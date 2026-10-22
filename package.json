@@ -1,0 +1,13 @@
+{
+  "name": "huellas-de-la-humanidad-website",
+  "version": "1.0.0",
+  "description": "Sitio web oficial y servidor de chat en vivo de Huellas de la Humanidad",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'Build listo'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

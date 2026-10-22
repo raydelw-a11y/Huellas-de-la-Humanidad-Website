@@ -45,6 +45,9 @@
                 <a href="https://www.tiktok.com/@huellas_de_la_humanidad" class="social-btn tiktok" target="_blank" rel="noopener noreferrer">
                     <i class="fa-brands fa-tiktok"></i> TikTok
                 </a>
+                <a href="#contacto-chat" class="social-btn contact-btn">
+                    <i class="fa-solid fa-comments"></i> Ponte en Contacto
+                </a>
             </div>
         </section>
 
@@ -75,13 +78,131 @@
                 </div>
             </div>
         </section>
+
+        <!-- SECCIÓN DE CHAT EN VIVO Y CUENTAS DE USUARIO / ADMIN -->
+        <section id="contacto-chat" class="chat-section glass-panel">
+            <h2><i class="fa-solid fa-feather-pointed"></i> Ponte en Contacto · Chat Directo</h2>
+            <p class="chat-subtitle">Crea tu cuenta o inicia sesión para escribirnos en directo. Si eres el administrador, inicia sesión con tu cuenta de Admin para responder a tus seguidores.</p>
+
+            <!-- VISTA 1: AUTENTICACIÓN (INICIAR SESIÓN / CREAR CUENTA) -->
+            <div id="auth-container" class="auth-container">
+                <div class="auth-tabs">
+                    <button type="button" id="tab-login" class="auth-tab active">Iniciar Sesión</button>
+                    <button type="button" id="tab-register" class="auth-tab">Crear Cuenta</button>
+                </div>
+
+                <div id="auth-feedback" class="auth-feedback hidden"></div>
+
+                <!-- Formulario Iniciar Sesión -->
+                <form id="login-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="login-username">Usuario</label>
+                        <input type="text" id="login-username" placeholder="Ingresa tu usuario" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Contraseña</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="login-password" placeholder="Ingresa tu contraseña" autocomplete="current-password" required>
+                            <button type="button" class="toggle-pwd-btn" data-target="login-password" aria-label="Mostrar u ocultar contraseña">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-right-to-bracket"></i> Entrar al Chat
+                    </button>
+                </form>
+
+                <!-- Formulario Crear Cuenta -->
+                <form id="register-form" class="auth-form hidden">
+                    <div class="form-group">
+                        <label for="reg-username">Elige tu Nombre de Usuario</label>
+                        <input type="text" id="reg-username" placeholder="Ej: historiador_99" autocomplete="username" minlength="3" maxlength="30" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Crea tu Contraseña</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" autocomplete="new-password" required>
+                            <button type="button" class="toggle-pwd-btn" data-target="reg-password" aria-label="Mostrar u ocultar contraseña">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        <ul class="pwd-rules-list" id="pwd-rules">
+                            <li id="rule-length"><i class="fa-regular fa-circle"></i> Mínimo 8 caracteres</li>
+                            <li id="rule-number"><i class="fa-regular fa-circle"></i> Al menos 1 número (0-9)</li>
+                            <li id="rule-symbol"><i class="fa-regular fa-circle"></i> Al menos 1 símbolo (!@#$%^&*...)</li>
+                        </ul>
+                    </div>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-user-plus"></i> Crear Cuenta y Chatear
+                    </button>
+                </form>
+            </div>
+
+            <!-- VISTA 2: CHAT DE USUARIO (SEGUIDOR) -->
+            <div id="user-chat-view" class="chat-view hidden">
+                <div class="chat-top-bar">
+                    <div class="chat-user-info">
+                        <span class="status-dot online"></span>
+                        <span>Conectado como <strong id="current-user-label"></strong></span>
+                    </div>
+                    <button type="button" id="logout-btn-user" class="logout-btn">
+                        <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+                    </button>
+                </div>
+
+                <div id="user-messages-box" class="messages-box"></div>
+
+                <form id="user-chat-form" class="chat-input-form">
+                    <input type="text" id="user-msg-input" placeholder="Escribe tu mensaje para Huellas de la Humanidad..." maxlength="1500" autocomplete="off" required>
+                    <button type="submit" class="send-msg-btn">
+                        <i class="fa-solid fa-paper-plane"></i> Enviar
+                    </button>
+                </form>
+            </div>
+
+            <!-- VISTA 3: PANEL DE ADMINISTRADOR (RESPONDER A USUARIOS) -->
+            <div id="admin-chat-view" class="chat-view hidden">
+                <div class="chat-top-bar admin-bar">
+                    <div class="chat-user-info">
+                        <span class="admin-badge"><i class="fa-solid fa-crown"></i> MODO ADMIN</span>
+                        <span>Conectado como <strong id="current-admin-label"></strong></span>
+                    </div>
+                    <button type="button" id="logout-btn-admin" class="logout-btn">
+                        <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+                    </button>
+                </div>
+
+                <div class="admin-dashboard-grid">
+                    <aside class="admin-users-sidebar">
+                        <h4>Conversaciones</h4>
+                        <div id="admin-conversations-list" class="conversations-list">
+                            <p class="empty-conv-text">Aún no hay mensajes de seguidores.</p>
+                        </div>
+                    </aside>
+
+                    <div class="admin-chat-main">
+                        <div id="admin-active-header" class="admin-active-header">
+                            Selecciona una conversación a la izquierda para responder
+                        </div>
+                        <div id="admin-messages-box" class="messages-box"></div>
+                        <form id="admin-chat-form" class="chat-input-form">
+                            <input type="text" id="admin-msg-input" placeholder="Escribe tu respuesta como Administrador..." maxlength="1500" autocomplete="off" disabled required>
+                            <button type="submit" id="admin-send-btn" class="send-msg-btn" disabled>
+                                <i class="fa-solid fa-reply"></i> Responder
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
         
         <footer>
             <p>&copy; 2026 Huellas de la Humanidad. Todos los derechos reservados.</p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 06:57 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 07:05 PM - 10/22/2026</div>
 
     <script src="script.js"></script>
 </body>

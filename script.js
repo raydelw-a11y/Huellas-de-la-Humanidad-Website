@@ -41,21 +41,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // CHAT EN VIVO Y SISTEMA DE CUENTAS / ADMIN
+    // SUBMENÚ SUPERIOR DE CUENTA Y CHAT EN VIVO
     // ==========================================
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? ''
         : 'https://huellas-chat-api.onrender.com';
 
-    const authContainer = document.getElementById('auth-container');
-    const userChatView = document.getElementById('user-chat-view');
-    const adminChatView = document.getElementById('admin-chat-view');
+    const guestTopButtons = document.getElementById('guest-top-buttons');
+    const loggedTopButtons = document.getElementById('logged-top-buttons');
+    const topUserDisplay = document.getElementById('top-user-display');
 
-    const tabLogin = document.getElementById('tab-login');
-    const tabRegister = document.getElementById('tab-register');
+    const btnOpenLogin = document.getElementById('btn-open-login');
+    const btnOpenRegister = document.getElementById('btn-open-register');
+    const btnOpenSettings = document.getElementById('btn-open-settings');
+    const btnTopLogout = document.getElementById('btn-top-logout');
+    const closeSubmenuBtn = document.getElementById('close-submenu-btn');
+    const topSubmenuDropdown = document.getElementById('top-submenu-dropdown');
+
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
+    const accountSettingsForm = document.getElementById('account-settings-form');
     const authFeedback = document.getElementById('auth-feedback');
+
+    const chatGuestPrompt = document.getElementById('chat-guest-prompt');
+    const chatTriggerLogin = document.getElementById('chat-trigger-login');
+    const chatTriggerRegister = document.getElementById('chat-trigger-register');
+    const userChatView = document.getElementById('user-chat-view');
+    const adminChatView = document.getElementById('admin-chat-view');
 
     const regPasswordInput = document.getElementById('reg-password');
     const ruleLength = document.getElementById('rule-length');
@@ -72,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedAdminUser = null;
     let pollTimer = null;
+    let activeSubmenu = null; // 'login' | 'register' | 'settings' | null
 
     function showFeedback(msg, type = 'error') {
         authFeedback.textContent = msg;
@@ -83,22 +96,57 @@ document.addEventListener('DOMContentLoaded', () => {
         authFeedback.className = 'auth-feedback hidden';
     }
 
-    // Cambiar pestañas Iniciar Sesión / Crear Cuenta
-    tabLogin.addEventListener('click', () => {
-        tabLogin.classList.add('active');
-        tabRegister.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
+    function openSubmenu(mode) {
         clearFeedback();
-    });
+        if (activeSubmenu === mode && !topSubmenuDropdown.classList.contains('hidden')) {
+            closeSubmenu();
+            return;
+        }
+        activeSubmenu = mode;
+        topSubmenuDropdown.classList.remove('hidden');
 
-    tabRegister.addEventListener('click', () => {
-        tabRegister.classList.add('active');
-        tabLogin.classList.remove('active');
-        registerForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
+        loginForm.classList.toggle('hidden', mode !== 'login');
+        registerForm.classList.toggle('hidden', mode !== 'register');
+        accountSettingsForm.classList.toggle('hidden', mode !== 'settings');
+
+        btnOpenLogin.classList.toggle('active', mode === 'login');
+        btnOpenRegister.classList.toggle('active', mode === 'register');
+        if (btnOpenSettings) btnOpenSettings.classList.toggle('active', mode === 'settings');
+
+        if (mode === 'settings' && currentUser) {
+            document.getElementById('settings-email').value = currentUser.email || '';
+            document.getElementById('settings-notify-yt').checked = currentUser.notifyYoutube !== false;
+        }
+    }
+
+    function closeSubmenu() {
+        activeSubmenu = null;
+        topSubmenuDropdown.classList.add('hidden');
+        btnOpenLogin.classList.remove('active');
+        btnOpenRegister.classList.remove('active');
+        if (btnOpenSettings) btnOpenSettings.classList.remove('active');
         clearFeedback();
-    });
+    }
+
+    btnOpenLogin.addEventListener('click', () => openSubmenu('login'));
+    btnOpenRegister.addEventListener('click', () => openSubmenu('register'));
+    if (btnOpenSettings) btnOpenSettings.addEventListener('click', () => openSubmenu('settings'));
+    closeSubmenuBtn.addEventListener('click', closeSubmenu);
+
+    if (chatTriggerLogin) {
+        chatTriggerLogin.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            openSubmenu('login');
+            setTimeout(() => document.getElementById('login-username').focus(), 300);
+        });
+    }
+    if (chatTriggerRegister) {
+        chatTriggerRegister.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            openSubmenu('register');
+            setTimeout(() => document.getElementById('reg-username').focus(), 300);
+        });
+    }
 
     // Mostrar / Ocultar contraseña
     document.querySelectorAll('.toggle-pwd-btn').forEach(btn => {
@@ -145,8 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
         checkPasswordRules(regPasswordInput.value);
     });
 
-    // Soporte explícito para tecla Enter en formularios de contraseña
-    [loginForm, registerForm].forEach(form => {
+    // Soporte explícito para tecla Enter en todos los formularios del submenú
+    [loginForm, registerForm, accountSettingsForm].forEach(form => {
+        if (!form) return;
         form.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -155,13 +204,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Registro de cuenta nueva
+    // Registro de cuenta nueva (con correo opcional)
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearFeedback();
 
         const username = document.getElementById('reg-username').value.trim();
         const password = regPasswordInput.value;
+        const email = document.getElementById('reg-email').value.trim();
 
         if (!checkPasswordRules(password)) {
             return showFeedback('La contraseña debe tener mínimo 8 caracteres, al menos 1 número y 1 símbolo.');
@@ -171,16 +221,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password, email })
             });
             const data = await res.json();
             if (!res.ok) {
                 return showFeedback(data.error || 'No se pudo crear la cuenta.');
             }
             saveSession(data.token, data.user);
+            closeSubmenu();
             enterChatView();
         } catch (err) {
-            showFeedback('Conectando con el servidor de chat, intenta de nuevo en unos segundos...');
+            showFeedback('Conectando con el servidor, intenta de nuevo en unos segundos...');
         }
     });
 
@@ -203,9 +254,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 return showFeedback(data.error || 'Usuario o contraseña incorrectos.');
             }
             saveSession(data.token, data.user);
+            closeSubmenu();
             enterChatView();
         } catch (err) {
-            showFeedback('Conectando con el servidor de chat, intenta de nuevo en unos segundos...');
+            showFeedback('Conectando con el servidor, intenta de nuevo en unos segundos...');
+        }
+    });
+
+    // Guardar Opciones de la Cuenta (Correo electrónico y notificaciones de YouTube)
+    accountSettingsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearFeedback();
+
+        const email = document.getElementById('settings-email').value.trim();
+        const notifyYoutube = document.getElementById('settings-notify-yt').checked;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/account/settings`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ email, notifyYoutube })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                return showFeedback(data.error || 'No se pudieron guardar las opciones.');
+            }
+            saveSession(authToken, data.user);
+            showFeedback('¡Correo y notificaciones actualizados correctamente!', 'success');
+        } catch (err) {
+            showFeedback('Error de conexión al guardar opciones.');
         }
     });
 
@@ -223,15 +303,17 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('huellas_chat_token');
         localStorage.removeItem('huellas_chat_user');
         if (pollTimer) clearInterval(pollTimer);
+        closeSubmenu();
+        guestTopButtons.classList.remove('hidden');
+        loggedTopButtons.classList.add('hidden');
         userChatView.classList.add('hidden');
         adminChatView.classList.add('hidden');
-        authContainer.classList.remove('hidden');
-        updatePollAdminControls();
+        chatGuestPrompt.classList.remove('hidden');
+        updatePollAdminControls(false, null);
         loadPoll();
     }
 
-    document.getElementById('logout-btn-user').addEventListener('click', logout);
-    document.getElementById('logout-btn-admin').addEventListener('click', logout);
+    btnTopLogout.addEventListener('click', logout);
 
     function formatTime(isoStr) {
         try {
@@ -412,19 +494,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function enterChatView() {
         if (!authToken || !currentUser) return;
-        authContainer.classList.add('hidden');
+        guestTopButtons.classList.add('hidden');
+        loggedTopButtons.classList.remove('hidden');
+        topUserDisplay.textContent = currentUser.role === 'admin'
+            ? `${currentUser.username} (Admin)`
+            : (currentUser.displayName || currentUser.username);
+
+        chatGuestPrompt.classList.add('hidden');
         if (pollTimer) clearInterval(pollTimer);
 
         if (currentUser.role === 'admin') {
             userChatView.classList.add('hidden');
             adminChatView.classList.remove('hidden');
-            document.getElementById('current-admin-label').textContent = currentUser.displayName;
+            document.getElementById('current-admin-label').textContent = currentUser.username;
             loadAdminConversations();
             pollTimer = setInterval(loadAdminConversations, 3500);
         } else {
             adminChatView.classList.add('hidden');
             userChatView.classList.remove('hidden');
-            document.getElementById('current-user-label').textContent = currentUser.displayName;
+            document.getElementById('current-user-label').textContent = currentUser.displayName || currentUser.username;
             loadUserMessages();
             pollTimer = setInterval(loadUserMessages, 3500);
         }

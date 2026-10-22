@@ -22,15 +22,121 @@
     <div class="background-animation"></div>
     
     <main class="page-wrapper">
-        <!-- CABECERA A TODO LO ANCHO: LOGO A LA IZQUIERDA + ESLOGAN AL LADO -->
-        <header class="profile-header glass-panel">
-            <div class="logo-container">
-                <img src="logo.png" alt="Huellas de la Humanidad" class="brand-logo">
+        <!-- CABECERA A TODO LO ANCHO: LOGO A LA IZQUIERDA + ESLOGAN AL LADO + BARRA DE CUENTA ABAJO -->
+        <header class="top-header-block glass-panel">
+            <div class="profile-header">
+                <div class="logo-container">
+                    <img src="logo.png" alt="Huellas de la Humanidad" class="brand-logo">
+                </div>
+                <div class="header-content">
+                    <h1 class="sr-only">Huellas de la Humanidad</h1>
+                    <p class="bio">«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
+                    <div class="ancient-divider" aria-hidden="true"><span>✦</span></div>
+                </div>
             </div>
-            <div class="header-content">
-                <h1 class="sr-only">Huellas de la Humanidad</h1>
-                <p class="bio">«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
-                <div class="ancient-divider" aria-hidden="true"><span>✦</span></div>
+
+            <!-- OPCIONES DEBAJO DEL LOGO Y ESLOGAN: INICIAR SESIÓN / CREAR CUENTA / OPCIONES DE CUENTA CON SUBMENÚ -->
+            <div class="top-account-bar">
+                <!-- Botones cuando NO ha iniciado sesión -->
+                <div id="guest-top-buttons" class="top-account-buttons">
+                    <button type="button" id="btn-open-login" class="top-menu-btn">
+                        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                    </button>
+                    <button type="button" id="btn-open-register" class="top-menu-btn">
+                        <i class="fa-solid fa-user-plus"></i> Crear Cuenta <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                    </button>
+                </div>
+
+                <!-- Botones cuando SÍ ha iniciado sesión -->
+                <div id="logged-top-buttons" class="top-account-buttons hidden">
+                    <span class="top-user-greeting">
+                        <span class="status-dot online"></span>
+                        <span id="top-user-display"></span>
+                    </span>
+                    <button type="button" id="btn-open-settings" class="top-menu-btn">
+                        <i class="fa-solid fa-gear"></i> Opciones de la Cuenta <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                    </button>
+                    <button type="button" id="btn-top-logout" class="logout-btn">
+                        <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUBMENÚ DESPLEGABLE (INICIAR SESIÓN / CREAR CUENTA / OPCIONES DE LA CUENTA) -->
+            <div id="top-submenu-dropdown" class="top-submenu-dropdown hidden">
+                <button type="button" id="close-submenu-btn" class="close-submenu-btn" aria-label="Cerrar submenú">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div id="auth-feedback" class="auth-feedback hidden"></div>
+
+                <!-- Submenú 1: Iniciar Sesión -->
+                <form id="login-form" class="auth-form hidden">
+                    <h3 class="submenu-title"><i class="fa-solid fa-key"></i> Iniciar Sesión</h3>
+                    <div class="form-group">
+                        <label for="login-username">Usuario</label>
+                        <input type="text" id="login-username" placeholder="Ingresa tu usuario" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Contraseña</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="login-password" placeholder="Ingresa tu contraseña" autocomplete="current-password" required>
+                            <button type="button" class="toggle-pwd-btn" data-target="login-password" aria-label="Mostrar u ocultar contraseña">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-right-to-bracket"></i> Entrar a mi Cuenta
+                    </button>
+                </form>
+
+                <!-- Submenú 2: Crear Cuenta -->
+                <form id="register-form" class="auth-form hidden">
+                    <h3 class="submenu-title"><i class="fa-solid fa-user-plus"></i> Crear Cuenta</h3>
+                    <div class="form-group">
+                        <label for="reg-username">Elige tu Nombre de Usuario</label>
+                        <input type="text" id="reg-username" placeholder="Ej: historiador_99" autocomplete="username" minlength="3" maxlength="30" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Crea tu Contraseña</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" autocomplete="new-password" required>
+                            <button type="button" class="toggle-pwd-btn" data-target="reg-password" aria-label="Mostrar u ocultar contraseña">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        <ul class="pwd-rules-list" id="pwd-rules">
+                            <li id="rule-length"><i class="fa-regular fa-circle"></i> Mínimo 8 caracteres</li>
+                            <li id="rule-number"><i class="fa-regular fa-circle"></i> Al menos 1 número (0-9)</li>
+                            <li id="rule-symbol"><i class="fa-regular fa-circle"></i> Al menos 1 símbolo (!@#$%^&*...)</li>
+                        </ul>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Correo Electrónico <span class="optional-tag">(Opcional · Notificaciones de YouTube)</span></label>
+                        <input type="email" id="reg-email" placeholder="tucorreo@ejemplo.com (puedes agregarlo ahora o más tarde)" autocomplete="email">
+                        <small class="field-hint"><i class="fa-brands fa-youtube"></i> Si lo ingresas, te avisaremos por correo cada vez que subamos un nuevo video a YouTube.</small>
+                    </div>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-user-check"></i> Crear Cuenta
+                    </button>
+                </form>
+
+                <!-- Submenú 3: Opciones de la Cuenta (Agregar / Editar Correo para Notificaciones de YouTube) -->
+                <form id="account-settings-form" class="auth-form hidden">
+                    <h3 class="submenu-title"><i class="fa-solid fa-sliders"></i> Opciones de la Cuenta</h3>
+                    <div class="form-group">
+                        <label for="settings-email">Correo Electrónico para Notificaciones</label>
+                        <input type="email" id="settings-email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+                    </div>
+                    <label class="checkbox-row" for="settings-notify-yt">
+                        <input type="checkbox" id="settings-notify-yt" checked>
+                        <span>Recibir una notificación por correo electrónico cuando se suba un nuevo video a YouTube</span>
+                    </label>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-floppy-disk"></i> Guardar Opciones
+                    </button>
+                </form>
             </div>
         </header>
 
@@ -51,7 +157,7 @@
                     <!-- Formulario para sugerir tema (Visible mientras haya menos de 5 temas) -->
                     <form id="topic-suggest-form" class="topic-suggest-form">
                         <div id="suggest-identity-label" class="suggest-identity-label">
-                            Proponiendo como: <strong>Seguidor</strong>
+                            Proponiendo sin cuenta como: <strong>Seguidor</strong>
                         </div>
                         <input type="text" id="topic-title-input" placeholder="Escribe tu propuesta de tema..." maxlength="140" required>
                         <button type="submit" class="gold-submit-btn suggest-btn">
@@ -121,61 +227,19 @@
             <aside class="side-column right-column">
                 <section id="contacto-chat" class="chat-section glass-panel">
                     <h2><i class="fa-solid fa-feather-pointed"></i> Ponte en Contacto</h2>
-                    <p class="chat-subtitle">Crea tu cuenta o inicia sesión para escribirnos en directo.</p>
+                    <p class="chat-subtitle">Escríbenos en directo a través del chat.</p>
 
-                    <!-- VISTA 1: AUTENTICACIÓN (INICIAR SESIÓN / CREAR CUENTA) -->
-                    <div id="auth-container" class="auth-container">
-                        <div class="auth-tabs">
-                            <button type="button" id="tab-login" class="auth-tab active">Iniciar Sesión</button>
-                            <button type="button" id="tab-register" class="auth-tab">Crear Cuenta</button>
+                    <!-- VISTA 1: INVITACIÓN A INICIAR SESIÓN O CREAR CUENTA EN EL MENÚ SUPERIOR -->
+                    <div id="chat-guest-prompt" class="chat-guest-prompt">
+                        <p>Para conversar en directo con nosotros, inicia sesión o crea tu cuenta en el menú superior.</p>
+                        <div class="guest-prompt-actions">
+                            <button type="button" id="chat-trigger-login" class="gold-submit-btn">
+                                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                            </button>
+                            <button type="button" id="chat-trigger-register" class="top-menu-btn full-width-btn">
+                                <i class="fa-solid fa-user-plus"></i> Crear Cuenta
+                            </button>
                         </div>
-
-                        <div id="auth-feedback" class="auth-feedback hidden"></div>
-
-                        <!-- Formulario Iniciar Sesión -->
-                        <form id="login-form" class="auth-form">
-                            <div class="form-group">
-                                <label for="login-username">Usuario</label>
-                                <input type="text" id="login-username" placeholder="Ingresa tu usuario" autocomplete="username" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="login-password">Contraseña</label>
-                                <div class="password-input-wrap">
-                                    <input type="password" id="login-password" placeholder="Ingresa tu contraseña" autocomplete="current-password" required>
-                                    <button type="button" class="toggle-pwd-btn" data-target="login-password" aria-label="Mostrar u ocultar contraseña">
-                                        <i class="fa-regular fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <button type="submit" class="gold-submit-btn">
-                                <i class="fa-solid fa-right-to-bracket"></i> Entrar al Chat
-                            </button>
-                        </form>
-
-                        <!-- Formulario Crear Cuenta -->
-                        <form id="register-form" class="auth-form hidden">
-                            <div class="form-group">
-                                <label for="reg-username">Elige tu Nombre de Usuario</label>
-                                <input type="text" id="reg-username" placeholder="Ej: historiador_99" autocomplete="username" minlength="3" maxlength="30" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="reg-password">Crea tu Contraseña</label>
-                                <div class="password-input-wrap">
-                                    <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" autocomplete="new-password" required>
-                                    <button type="button" class="toggle-pwd-btn" data-target="reg-password" aria-label="Mostrar u ocultar contraseña">
-                                        <i class="fa-regular fa-eye"></i>
-                                    </button>
-                                </div>
-                                <ul class="pwd-rules-list" id="pwd-rules">
-                                    <li id="rule-length"><i class="fa-regular fa-circle"></i> Mínimo 8 caracteres</li>
-                                    <li id="rule-number"><i class="fa-regular fa-circle"></i> Al menos 1 número (0-9)</li>
-                                    <li id="rule-symbol"><i class="fa-regular fa-circle"></i> Al menos 1 símbolo (!@#$%^&*...)</li>
-                                </ul>
-                            </div>
-                            <button type="submit" class="gold-submit-btn">
-                                <i class="fa-solid fa-user-plus"></i> Crear Cuenta y Chatear
-                            </button>
-                        </form>
                     </div>
 
                     <!-- VISTA 2: CHAT DE USUARIO (SEGUIDOR) -->
@@ -185,9 +249,6 @@
                                 <span class="status-dot online"></span>
                                 <span>Conectado como <strong id="current-user-label"></strong></span>
                             </div>
-                            <button type="button" id="logout-btn-user" class="logout-btn">
-                                <i class="fa-solid fa-power-off"></i> Salir
-                            </button>
                         </div>
 
                         <div id="user-messages-box" class="messages-box"></div>
@@ -207,9 +268,6 @@
                                 <span class="admin-badge"><i class="fa-solid fa-crown"></i> ADMIN</span>
                                 <strong id="current-admin-label"></strong>
                             </div>
-                            <button type="button" id="logout-btn-admin" class="logout-btn">
-                                <i class="fa-solid fa-power-off"></i> Salir
-                            </button>
                         </div>
 
                         <div class="admin-dashboard-stack">
@@ -244,7 +302,7 @@
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 07:26 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 07:38 PM - 10/22/2026</div>
 
     <script src="script.js"></script>
 </body>

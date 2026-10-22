@@ -52,6 +52,11 @@ let db = {
   poll: {
     maxTopics: 5,
     topics: [] // [ { id, title, author, createdAt, voters: [] } ]
+  },
+  youtubeNotifier: {
+    lastVideoId: 'rJdAGfxEYkw',
+    lastVideoTitle: '',
+    lastNotifiedAt: null
   }
 };
 
@@ -120,6 +125,9 @@ async function loadDatabase() {
         if (parsed.poll && Array.isArray(parsed.poll.topics)) {
           db.poll = parsed.poll;
         }
+        if (parsed.youtubeNotifier) {
+          db.youtubeNotifier = parsed.youtubeNotifier;
+        }
       }
     }
   } catch (e) {
@@ -139,6 +147,9 @@ async function loadDatabase() {
           db.conversations = parsed.conversations || {};
           if (parsed.poll && Array.isArray(parsed.poll.topics)) {
             db.poll = parsed.poll;
+          }
+          if (parsed.youtubeNotifier) {
+            db.youtubeNotifier = parsed.youtubeNotifier;
           }
           console.log('Database loaded from GitHub cloud backup.');
         }
@@ -270,8 +281,9 @@ const server = http.createServer(async (req, res) => {
 
   // --- API ROUTES ---
   if (pathname === '/api/register' && req.method === 'POST') {
-    const { username, password } = await parseBody(req);
+    const { username, password, email } = await parseBody(req);
     const cleanUser = String(username || '').trim().toLowerCase();
+    const cleanEmail = String(email || '').trim().toLowerCase();
 
     if (!cleanUser || cleanUser.length < 3 || cleanUser.length > 30 || !/^[a-z0-9_.-]+$/.test(cleanUser)) {
       return sendJson(res, 400, { error: 'El usuario debe tener entre 3 y 30 caracteres (letras, números, punto o guion).' });
@@ -282,6 +294,10 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { error: pwdError });
     }
 
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return sendJson(res, 400, { error: 'El formato del correo electrónico no es válido.' });
+    }
+
     if (db.users[cleanUser]) {
       return sendJson(res, 409, { error: 'Ese nombre de usuario ya está registrado. Elige otro o inicia sesión.' });
     }
@@ -290,6 +306,8 @@ const server = http.createServer(async (req, res) => {
       username: cleanUser,
       displayName: String(username).trim(),
       passwordHash: hashPassword(password),
+      email: cleanEmail || '',
+      notifyYoutube: Boolean(cleanEmail),
       role: 'user',
       createdAt: new Date().toISOString()
     };
@@ -315,8 +333,14 @@ const server = http.createServer(async (req, res) => {
 
     saveDatabase();
 
-    const userPayload = { username: cleanUser, displayName: db.users[cleanUser].displayName, role: 'user' };
-    const token = createSessionToken(userPayload);
+    const userPayload = {
+      username: cleanUser,
+      displayName: db.users[cleanUser].displayName,
+      email: db.users[cleanUser].email || '',
+      notifyYoutube: Boolean(db.users[cleanUser].notifyYoutube),
+      role: 'user'
+    };
+    const token = createSessionToken({ username: cleanUser, role: 'user' });
 
     return sendJson(res, 201, {
       token,
@@ -336,13 +360,59 @@ const server = http.createServer(async (req, res) => {
     const userPayload = {
       username: userRecord.username,
       displayName: userRecord.displayName,
+      email: userRecord.email || '',
+      notifyYoutube: Boolean(userRecord.notifyYoutube),
       role: userRecord.role
     };
-    const token = createSessionToken(userPayload);
+    const token = createSessionToken({ username: userRecord.username, role: userRecord.role });
 
     return sendJson(res, 200, {
       token,
       user: userPayload
+    });
+  }
+
+  if (pathname === '/api/account/me' && req.method === 'GET') {
+    const session = getAuthSession(req);
+    if (!session) return sendJson(res, 401, { error: 'Sesión no válida.' });
+    const u = db.users[session.username];
+    return sendJson(res, 200, {
+      user: {
+        username: u.username,
+        displayName: u.displayName || u.username,
+        email: u.email || '',
+        notifyYoutube: Boolean(u.notifyYoutube),
+        role: u.role
+      }
+    });
+  }
+
+  if (pathname === '/api/account/settings' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session) return sendJson(res, 401, { error: 'Inicia sesión para actualizar tu cuenta.' });
+
+    const { email, notifyYoutube } = await parseBody(req);
+    const cleanEmail = String(email || '').trim().toLowerCase();
+
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return sendJson(res, 400, { error: 'Ingresa un correo electrónico válido (ej: nombre@correo.com).' });
+    }
+
+    const u = db.users[session.username];
+    u.email = cleanEmail;
+    u.notifyYoutube = cleanEmail ? Boolean(notifyYoutube) : false;
+
+    saveDatabase();
+
+    return sendJson(res, 200, {
+      ok: true,
+      user: {
+        username: u.username,
+        displayName: u.displayName || u.username,
+        email: u.email,
+        notifyYoutube: u.notifyYoutube,
+        role: u.role
+      }
     });
   }
 
@@ -581,4 +651,85 @@ loadDatabase().then(() => {
   server.listen(PORT, () => {
     console.log(`Servidor Huellas de la Humanidad activo en puerto ${PORT}`);
   });
+  // Vigilar automáticamente nuevos videos en el canal de YouTube cada 10 minutos
+  setInterval(checkYoutubeAndNotify, 10 * 60 * 1000);
 });
+
+const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
+
+function sendEmailViaResend(toEmail, subject, htmlBody) {
+  const apiKey = process.env.RESEND_API_KEY || '';
+  if (!apiKey) return Promise.resolve(false);
+  const fromAddress = process.env.EMAIL_FROM || 'Huellas de la Humanidad <notificaciones@huellasdelahumanidad.com>';
+  const payload = JSON.stringify({
+    from: fromAddress,
+    to: [toEmail],
+    subject,
+    html: htmlBody
+  });
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.resend.com',
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      res.on('data', () => {});
+      res.on('end', () => resolve(res.statusCode >= 200 && res.statusCode < 300));
+    });
+    req.on('error', () => resolve(false));
+    req.write(payload);
+    req.end();
+  });
+}
+
+function checkYoutubeAndNotify() {
+  https.get(`https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHANNEL_ID}`, (res) => {
+    let xml = '';
+    res.on('data', chunk => xml += chunk);
+    res.on('end', async () => {
+      const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
+      if (!entryMatch) return;
+      const entry = entryMatch[1];
+      const idMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+      const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
+      if (!idMatch) return;
+      const latestId = idMatch[1].trim();
+      const latestTitle = titleMatch ? titleMatch[1].trim() : 'Nuevo Documental';
+
+      if (!db.youtubeNotifier) {
+        db.youtubeNotifier = { lastVideoId: latestId, lastVideoTitle: latestTitle, lastNotifiedAt: new Date().toISOString() };
+        saveDatabase();
+        return;
+      }
+
+      if (db.youtubeNotifier.lastVideoId && db.youtubeNotifier.lastVideoId !== latestId) {
+        db.youtubeNotifier.lastVideoId = latestId;
+        db.youtubeNotifier.lastVideoTitle = latestTitle;
+        db.youtubeNotifier.lastNotifiedAt = new Date().toISOString();
+        saveDatabase();
+
+        const subscribers = Object.values(db.users).filter(u => u.email && u.notifyYoutube);
+        for (const sub of subscribers) {
+          const html = `
+            <div style="background:#0c0a08;color:#f4ebd9;padding:28px;font-family:Georgia,serif;border:1px solid #d4af37;border-radius:12px;max-width:560px;margin:0 auto;">
+              <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;">Huellas de la Humanidad</h2>
+              <p>Hola <strong>${sub.displayName || sub.username}</strong>,</p>
+              <p>Acabamos de publicar un nuevo documental en nuestro canal de YouTube:</p>
+              <h3 style="color:#f5df98;">«${latestTitle}»</h3>
+              <p style="margin:24px 0;">
+                <a href="https://huellasdelahumanidad.com" style="background:#d4af37;color:#0c0a08;padding:12px 22px;text-decoration:none;font-weight:bold;border-radius:8px;">Ver Ahora en Huellas de la Humanidad</a>
+              </p>
+              <p style="font-size:12px;color:#a09580;">Cada historia deja una huella. Aquí seguimos sus rastros.</p>
+            </div>
+          `;
+          await sendEmailViaResend(sub.email, `Nuevo video: ${latestTitle} - Huellas de la Humanidad`, html);
+        }
+      }
+    });
+  }).on('error', () => {});
+}

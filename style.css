@@ -213,7 +213,7 @@ body {
     color: var(--primary-color);
 }
 
-.video-wrapper {
+.youtube-wrapper {
     position: relative;
     width: 100%;
     padding-bottom: 56.25%; /* 16:9 Aspect Ratio for YouTube */
@@ -222,7 +222,7 @@ body {
     background: rgba(0,0,0,0.3);
 }
 
-.video-wrapper iframe {
+.youtube-wrapper iframe {
     position: absolute;
     top: 0;
     left: 0;
@@ -233,23 +233,24 @@ body {
 
 /* Adjustments for TikTok & Facebook embeds */
 .tiktok-wrapper, .facebook-wrapper {
-    padding-bottom: 0;
-    min-height: 500px;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     background: transparent;
+    overflow: visible;
 }
 
 .facebook-wrapper iframe {
-    position: static;
     width: 100%;
     max-width: 500px;
     height: 650px;
     border-radius: 12px;
+    background: #fff;
 }
 
 .tiktok-embed {
+    width: 100%;
     margin: 0 auto !important;
     border-radius: 12px !important;
 }

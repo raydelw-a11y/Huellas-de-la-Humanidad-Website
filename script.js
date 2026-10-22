@@ -460,6 +460,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updatePollAdminControls() {
+        const suggestIdentityLabel = document.getElementById('suggest-identity-label');
+        if (suggestIdentityLabel) {
+            if (authToken && currentUser) {
+                const nameToShow = currentUser.role === 'admin' ? currentUser.username : (currentUser.displayName || currentUser.username);
+                suggestIdentityLabel.innerHTML = `Proponiendo desde tu cuenta: <strong>${nameToShow}</strong>`;
+            } else {
+                suggestIdentityLabel.innerHTML = 'Proponiendo sin cuenta como: <strong>Seguidor</strong>';
+            }
+        }
         if (!pollAdminControls) return;
         if (currentUser && currentUser.role === 'admin') {
             pollAdminControls.classList.remove('hidden');
@@ -594,11 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${API_BASE}/api/poll/suggest`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({
-                        title,
-                        voterId,
-                        authorName: currentUser ? currentUser.displayName : 'Seguidor'
-                    })
+                    body: JSON.stringify({ title })
                 });
                 const data = await res.json();
                 if (!res.ok) {

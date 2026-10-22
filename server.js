@@ -464,7 +464,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/poll/suggest' && req.method === 'POST') {
-    const { title, authorName, voterId } = await parseBody(req);
+    const { title } = await parseBody(req);
     const session = getAuthSession(req);
     const cleanTitle = String(title || '').trim();
 
@@ -482,9 +482,10 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 409, { error: 'Ese tema ya fue propuesto en esta ronda.' });
     }
 
+    // Sin cuenta -> 'Seguidor'; desde una cuenta activa -> nombre de usuario
     const author = session
-      ? session.displayName
-      : (String(authorName || '').trim().slice(0, 30) || 'Seguidor');
+      ? (session.role === 'admin' ? session.username : (session.displayName || session.username))
+      : 'Seguidor';
 
     db.poll.topics.push({
       id: crypto.randomUUID(),
@@ -495,7 +496,7 @@ const server = http.createServer(async (req, res) => {
     });
 
     saveDatabase();
-    return sendJson(res, 201, { ok: true, count: db.poll.topics.length });
+    return sendJson(res, 201, { ok: true, count: db.poll.topics.length, author });
   }
 
   if (pathname === '/api/poll/vote' && req.method === 'POST') {

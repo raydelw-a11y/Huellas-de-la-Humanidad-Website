@@ -3,17 +3,15 @@
     --primary-hover: #b5952f;
     --bg-dark: #0f1115;
     --text-light: #f8f9fa;
-    --text-muted: #a0aab2;
+    --text-muted: #c2c9d0;
     --glass-bg: rgba(255, 255, 255, 0.05);
     --glass-border: rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     
     /* Social Colors */
     --yt-color: #FF0000;
-    --tk-color: #00f2fe; /* TikTok gradient end */
-    --tk-color-2: #fe0979; /* TikTok gradient start */
-    --ig-color: #E1306C;
-    --x-color: #1DA1F2;
+    --fb-color: #1877F2;
+    --tk-color: #00f2fe;
 }
 
 * {
@@ -40,7 +38,7 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background: radial-gradient(circle at 15% 50%, rgba(212, 175, 55, 0.1), transparent 50%),
+    background: radial-gradient(circle at 15% 50%, rgba(212, 175, 55, 0.12), transparent 50%),
                 radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.05), transparent 50%);
     animation: pulse 15s ease-in-out infinite alternate;
 }
@@ -51,7 +49,7 @@ body {
 }
 
 .container {
-    max-width: 800px;
+    max-width: 820px;
     margin: 0 auto;
     padding: 2rem;
     display: flex;
@@ -82,18 +80,18 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .logo-container {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .brand-logo {
-    max-width: 260px;
+    max-width: 280px;
     width: 100%;
     height: auto;
     filter: drop-shadow(0 6px 24px rgba(212, 175, 55, 0.35));
@@ -119,8 +117,10 @@ body {
 
 .bio {
     color: var(--text-muted);
-    font-size: 1.1rem;
-    max-width: 600px;
+    font-size: 1.15rem;
+    max-width: 640px;
+    font-weight: 400;
+    line-height: 1.7;
 }
 
 /* Social Links */
@@ -128,11 +128,12 @@ body {
     text-align: center;
     margin-bottom: 1.5rem;
     font-weight: 600;
+    color: var(--primary-color);
 }
 
 .links-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
 
@@ -141,14 +142,14 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 1rem;
-    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
     text-decoration: none;
     color: var(--text-light);
     font-weight: 600;
     font-size: 1.1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -161,7 +162,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.12), transparent);
     transform: translateX(-100%);
     transition: transform 0.6s ease;
 }
@@ -171,14 +172,27 @@ body {
 }
 
 .social-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
 }
 
-.social-btn.youtube:hover { color: var(--yt-color); border-color: var(--yt-color); }
-.social-btn.tiktok:hover { color: var(--tk-color); border-color: var(--tk-color); }
-.social-btn.instagram:hover { color: var(--ig-color); border-color: var(--ig-color); }
-.social-btn.x-twitter:hover { color: var(--x-color); border-color: var(--x-color); }
+.social-btn.youtube:hover {
+    color: var(--yt-color);
+    border-color: var(--yt-color);
+    box-shadow: 0 0 18px rgba(255, 0, 0, 0.25);
+}
+
+.social-btn.facebook:hover {
+    color: var(--fb-color);
+    border-color: var(--fb-color);
+    box-shadow: 0 0 18px rgba(24, 119, 242, 0.25);
+}
+
+.social-btn.tiktok:hover {
+    color: var(--tk-color);
+    border-color: var(--tk-color);
+    box-shadow: 0 0 18px rgba(0, 242, 254, 0.25);
+}
 
 /* Video Cards */
 .latest-videos {
@@ -217,16 +231,25 @@ body {
     border: none;
 }
 
-/* Adjustments for vertical videos (TikTok/Instagram) */
-.tiktok-wrapper, .instagram-wrapper {
+/* Adjustments for TikTok & Facebook embeds */
+.tiktok-wrapper, .facebook-wrapper {
     padding-bottom: 0;
     min-height: 500px;
     display: flex;
     justify-content: center;
+    align-items: center;
     background: transparent;
 }
 
-.tiktok-embed, .instagram-media {
+.facebook-wrapper iframe {
+    position: static;
+    width: 100%;
+    max-width: 500px;
+    height: 650px;
+    border-radius: 12px;
+}
+
+.tiktok-embed {
     margin: 0 auto !important;
     border-radius: 12px !important;
 }
@@ -266,11 +289,15 @@ footer {
         padding: 1rem;
     }
     
-    h1 {
-        font-size: 2rem;
-    }
-    
     .glass-panel {
         padding: 1.5rem;
+    }
+
+    .brand-logo {
+        max-width: 220px;
+    }
+
+    .bio {
+        font-size: 1.05rem;
     }
 }

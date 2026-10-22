@@ -459,18 +459,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4500);
     }
 
-    function updatePollAdminControls() {
+    function updatePollAdminControls(serverIsAdmin = null, serverUsername = null) {
+        const isAdmin = serverIsAdmin !== null
+            ? Boolean(serverIsAdmin)
+            : Boolean(authToken && currentUser && currentUser.role === 'admin');
+
         const suggestIdentityLabel = document.getElementById('suggest-identity-label');
         if (suggestIdentityLabel) {
-            if (authToken && currentUser) {
-                const nameToShow = currentUser.role === 'admin' ? currentUser.username : (currentUser.displayName || currentUser.username);
-                suggestIdentityLabel.innerHTML = `Proponiendo desde tu cuenta: <strong>${nameToShow}</strong>`;
+            const activeName = serverUsername || (authToken && currentUser ? (currentUser.role === 'admin' ? currentUser.username : (currentUser.displayName || currentUser.username)) : null);
+            if (activeName) {
+                suggestIdentityLabel.innerHTML = `Proponiendo desde tu cuenta: <strong>${activeName}</strong>`;
             } else {
                 suggestIdentityLabel.innerHTML = 'Proponiendo sin cuenta como: <strong>Seguidor</strong>';
             }
         }
         if (!pollAdminControls) return;
-        if (currentUser && currentUser.role === 'admin') {
+        if (isAdmin) {
             pollAdminControls.classList.remove('hidden');
         } else {
             pollAdminControls.classList.add('hidden');
@@ -491,7 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const topics = data.topics || [];
         const isVoting = topics.length >= 5;
         const totalVotes = data.totalVotes || 0;
-        const isAdmin = currentUser && currentUser.role === 'admin';
+        const isAdmin = Boolean(data.isAdmin);
+        updatePollAdminControls(isAdmin, data.currentUsername);
 
         if (isVoting) {
             pollStageBadge.textContent = `¡Votaciones Abiertas! (${totalVotes} ${totalVotes === 1 ? 'voto' : 'votos'})`;

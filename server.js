@@ -232,7 +232,16 @@ function parseBody(req) {
 function getAuthSession(req) {
   const auth = req.headers['authorization'] || '';
   const token = auth.replace(/^Bearer\s+/i, '').trim();
-  return verifySessionToken(token);
+  const payload = verifySessionToken(token);
+  if (!payload || !payload.username || !db.users[payload.username]) {
+    return null;
+  }
+  const u = db.users[payload.username];
+  return {
+    username: u.username,
+    displayName: u.displayName || u.username,
+    role: u.role
+  };
 }
 
 const MIME_TYPES = {
@@ -459,6 +468,8 @@ const server = http.createServer(async (req, res) => {
       maxTopics: 5,
       status: topics.length >= 5 ? 'voting' : 'suggesting',
       totalVotes,
+      isAdmin: Boolean(session && session.role === 'admin'),
+      currentUsername: session ? (session.role === 'admin' ? session.username : (session.displayName || session.username)) : null,
       topics
     });
   }

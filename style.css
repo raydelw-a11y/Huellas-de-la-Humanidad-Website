@@ -53,13 +53,15 @@ body {
     100% { transform: scale(1.1); }
 }
 
-.container {
-    max-width: 820px;
+/* Full-screen wrapper so header spans the full width and 3 columns sit below */
+.page-wrapper {
+    width: 100%;
+    max-width: 1720px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1.5rem 2rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.75rem;
 }
 
 /* Glassmorphism + Antique Gold Frame */
@@ -69,26 +71,26 @@ body {
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
-    padding: 2.25rem;
+    padding: 1.75rem;
     box-shadow: var(--glass-shadow), inset 0 0 24px rgba(212, 175, 55, 0.05);
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-panel:hover {
-    transform: translateY(-4px);
     border-color: rgba(212, 175, 55, 0.45);
     box-shadow: 0 14px 44px 0 rgba(0, 0, 0, 0.75), inset 0 0 28px rgba(212, 175, 55, 0.08);
 }
 
-/* Header: Logo arriba a la izquierda + Slogan al lado */
+/* Header: Ocupa todo el ancho de la pantalla, logo a la izquierda + eslogan al lado */
 .profile-header {
+    width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 2rem;
+    gap: 2.25rem;
     text-align: left;
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 2.5rem;
 }
 
 .logo-container {
@@ -136,15 +138,15 @@ body {
     align-items: center;
     justify-content: flex-start;
     width: 100%;
-    max-width: 260px;
+    max-width: 420px;
     color: var(--primary-color);
     font-size: 0.85rem;
-    opacity: 0.8;
+    opacity: 0.85;
 }
 
 .ancient-divider::before {
     content: "";
-    width: 40px;
+    width: 60px;
     height: 1px;
     background: linear-gradient(90deg, var(--primary-color), transparent);
     margin-right: 10px;
@@ -162,11 +164,36 @@ body {
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-style: italic;
     color: var(--text-muted);
-    font-size: 1.35rem;
+    font-size: 1.5rem;
     font-weight: 600;
-    line-height: 1.5;
+    line-height: 1.45;
     letter-spacing: 0.02em;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================
+   ESTRUCTURA DE 3 HILERAS VERTICALES
+   ========================================== */
+.three-columns-layout {
+    display: grid;
+    grid-template-columns: minmax(310px, 1fr) minmax(440px, 1.35fr) minmax(320px, 1fr);
+    gap: 1.75rem;
+    align-items: start;
+}
+
+.side-column {
+    position: sticky;
+    top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.center-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    min-width: 0;
 }
 
 /* Headings in Classical Roman Engraved Serif (Cinzel) */
@@ -176,7 +203,7 @@ body {
 .poll-section h2 {
     font-family: 'Cinzel', Georgia, serif;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     font-weight: 700;
     background: linear-gradient(180deg, var(--gold-light) 0%, var(--primary-color) 55%, var(--gold-dark) 100%);
     -webkit-background-clip: text;
@@ -186,14 +213,14 @@ body {
 
 .social-links h2 {
     text-align: center;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.4rem;
 }
 
 .links-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
 }
 
 .social-btn {
@@ -202,13 +229,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 1rem 1rem;
+    gap: 8px;
+    padding: 0.9rem 0.75rem;
     border-radius: 12px;
     text-decoration: none;
     color: var(--text-light);
     font-weight: 600;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     background: rgba(212, 175, 55, 0.06);
     border: 1px solid rgba(212, 175, 55, 0.25);
     transition: all 0.3s ease;
@@ -255,25 +282,19 @@ body {
     box-shadow: 0 0 18px rgba(0, 242, 254, 0.25);
 }
 
-.social-btn.contact-btn:hover {
-    color: var(--gold-light);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 18px rgba(212, 175, 55, 0.35);
-}
-
 /* Video Cards */
 .latest-videos {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.75rem;
 }
 
 .video-card h3 {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 1.25rem;
+    gap: 10px;
+    font-size: 1.2rem;
 }
 
 .video-card h3 i,
@@ -319,30 +340,31 @@ body {
 }
 
 /* ==========================================
-   SECCIÓN TEMA DEL PRÓXIMO VIDEO (ENCUESTA)
+   HILERA IZQUIERDA: TEMA DEL PRÓXIMO VIDEO
    ========================================== */
 .poll-header-row {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 0.6rem;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
 }
 
 .poll-section h2 {
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 8px;
 }
 
 .poll-stage-badge {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.06em;
-    padding: 0.35rem 0.9rem;
+    padding: 0.3rem 0.85rem;
     border-radius: 20px;
     background: rgba(212, 175, 55, 0.14);
     border: 1px solid rgba(212, 175, 55, 0.45);
@@ -357,21 +379,20 @@ body {
 
 .topic-suggest-form {
     display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
 }
 
 .topic-suggest-form input {
-    flex: 1;
-    min-width: 240px;
-    padding: 0.85rem 1.15rem;
-    border-radius: 12px;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.35);
     background: rgba(0, 0, 0, 0.6);
     color: var(--text-light);
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     outline: none;
 }
 
@@ -382,24 +403,24 @@ body {
 
 .suggest-btn {
     margin-top: 0;
-    white-space: nowrap;
+    width: 100%;
 }
 
 .poll-topics-list {
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
+    gap: 0.75rem;
 }
 
 .poll-topic-card {
     background: rgba(12, 10, 8, 0.72);
     border: 1px solid rgba(212, 175, 55, 0.25);
-    border-radius: 14px;
-    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
-    transition: border-color 0.25s ease, transform 0.2s ease;
+    gap: 0.55rem;
+    transition: border-color 0.25s ease;
 }
 
 .poll-topic-card:hover {
@@ -413,10 +434,9 @@ body {
 
 .poll-topic-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .poll-topic-info {
@@ -428,20 +448,21 @@ body {
 
 .poll-topic-number {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     color: var(--primary-color);
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
 .poll-topic-title {
-    font-size: 1.3rem;
+    font-size: 1.18rem;
     font-weight: 600;
     color: var(--text-light);
+    line-height: 1.35;
 }
 
 .poll-topic-author {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
     font-style: italic;
 }
@@ -449,28 +470,25 @@ body {
 .poll-topic-actions {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.45rem;
 }
 
 .vote-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.82rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 0.55rem 1.05rem;
-    border-radius: 10px;
+    letter-spacing: 0.05em;
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
     border: 1px solid var(--primary-color);
     background: rgba(212, 175, 55, 0.14);
     color: var(--gold-light);
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
-.vote-btn:hover {
-    background: linear-gradient(135deg, #d4af37, #99741c);
-    color: #0c0a08;
-}
-
+.vote-btn:hover,
 .vote-btn.voted {
     background: linear-gradient(135deg, #d4af37, #99741c);
     color: #0c0a08;
@@ -481,9 +499,9 @@ body {
     border: 1px solid rgba(220, 53, 69, 0.4);
     color: #ff9da6;
     border-radius: 8px;
-    padding: 0.45rem 0.65rem;
+    padding: 0.4rem 0.6rem;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
 }
 
 .delete-topic-btn:hover {
@@ -493,10 +511,9 @@ body {
 .poll-progress-wrap {
     width: 100%;
     background: rgba(255, 255, 255, 0.06);
-    height: 10px;
+    height: 8px;
     border-radius: 8px;
     overflow: hidden;
-    position: relative;
 }
 
 .poll-progress-bar {
@@ -510,38 +527,39 @@ body {
     display: flex;
     justify-content: space-between;
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--gold-light);
     letter-spacing: 0.05em;
 }
 
 .poll-admin-controls {
-    margin-top: 1.25rem;
+    margin-top: 1rem;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     border-top: 1px solid rgba(212, 175, 55, 0.2);
-    padding-top: 1rem;
+    padding-top: 0.85rem;
 }
 
 /* ==========================================
-   SECCIÓN DE CHAT EN VIVO Y AUTENTICACIÓN
+   HILERA DERECHA: CHAT EN VIVO Y CUENTAS
    ========================================== */
 .chat-section h2 {
     text-align: center;
-    font-size: 1.45rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    margin-bottom: 0.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .chat-subtitle {
     text-align: center;
     color: var(--text-muted);
-    font-size: 1.15rem;
-    margin-bottom: 1.75rem;
+    font-size: 1.08rem;
+    margin-bottom: 1.25rem;
     font-style: italic;
+    line-height: 1.45;
 }
 
 .hidden {
@@ -549,31 +567,30 @@ body {
 }
 
 .auth-container {
-    max-width: 460px;
-    margin: 0 auto;
+    width: 100%;
     background: rgba(12, 10, 8, 0.65);
     border: 1px solid rgba(212, 175, 55, 0.25);
-    border-radius: 16px;
-    padding: 1.75rem;
+    border-radius: 14px;
+    padding: 1.25rem;
 }
 
 .auth-tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    gap: 0.4rem;
+    margin-bottom: 1.15rem;
     background: rgba(255, 255, 255, 0.03);
-    padding: 0.35rem;
+    padding: 0.3rem;
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.18);
 }
 
 .auth-tab {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    padding: 0.65rem;
+    letter-spacing: 0.05em;
+    padding: 0.55rem 0.4rem;
     border: none;
     border-radius: 8px;
     background: transparent;
@@ -590,10 +607,10 @@ body {
 }
 
 .auth-feedback {
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 0.85rem;
     border-radius: 10px;
-    margin-bottom: 1rem;
-    font-size: 1.05rem;
+    margin-bottom: 0.85rem;
+    font-size: 1rem;
     text-align: center;
 }
 
@@ -612,31 +629,31 @@ body {
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 1.15rem;
+    gap: 1rem;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.35rem;
 }
 
 .form-group label {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     letter-spacing: 0.06em;
     color: var(--gold-light);
 }
 
 .form-group input {
     width: 100%;
-    padding: 0.8rem 1rem;
+    padding: 0.75rem 0.9rem;
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.3);
     background: rgba(0, 0, 0, 0.55);
     color: var(--text-light);
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     outline: none;
     transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
@@ -653,7 +670,7 @@ body {
 }
 
 .password-input-wrap input {
-    padding-right: 2.8rem;
+    padding-right: 2.6rem;
 }
 
 .toggle-pwd-btn {
@@ -663,7 +680,7 @@ body {
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     padding: 4px;
 }
 
@@ -673,11 +690,11 @@ body {
 
 .pwd-rules-list {
     list-style: none;
-    margin-top: 0.45rem;
+    margin-top: 0.35rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    font-size: 1rem;
+    gap: 0.2rem;
+    font-size: 0.95rem;
     color: var(--text-muted);
 }
 
@@ -689,7 +706,7 @@ body {
 }
 
 .pwd-rules-list li i {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
 }
 
 .pwd-rules-list li.valid {
@@ -699,20 +716,20 @@ body {
 .gold-submit-btn {
     font-family: 'Cinzel', Georgia, serif;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    padding: 0.9rem 1.25rem;
+    letter-spacing: 0.07em;
+    padding: 0.8rem 1rem;
     border-radius: 10px;
     border: 1px solid var(--primary-color);
     background: linear-gradient(135deg, #d4af37 0%, #99741c 100%);
     color: #0c0a08;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    margin-top: 0.3rem;
+    margin-top: 0.2rem;
 }
 
 .gold-submit-btn:hover {
@@ -724,17 +741,17 @@ body {
 .chat-view {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.85rem;
 }
 
 .chat-top-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.85rem 1.2rem;
+    padding: 0.7rem 0.95rem;
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(212, 175, 55, 0.25);
-    border-radius: 12px;
+    border-radius: 10px;
     flex-wrap: wrap;
     gap: 0.5rem;
 }
@@ -742,13 +759,13 @@ body {
 .chat-user-info {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 1.15rem;
+    gap: 8px;
+    font-size: 1.05rem;
 }
 
 .status-dot.online {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: #2ecc71;
     box-shadow: 0 0 8px #2ecc71;
@@ -756,19 +773,19 @@ body {
 
 .admin-badge {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    padding: 0.25rem 0.65rem;
+    padding: 0.2rem 0.55rem;
     border-radius: 6px;
     background: linear-gradient(135deg, #d4af37, #99741c);
     color: #0c0a08;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
 }
 
 .logout-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.8rem;
-    padding: 0.45rem 0.85rem;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(212, 175, 55, 0.3);
@@ -783,23 +800,23 @@ body {
 }
 
 .messages-box {
-    height: 360px;
+    height: 330px;
     overflow-y: auto;
-    padding: 1.25rem;
+    padding: 1rem;
     background: rgba(8, 6, 4, 0.7);
     border: 1px solid rgba(212, 175, 55, 0.22);
-    border-radius: 14px;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: 0.75rem;
 }
 
 .msg-bubble {
-    max-width: 82%;
-    padding: 0.75rem 1.05rem;
-    border-radius: 14px;
-    font-size: 1.15rem;
-    line-height: 1.45;
+    max-width: 86%;
+    padding: 0.65rem 0.9rem;
+    border-radius: 12px;
+    font-size: 1.08rem;
+    line-height: 1.4;
     position: relative;
     word-wrap: break-word;
 }
@@ -824,28 +841,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    font-size: 0.82rem;
+    gap: 8px;
+    font-size: 0.74rem;
     color: var(--primary-color);
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
     font-family: 'Cinzel', Georgia, serif;
     letter-spacing: 0.04em;
 }
 
 .chat-input-form {
     display: flex;
-    gap: 0.75rem;
+    gap: 0.55rem;
 }
 
 .chat-input-form input {
     flex: 1;
-    padding: 0.85rem 1.1rem;
-    border-radius: 12px;
+    min-width: 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.35);
     background: rgba(0, 0, 0, 0.6);
     color: var(--text-light);
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.2rem;
+    font-size: 1.12rem;
     outline: none;
 }
 
@@ -855,17 +873,18 @@ body {
 
 .send-msg-btn {
     font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.8rem;
     font-weight: 700;
-    padding: 0 1.4rem;
-    border-radius: 12px;
+    padding: 0 1rem;
+    border-radius: 10px;
     border: 1px solid var(--primary-color);
     background: linear-gradient(135deg, #d4af37, #99741c);
     color: #0c0a08;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .send-msg-btn:disabled {
@@ -873,45 +892,45 @@ body {
     cursor: not-allowed;
 }
 
-/* Admin Dashboard Grid */
-.admin-dashboard-grid {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 1rem;
+/* Admin Dashboard Stack inside Right Column */
+.admin-dashboard-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
 }
 
 .admin-users-sidebar {
     background: rgba(8, 6, 4, 0.7);
     border: 1px solid rgba(212, 175, 55, 0.22);
-    border-radius: 14px;
-    padding: 1rem;
+    border-radius: 12px;
+    padding: 0.85rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    max-height: 465px;
+    gap: 0.55rem;
+    max-height: 185px;
 }
 
 .admin-users-sidebar h4 {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--gold-light);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
 }
 
 .conversations-list {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.45rem;
     flex: 1;
 }
 
 .conv-item {
-    padding: 0.7rem 0.85rem;
-    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(212, 175, 55, 0.15);
     cursor: pointer;
@@ -930,23 +949,23 @@ body {
     align-items: center;
     justify-content: space-between;
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--gold-light);
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.15rem;
 }
 
 .unread-pill {
     background: #e74c3c;
     color: #fff;
     font-family: sans-serif;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 700;
     padding: 1px 6px;
     border-radius: 10px;
 }
 
 .conv-preview {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -956,24 +975,24 @@ body {
 .admin-chat-main {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.65rem;
 }
 
 .admin-active-header {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--gold-light);
-    padding: 0.6rem 1rem;
+    padding: 0.55rem 0.85rem;
     background: rgba(212, 175, 55, 0.08);
     border: 1px solid rgba(212, 175, 55, 0.22);
-    border-radius: 10px;
+    border-radius: 8px;
 }
 
 footer {
     font-family: 'Cinzel', Georgia, serif;
     letter-spacing: 0.08em;
     text-align: center;
-    padding: 2rem 0;
+    padding: 1.5rem 0;
     color: var(--text-muted);
     font-size: 0.85rem;
     opacity: 0.8;
@@ -993,8 +1012,8 @@ footer {
 /* Animations for scroll reveal */
 .fade-in {
     opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
 }
 
 .fade-in.visible {
@@ -1003,8 +1022,18 @@ footer {
 }
 
 /* Responsive */
+@media (max-width: 1180px) {
+    .three-columns-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .side-column {
+        position: static;
+    }
+}
+
 @media (max-width: 650px) {
-    .container {
+    .page-wrapper {
         padding: 1rem;
     }
     
@@ -1023,14 +1052,10 @@ footer {
     }
 
     .bio {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
     }
 
-    .admin-dashboard-grid {
+    .links-grid {
         grid-template-columns: 1fr;
-    }
-
-    .admin-users-sidebar {
-        max-height: 180px;
     }
 }

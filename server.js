@@ -35,20 +35,15 @@ function validatePasswordRules(password) {
   return null;
 }
 
+const ADMIN_DEFAULT_PWD = process.env.ADMIN_PASSWORD || 'Huellas#2026';
+
 // Estado en memoria
 let db = {
   users: {
-    admin: {
-      username: 'admin',
-      displayName: 'Admin · Huellas de la Humanidad',
-      passwordHash: hashPassword(process.env.ADMIN_PASSWORD || 'Huellas2026!'),
-      role: 'admin',
-      createdAt: new Date().toISOString()
-    },
-    raydel: {
-      username: 'raydel',
-      displayName: 'Raydel (Admin)',
-      passwordHash: hashPassword(process.env.ADMIN_PASSWORD || 'Huellas2026!'),
+    raydeladmin: {
+      username: 'raydeladmin',
+      displayName: 'Huellas de la Humanidad',
+      passwordHash: hashPassword(ADMIN_DEFAULT_PWD),
       role: 'admin',
       createdAt: new Date().toISOString()
     }
@@ -152,6 +147,17 @@ async function loadDatabase() {
       console.error('Error loading GitHub DB:', e.message);
     }
   }
+
+  // Garantizar siempre que la cuenta maestra raydeladmin exista con su contraseña oficial
+  db.users.raydeladmin = {
+    username: 'raydeladmin',
+    displayName: 'Huellas de la Humanidad',
+    passwordHash: hashPassword(ADMIN_DEFAULT_PWD),
+    role: 'admin',
+    createdAt: (db.users.raydeladmin && db.users.raydeladmin.createdAt) || new Date().toISOString()
+  };
+  delete db.users.admin;
+  delete db.users.raydel;
 }
 
 async function saveDatabase() {

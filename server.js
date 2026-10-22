@@ -403,13 +403,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     const u = db.users[session.username];
-    const prevEmail = u.email;
     u.email = cleanEmail;
     u.notifyYoutube = cleanEmail ? Boolean(notifyYoutube) : false;
 
     saveDatabase();
 
-    if (cleanEmail && u.notifyYoutube && cleanEmail !== prevEmail) {
+    if (cleanEmail && u.notifyYoutube) {
       sendSubscriptionWelcomeEmail(cleanEmail, u.displayName || u.username);
     }
 
@@ -665,19 +664,43 @@ loadDatabase().then(() => {
 });
 
 const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
+const EMAIL_LOGO_URL = 'https://huellasdelahumanidad.com/logo.png';
 
-function sendSubscriptionWelcomeEmail(toEmail, displayName) {
-  const html = `
-    <div style="background:#0c0a08;color:#f4ebd9;padding:28px;font-family:Georgia,serif;border:1px solid #d4af37;border-radius:12px;max-width:560px;margin:0 auto;">
-      <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;">Huellas de la Humanidad</h2>
-      <p>Hola <strong>${displayName}</strong>,</p>
-      <p>Tu correo electrónico ha quedado registrado exitosamente para recibir notificaciones automáticas cada vez que publiquemos un nuevo documental en nuestro canal de YouTube.</p>
-      <p style="margin:24px 0;">
-        <a href="https://huellasdelahumanidad.com" style="background:#d4af37;color:#0c0a08;padding:12px 22px;text-decoration:none;font-weight:bold;border-radius:8px;">Visitar Huellas de la Humanidad</a>
+function buildBrandEmailHtml({ title, greetingName, bodyHtml, ctaText, ctaUrl }) {
+  return `
+    <div style="background-color:#0c0a08;color:#f4ebd9;padding:32px 24px;font-family:Georgia,'Times New Roman',serif;border:1px solid #d4af37;border-radius:16px;max-width:580px;margin:0 auto;text-align:center;">
+      <div style="margin-bottom:20px;">
+        <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">
+          <img src="${EMAIL_LOGO_URL}" alt="Huellas de la Humanidad" width="165" style="width:165px;max-width:165px;height:auto;display:block;margin:0 auto;border:0;" />
+        </a>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,#d4af37,transparent);margin:16px auto 22px;max-width:320px;"></div>
+      <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;font-size:20px;margin:0 0 16px;">${title}</h2>
+      <p style="font-size:17px;color:#f4ebd9;margin:0 0 14px;">Hola <strong>${greetingName}</strong>,</p>
+      <div style="font-size:16px;line-height:1.6;color:#dfd2b8;margin-bottom:26px;">
+        ${bodyHtml}
+      </div>
+      <div style="margin:28px 0;">
+        <a href="${ctaUrl}" target="_blank" style="background:linear-gradient(135deg,#d4af37,#99741c);color:#0c0a08;padding:13px 26px;text-decoration:none;font-weight:bold;border-radius:8px;display:inline-block;letter-spacing:1px;text-transform:uppercase;font-size:14px;">
+          ${ctaText}
+        </a>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.4),transparent);margin:24px auto 14px;max-width:260px;"></div>
+      <p style="font-size:13px;font-style:italic;color:#a09580;margin:0;">
+        «Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»
       </p>
-      <p style="font-size:12px;color:#a09580;">«Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
     </div>
   `;
+}
+
+function sendSubscriptionWelcomeEmail(toEmail, displayName) {
+  const html = buildBrandEmailHtml({
+    title: 'Notificaciones Activadas',
+    greetingName: displayName,
+    bodyHtml: '<p style="margin:0;">Tu correo electrónico ha quedado registrado exitosamente para recibir notificaciones automáticas cada vez que publiquemos un nuevo documental en nuestro canal de YouTube.</p>',
+    ctaText: 'Visitar Huellas de la Humanidad',
+    ctaUrl: 'https://huellasdelahumanidad.com'
+  });
   return sendEmailViaResend(toEmail, 'Notificaciones activadas · Huellas de la Humanidad', html);
 }
 
@@ -739,18 +762,20 @@ function checkYoutubeAndNotify() {
 
         const subscribers = Object.values(db.users).filter(u => u.email && u.notifyYoutube);
         for (const sub of subscribers) {
-          const html = `
-            <div style="background:#0c0a08;color:#f4ebd9;padding:28px;font-family:Georgia,serif;border:1px solid #d4af37;border-radius:12px;max-width:560px;margin:0 auto;">
-              <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;">Huellas de la Humanidad</h2>
-              <p>Hola <strong>${sub.displayName || sub.username}</strong>,</p>
-              <p>Acabamos de publicar un nuevo documental en nuestro canal de YouTube:</p>
-              <h3 style="color:#f5df98;">«${latestTitle}»</h3>
-              <p style="margin:24px 0;">
-                <a href="https://huellasdelahumanidad.com" style="background:#d4af37;color:#0c0a08;padding:12px 22px;text-decoration:none;font-weight:bold;border-radius:8px;">Ver Ahora en Huellas de la Humanidad</a>
-              </p>
-              <p style="font-size:12px;color:#a09580;">Cada historia deja una huella. Aquí seguimos sus rastros.</p>
-            </div>
-          `;
+          const thumbUrl = `https://i.ytimg.com/vi/${latestId}/hqdefault.jpg`;
+          const html = buildBrandEmailHtml({
+            title: 'Nuevo Documental en YouTube',
+            greetingName: sub.displayName || sub.username,
+            bodyHtml: `
+              <p style="margin:0 0 14px;">Acabamos de publicar un nuevo video en nuestro canal de YouTube:</p>
+              <h3 style="color:#f5df98;font-size:19px;margin:0 0 14px;">«${latestTitle}»</h3>
+              <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">
+                <img src="${thumbUrl}" alt="${latestTitle}" width="460" style="width:100%;max-width:460px;height:auto;border-radius:10px;border:1px solid #d4af37;display:block;margin:0 auto;" />
+              </a>
+            `,
+            ctaText: 'Ver Video Ahora',
+            ctaUrl: 'https://huellasdelahumanidad.com'
+          });
           await sendEmailViaResend(sub.email, `Nuevo video: ${latestTitle} - Huellas de la Humanidad`, html);
         }
       }

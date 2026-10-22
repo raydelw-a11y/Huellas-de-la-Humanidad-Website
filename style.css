@@ -1,12 +1,13 @@
 :root {
-    --primary-color: #d4af37; /* Gold */
-    --primary-hover: #b5952f;
-    --bg-dark: #0f1115;
-    --text-light: #f8f9fa;
-    --text-muted: #c2c9d0;
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --primary-color: #d4af37; /* Antique Gold */
+    --gold-light: #f5df98;
+    --gold-dark: #99741c;
+    --bg-dark: #0c0a08;
+    --text-light: #f4ebd9; /* Parchment Ivory */
+    --text-muted: #dfd2b8;
+    --glass-bg: rgba(24, 19, 14, 0.72);
+    --glass-border: rgba(212, 175, 55, 0.28);
+    --glass-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.65);
     
     /* Social Colors */
     --yt-color: #FF0000;
@@ -21,10 +22,10 @@
 }
 
 body {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Cormorant Garamond', Georgia, serif;
     background-color: var(--bg-dark);
     color: var(--text-light);
-    line-height: 1.6;
+    line-height: 1.65;
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
@@ -38,8 +39,8 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background: radial-gradient(circle at 15% 50%, rgba(212, 175, 55, 0.12), transparent 50%),
-                radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.05), transparent 50%);
+    background: radial-gradient(circle at 20% 35%, rgba(212, 175, 55, 0.14), transparent 55%),
+                radial-gradient(circle at 80% 70%, rgba(153, 116, 28, 0.1), transparent 50%);
     animation: pulse 15s ease-in-out infinite alternate;
 }
 
@@ -57,21 +58,22 @@ body {
     gap: 2rem;
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism + Antique Gold Frame */
 .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 2rem;
-    box-shadow: var(--glass-shadow);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 20px;
+    padding: 2.25rem;
+    box-shadow: var(--glass-shadow), inset 0 0 24px rgba(212, 175, 55, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-panel:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+    transform: translateY(-4px);
+    border-color: rgba(212, 175, 55, 0.45);
+    box-shadow: 0 14px 44px 0 rgba(0, 0, 0, 0.75), inset 0 0 28px rgba(212, 175, 55, 0.08);
 }
 
 /* Header */
@@ -80,7 +82,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .logo-container {
@@ -115,20 +117,55 @@ body {
     border: 0;
 }
 
-.bio {
-    color: var(--text-muted);
-    font-size: 1.15rem;
-    max-width: 640px;
-    font-weight: 400;
-    line-height: 1.7;
+.ancient-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 340px;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    opacity: 0.85;
 }
 
-/* Social Links */
+.ancient-divider::before,
+.ancient-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+    margin: 0 12px;
+}
+
+.bio {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 1.45rem;
+    max-width: 660px;
+    font-weight: 600;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* Headings in Classical Roman Engraved Serif (Cinzel) */
+.social-links h2,
+.video-card h3 {
+    font-family: 'Cinzel', Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    background: linear-gradient(180deg, var(--gold-light) 0%, var(--primary-color) 55%, var(--gold-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 12px rgba(212, 175, 55, 0.18);
+}
+
 .social-links h2 {
     text-align: center;
     margin-bottom: 1.5rem;
-    font-weight: 600;
-    color: var(--primary-color);
+    font-size: 1.5rem;
 }
 
 .links-grid {
@@ -138,18 +175,20 @@ body {
 }
 
 .social-btn {
+    font-family: 'Cinzel', Georgia, serif;
+    letter-spacing: 0.08em;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
     padding: 1rem 1.25rem;
-    border-radius: 14px;
+    border-radius: 12px;
     text-decoration: none;
     color: var(--text-light);
     font-weight: 600;
-    font-size: 1.1rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 1.05rem;
+    background: rgba(212, 175, 55, 0.06);
+    border: 1px solid rgba(212, 175, 55, 0.25);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -162,7 +201,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.12), transparent);
+    background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.18), transparent);
     transform: translateX(-100%);
     transition: transform 0.6s ease;
 }
@@ -172,7 +211,7 @@ body {
 }
 
 .social-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(212, 175, 55, 0.12);
     transform: translateY(-2px);
 }
 
@@ -205,21 +244,23 @@ body {
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-weight: 600;
+    gap: 12px;
+    font-size: 1.25rem;
 }
 
 .video-card h3 i {
+    -webkit-text-fill-color: var(--primary-color);
     color: var(--primary-color);
 }
 
 .youtube-wrapper {
     position: relative;
     width: 100%;
-    padding-bottom: 56.25%; /* 16:9 Aspect Ratio for YouTube */
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio for YouTube & Facebook */
     border-radius: 12px;
     overflow: hidden;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .youtube-wrapper iframe {
@@ -241,14 +282,6 @@ body {
     overflow: visible;
 }
 
-.facebook-wrapper iframe {
-    width: 100%;
-    max-width: 500px;
-    height: 650px;
-    border-radius: 12px;
-    background: #fff;
-}
-
 .tiktok-embed {
     width: 100%;
     margin: 0 auto !important;
@@ -256,13 +289,17 @@ body {
 }
 
 footer {
+    font-family: 'Cinzel', Georgia, serif;
+    letter-spacing: 0.08em;
     text-align: center;
     padding: 2rem 0;
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    opacity: 0.8;
 }
 
 .build-timestamp {
+    font-family: sans-serif;
     position: fixed;
     bottom: 8px;
     right: 12px;
@@ -299,6 +336,6 @@ footer {
     }
 
     .bio {
-        font-size: 1.05rem;
+        font-size: 1.25rem;
     }
 }

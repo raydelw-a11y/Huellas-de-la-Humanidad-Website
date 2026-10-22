@@ -45,6 +45,9 @@
                 <a href="https://www.tiktok.com/@huellas_de_la_humanidad" class="social-btn tiktok" target="_blank" rel="noopener noreferrer">
                     <i class="fa-brands fa-tiktok"></i> TikTok
                 </a>
+                <a href="#proximo-tema" class="social-btn contact-btn">
+                    <i class="fa-solid fa-scroll"></i> Próximo Tema
+                </a>
                 <a href="#contacto-chat" class="social-btn contact-btn">
                     <i class="fa-solid fa-comments"></i> Ponte en Contacto
                 </a>
@@ -76,6 +79,35 @@
                 <div class="youtube-wrapper">
                     <iframe src="https://www.facebook.com/plugins/video.php?height=314&href=https%3A%2F%2Fwww.facebook.com%2Fhuellasdelahumanidaddocumentales%2Fvideos%2F1977531949871048%2F&show_text=false&width=560&t=0" width="560" height="314" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
                 </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: TEMA DEL PRÓXIMO VIDEO (5 SUGERENCIAS -> VOTACIÓN) -->
+        <section id="proximo-tema" class="poll-section glass-panel">
+            <div class="poll-header-row">
+                <h2><i class="fa-solid fa-scroll"></i> Tema del Próximo Video</h2>
+                <span id="poll-stage-badge" class="poll-stage-badge">Propuestas: 0 / 5</span>
+            </div>
+            <p id="poll-description" class="chat-subtitle">Propón el suceso histórico, misterio o documental que quieres ver. Al establecerse los 5 temas, se abrirán las votaciones para elegir el próximo video.</p>
+
+            <div id="poll-feedback" class="auth-feedback hidden"></div>
+
+            <!-- Formulario para sugerir tema (Visible mientras haya menos de 5 temas) -->
+            <form id="topic-suggest-form" class="topic-suggest-form">
+                <input type="text" id="topic-title-input" placeholder="Escribe tu propuesta de tema (ej: La Biblioteca de Alejandría)..." maxlength="140" required>
+                <button type="submit" class="gold-submit-btn suggest-btn">
+                    <i class="fa-solid fa-plus"></i> Proponer Tema
+                </button>
+            </form>
+
+            <!-- Lista de los 5 temas / Tarjetas de Votación -->
+            <div id="poll-topics-list" class="poll-topics-list"></div>
+
+            <!-- Controles de Administrador (Solo visibles cuando el Admin inicia sesión) -->
+            <div id="poll-admin-controls" class="poll-admin-controls hidden">
+                <button type="button" id="poll-reset-btn" class="logout-btn">
+                    <i class="fa-solid fa-rotate-right"></i> Reiniciar Ronda (Borrar los 5 temas para nueva votación)
+                </button>
             </div>
         </section>
 
@@ -202,7 +234,7 @@
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 07:05 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 07:09 PM - 10/22/2026</div>
 
     <script src="script.js"></script>
 </body>

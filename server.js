@@ -53,7 +53,11 @@ let db = {
       createdAt: new Date().toISOString()
     }
   },
-  conversations: {} // { [username]: { username, updatedAt, unreadByAdmin: 0, unreadByUser: 0, messages: [ { id, sender, role, text, createdAt } ] } }
+  conversations: {}, // { [username]: { username, updatedAt, unreadByAdmin: 0, unreadByUser: 0, messages: [ { id, sender, role, text, createdAt } ] } }
+  poll: {
+    maxTopics: 5,
+    topics: [] // [ { id, title, author, createdAt, voters: [] } ]
+  }
 };
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'huellas-secret-key-2026-ancient-history';
@@ -118,6 +122,9 @@ async function loadDatabase() {
       if (parsed && parsed.users) {
         db.users = { ...db.users, ...parsed.users };
         db.conversations = parsed.conversations || {};
+        if (parsed.poll && Array.isArray(parsed.poll.topics)) {
+          db.poll = parsed.poll;
+        }
       }
     }
   } catch (e) {
@@ -135,6 +142,9 @@ async function loadDatabase() {
         if (parsed && parsed.users) {
           db.users = { ...db.users, ...parsed.users };
           db.conversations = parsed.conversations || {};
+          if (parsed.poll && Array.isArray(parsed.poll.topics)) {
+            db.poll = parsed.poll;
+          }
           console.log('Database loaded from GitHub cloud backup.');
         }
       }
@@ -420,6 +430,118 @@ const server = http.createServer(async (req, res) => {
       .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
     return sendJson(res, 200, { conversations: list });
+  }
+
+  // --- ENCUESTA / TEMA DEL PRÓXIMO VIDEO (5 TEMAS + VOTACIÓN) ---
+  if (pathname === '/api/poll' && req.method === 'GET') {
+    const voterId = String(parsedUrl.searchParams.get('voterId') || '').trim();
+    const session = getAuthSession(req);
+    const effectiveVoter = session ? `user:${session.username}` : (voterId ? `anon:${voterId}` : '');
+
+    if (!db.poll) db.poll = { maxTopics: 5, topics: [] };
+    const topics = (db.poll.topics || []).map(t => ({
+      id: t.id,
+      title: t.title,
+      author: t.author,
+      createdAt: t.createdAt,
+      votes: Array.isArray(t.voters) ? t.voters.length : 0,
+      votedByMe: effectiveVoter ? (Array.isArray(t.voters) && t.voters.includes(effectiveVoter)) : false
+    }));
+
+    const totalVotes = topics.reduce((sum, t) => sum + t.votes, 0);
+    return sendJson(res, 200, {
+      maxTopics: 5,
+      status: topics.length >= 5 ? 'voting' : 'suggesting',
+      totalVotes,
+      topics
+    });
+  }
+
+  if (pathname === '/api/poll/suggest' && req.method === 'POST') {
+    const { title, authorName, voterId } = await parseBody(req);
+    const session = getAuthSession(req);
+    const cleanTitle = String(title || '').trim();
+
+    if (!cleanTitle || cleanTitle.length < 4 || cleanTitle.length > 140) {
+      return sendJson(res, 400, { error: 'El tema debe tener entre 4 y 140 caracteres.' });
+    }
+
+    if (!db.poll) db.poll = { maxTopics: 5, topics: [] };
+    if (db.poll.topics.length >= 5) {
+      return sendJson(res, 400, { error: 'Ya se establecieron los 5 temas. ¡Ahora puedes votar por tu favorito!' });
+    }
+
+    const exists = db.poll.topics.some(t => t.title.toLowerCase() === cleanTitle.toLowerCase());
+    if (exists) {
+      return sendJson(res, 409, { error: 'Ese tema ya fue propuesto en esta ronda.' });
+    }
+
+    const author = session
+      ? session.displayName
+      : (String(authorName || '').trim().slice(0, 30) || 'Seguidor');
+
+    db.poll.topics.push({
+      id: crypto.randomUUID(),
+      title: cleanTitle,
+      author,
+      createdAt: new Date().toISOString(),
+      voters: []
+    });
+
+    saveDatabase();
+    return sendJson(res, 201, { ok: true, count: db.poll.topics.length });
+  }
+
+  if (pathname === '/api/poll/vote' && req.method === 'POST') {
+    const { topicId, voterId } = await parseBody(req);
+    const session = getAuthSession(req);
+    const effectiveVoter = session ? `user:${session.username}` : (voterId ? `anon:${String(voterId).trim()}` : '');
+
+    if (!effectiveVoter) {
+      return sendJson(res, 400, { error: 'No se pudo identificar tu voto.' });
+    }
+
+    if (!db.poll || !Array.isArray(db.poll.topics) || db.poll.topics.length < 5) {
+      return sendJson(res, 400, { error: 'Las votaciones se abren automáticamente al completarse los 5 temas.' });
+    }
+
+    const target = db.poll.topics.find(t => t.id === topicId);
+    if (!target) {
+      return sendJson(res, 404, { error: 'Tema no encontrado.' });
+    }
+
+    // Permitir 1 voto por persona (si cambia de opinión, mueve su voto al nuevo tema)
+    db.poll.topics.forEach(t => {
+      if (!Array.isArray(t.voters)) t.voters = [];
+      t.voters = t.voters.filter(v => v !== effectiveVoter);
+    });
+    target.voters.push(effectiveVoter);
+
+    saveDatabase();
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/poll/delete-topic' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Solo el Administrador puede eliminar un tema.' });
+    }
+    const { topicId } = await parseBody(req);
+    if (db.poll && Array.isArray(db.poll.topics)) {
+      db.poll.topics = db.poll.topics.filter(t => t.id !== topicId);
+      saveDatabase();
+    }
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/poll/reset' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Solo el Administrador puede reiniciar la ronda de temas.' });
+    }
+    db.poll = { maxTopics: 5, topics: [] };
+    saveDatabase();
+    return sendJson(res, 200, { ok: true });
   }
 
   // --- STATIC FILES ---

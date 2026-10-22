@@ -333,6 +333,10 @@ const server = http.createServer(async (req, res) => {
 
     saveDatabase();
 
+    if (cleanEmail) {
+      sendSubscriptionWelcomeEmail(cleanEmail, db.users[cleanUser].displayName);
+    }
+
     const userPayload = {
       username: cleanUser,
       displayName: db.users[cleanUser].displayName,
@@ -399,10 +403,15 @@ const server = http.createServer(async (req, res) => {
     }
 
     const u = db.users[session.username];
+    const prevEmail = u.email;
     u.email = cleanEmail;
     u.notifyYoutube = cleanEmail ? Boolean(notifyYoutube) : false;
 
     saveDatabase();
+
+    if (cleanEmail && u.notifyYoutube && cleanEmail !== prevEmail) {
+      sendSubscriptionWelcomeEmail(cleanEmail, u.displayName || u.username);
+    }
 
     return sendJson(res, 200, {
       ok: true,
@@ -656,6 +665,21 @@ loadDatabase().then(() => {
 });
 
 const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
+
+function sendSubscriptionWelcomeEmail(toEmail, displayName) {
+  const html = `
+    <div style="background:#0c0a08;color:#f4ebd9;padding:28px;font-family:Georgia,serif;border:1px solid #d4af37;border-radius:12px;max-width:560px;margin:0 auto;">
+      <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;">Huellas de la Humanidad</h2>
+      <p>Hola <strong>${displayName}</strong>,</p>
+      <p>Tu correo electrónico ha quedado registrado exitosamente para recibir notificaciones automáticas cada vez que publiquemos un nuevo documental en nuestro canal de YouTube.</p>
+      <p style="margin:24px 0;">
+        <a href="https://huellasdelahumanidad.com" style="background:#d4af37;color:#0c0a08;padding:12px 22px;text-decoration:none;font-weight:bold;border-radius:8px;">Visitar Huellas de la Humanidad</a>
+      </p>
+      <p style="font-size:12px;color:#a09580;">«Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
+    </div>
+  `;
+  return sendEmailViaResend(toEmail, 'Notificaciones activadas · Huellas de la Humanidad', html);
+}
 
 function sendEmailViaResend(toEmail, subject, htmlBody) {
   const apiKey = process.env.RESEND_API_KEY || '';

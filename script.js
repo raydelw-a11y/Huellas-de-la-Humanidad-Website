@@ -118,8 +118,21 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_reply: 'Responder',
             wall_title: 'Muro de Debate',
             wall_subtitle: 'Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.',
-            ph_wall_comment: 'Escribe tu comentario público...',
+            ph_wall_comment: '¿Qué teoría, pregunta o reflexión sobre nuestros documentales quieres compartir hoy?',
             btn_post_wall: 'Publicar en el Muro',
+            nav_home: 'Inicio y Documentales',
+            btn_open_wall_full: 'Entrar al Muro de Debate a Pantalla Completa',
+            btn_back_home: 'Volver a Inicio y Documentales',
+            opt_general_topic: '📌 Tema general del canal',
+            fb_like: 'Me gusta',
+            fb_comment: 'Comentar',
+            fb_reply: 'Responder',
+            fb_comments_count: 'comentarios',
+            fb_comment_singular: 'comentario',
+            fb_replying_to: 'Respondiendo a',
+            fb_write_comment: 'Escribe un comentario...',
+            fb_write_reply: 'Escribe tu respuesta a',
+            fb_cancel: 'Cancelar',
             footer_rights: 'Todos los derechos reservados.',
             poll_voting_open: '¡Votaciones Abiertas!',
             poll_vote_singular: 'voto',
@@ -132,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
             poll_follower: 'Seguidor',
             poll_your_vote: 'Tu Voto',
             poll_vote_btn: 'Votar',
-            wall_empty: 'Sé el primero en dejar tu comentario sobre nuestros documentales.',
+            wall_empty: 'Sé el primero en crear una publicación en el Muro de Debate.',
             lb_empty: 'Inicia sesión y acierta para inaugurar el Cuadro de Honor',
             map_docs_count: '25 Documentales'
         },
@@ -206,8 +219,21 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_reply: 'Reply',
             wall_title: 'Community Debate Wall',
             wall_subtitle: 'Share your thoughts or theories about our documentaries with the community.',
-            ph_wall_comment: 'Write your public comment...',
+            ph_wall_comment: 'What historical theory, question, or thought about our documentaries do you want to share today?',
             btn_post_wall: 'Post to Wall',
+            nav_home: 'Home & Documentaries',
+            btn_open_wall_full: 'Open Full-Screen Debate Wall',
+            btn_back_home: 'Back to Home & Documentaries',
+            opt_general_topic: '📌 General channel topic',
+            fb_like: 'Like',
+            fb_comment: 'Comment',
+            fb_reply: 'Reply',
+            fb_comments_count: 'comments',
+            fb_comment_singular: 'comment',
+            fb_replying_to: 'Replying to',
+            fb_write_comment: 'Write a comment...',
+            fb_write_reply: 'Write your reply to',
+            fb_cancel: 'Cancel',
             footer_rights: 'All rights reserved.',
             poll_voting_open: 'Voting Open!',
             poll_vote_singular: 'vote',
@@ -220,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             poll_follower: 'Follower',
             poll_your_vote: 'Your Vote',
             poll_vote_btn: 'Vote',
-            wall_empty: 'Be the first to leave a comment about our documentaries.',
+            wall_empty: 'Be the first to create a post on the Debate Wall.',
             lb_empty: 'Sign in and answer correctly to inaugurate the Hall of Fame',
             map_docs_count: '25 Documentaries'
         }
@@ -1172,6 +1198,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 5. MAPA INTERACTIVO REAL DE LA TIERRA Y 6. LOS 25 DOCUMENTALES DEL CANAL
     // ==========================================
+    const LIBRARY_CATEGORIES = [
+        { key: 'all', es: 'Todos', en: 'All' },
+        { key: 'antigua', es: 'Civilizaciones Antiguas', en: 'Ancient Civilizations' },
+        { key: 'medieval', es: 'Edad Media y Victoriana', en: 'Middle Ages & Victorian' },
+        { key: 'ww2', es: 'Segunda Guerra Mundial', en: 'World War II' },
+        { key: 'cuba', es: 'Historia de Cuba', en: 'History of Cuba' },
+        { key: 'wtc', es: 'Torres Gemelas y 11-S', en: 'Twin Towers & 9/11' },
+        { key: 'catastrofes', es: 'Grandes Catástrofes', en: 'Great Catastrophes' },
+        { key: 'misterios', es: 'Crímenes y Prisiones', en: 'Crime & Prisons' }
+    ];
+
     const DOCUMENTARIES = [
         {
             id: 'rJdAGfxEYkw',
@@ -1179,12 +1216,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Louvre in 1200: The Forgotten Fortress of Paris',
             eraEs: 'París, Francia · Año 1200',
             eraEn: 'Paris, France · Year 1200',
-            category: 'antigua',
+            category: 'medieval',
             region: 'europe',
             lon: 2.34,
-            lat: 48.86,
-            descEs: 'Descubre los cimientos subterráneos y la vida militar dentro de la fortaleza medieval antes de convertirse en palacio y museo.',
-            descEn: 'Discover the underground foundations and military life inside the medieval fortress before it became a royal palace and museum.'
+            lat: 48.86
         },
         {
             id: 'PVVdxqlf5XQ',
@@ -1195,9 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'antigua',
             region: 'europe',
             lon: 14.49,
-            lat: 40.75,
-            descEs: 'La reconstrucción minuto a minuto del destino de los habitantes de Pompeya ante la furia piroclástica del Vesubio.',
-            descEn: 'Minute-by-minute reconstruction of the fate of Pompeii’s inhabitants facing the pyroclastic fury of Mount Vesuvius.'
+            lat: 40.75
         },
         {
             id: '27AZ11nTUz0',
@@ -1208,9 +1241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'antigua',
             region: 'europe',
             lon: 31.13,
-            lat: 29.98,
-            descEs: '¿Cómo vivían, comían y trabajaban los miles de artesanos e ingenieros que levantaron la Gran Pirámide?',
-            descEn: 'How did the thousands of artisans and engineers who raised the Great Pyramid live, eat, and work?'
+            lat: 29.98
         },
         {
             id: 'muZvqVzTTQ4',
@@ -1218,12 +1249,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'What It Was Like to Be an Office Worker in the Twin Towers',
             eraEs: 'Nueva York, EE. UU. · World Trade Center',
             eraEn: 'New York, USA · World Trade Center',
-            category: 'tragedias',
+            category: 'wtc',
             region: 'americas',
             lon: -74.01,
-            lat: 40.71,
-            descEs: 'Una inmersión en los ascensores expresos, pasillos y rutinas de la ciudad vertical más famosa del siglo XX.',
-            descEn: 'An immersion into the express elevators, corridors, and daily routines of the 20th century’s most famous vertical city.'
+            lat: 40.71
         },
         {
             id: 'O-ewFhxFahk',
@@ -1234,9 +1263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'antigua',
             region: 'europe',
             lon: 35.30,
-            lat: 32.70,
-            descEs: 'Un viaje arqueológico a las casas excavadas en roca, costumbres y oficios de una aldea judía del siglo I.',
-            descEn: 'An archaeological journey into the rock-hewn homes, customs, and trades of a 1st-century Jewish village.'
+            lat: 32.70
         },
         {
             id: 'T8BdFd4Zm7Q',
@@ -1244,12 +1271,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Restaurant at the Top of the Twin Towers',
             eraEs: 'Nueva York, EE. UU. · Piso 107 (WTC)',
             eraEn: 'New York, USA · 107th Floor (WTC)',
-            category: 'tragedias',
+            category: 'wtc',
             region: 'americas',
             lon: -71.2,
-            lat: 42.3,
-            descEs: 'La historia de Windows on the World, el legendario restaurante en la cima de la Torre Norte.',
-            descEn: 'The story of Windows on the World, the legendary restaurant atop the North Tower.'
+            lat: 42.3
         },
         {
             id: 'OT_2LgSxUtY',
@@ -1257,12 +1282,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'September 11, 2001: The Evacuation of Manhattan',
             eraEs: 'Manhattan, Nueva York · 11 de Septiembre 2001',
             eraEn: 'Manhattan, New York · September 11, 2001',
-            category: 'tragedias',
+            category: 'wtc',
             region: 'americas',
             lon: -76.5,
-            lat: 38.8,
-            descEs: 'La mayor evacuación marítima y civil en la historia moderna de Nueva York narrada desde dentro.',
-            descEn: 'The largest maritime and civilian evacuation in modern New York history told from the inside.'
+            lat: 38.8
         },
         {
             id: '8I2sy6C4l10',
@@ -1270,12 +1293,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'Daily Life Inside the Twin Towers Before the Collapse',
             eraEs: 'Nueva York, EE. UU. · Años 90',
             eraEn: 'New York, USA · The 1990s',
-            category: 'tragedias',
+            category: 'wtc',
             region: 'americas',
             lon: -77.2,
-            lat: 43.2,
-            descEs: 'Cómo funcionaba por dentro el complejo que albergaba a más de 50,000 trabajadores cada día.',
-            descEn: 'How the complex that housed over 50,000 workers every single day operated from the inside.'
+            lat: 43.2
         },
         {
             id: 'AdulsJeHVIU',
@@ -1286,9 +1307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'misterios',
             region: 'europe',
             lon: 6.14,
-            lat: 46.20,
-            descEs: 'El impactante caso psicológico y criminal de una vida entera construida sobre una farsa.',
-            descEn: 'The shocking psychological and true crime story of an entire life built upon a deception.'
+            lat: 46.20
         },
         {
             id: '7lgpnoQpDXc',
@@ -1296,12 +1315,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'How the Titanic Was Built: The Negligence That Sank a Giant',
             eraEs: 'Belfast, Irlanda del Norte · 1909–1912',
             eraEn: 'Belfast, Northern Ireland · 1909–1912',
-            category: 'tragedias',
+            category: 'catastrofes',
             region: 'europe',
             lon: -5.93,
-            lat: 54.60,
-            descEs: 'Los secretos industriales, remaches y decisiones de diseño detrás del transatlántico más famoso de la historia.',
-            descEn: 'The industrial secrets, rivets, and design decisions behind the most famous ocean liner in history.'
+            lat: 54.60
         },
         {
             id: 'FPvbJ3RdC38',
@@ -1309,12 +1326,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Eruption of Krakatoa: The Loudest Disaster in History',
             eraEs: 'Estrecho de la Sonda, Indonesia · 1883',
             eraEn: 'Sunda Strait, Indonesia · 1883',
-            category: 'tragedias',
+            category: 'catastrofes',
             region: 'asia',
             lon: 105.42,
-            lat: -6.10,
-            descEs: 'El cataclismo volcánico de 1883 cuya onda expansiva dio la vuelta a la Tierra cuatro veces y oscureció el cielo.',
-            descEn: 'The 1883 volcanic cataclysm whose shockwave circled the Earth four times and darkened the global sky.'
+            lat: -6.10
         },
         {
             id: 'fovp3_GHPWU',
@@ -1325,9 +1340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'antigua',
             region: 'europe',
             lon: -5.35,
-            lat: 36.14,
-            descEs: 'En las cuevas costeras de Gibraltar sobrevivieron los últimos neandertales mientras su legado quedaba grabado en nuestro genoma.',
-            descEn: 'In the coastal caves of Gibraltar, the last Neanderthals survived while their legacy remained etched in our genome.'
+            lat: 36.14
         },
         {
             id: 'CF3K2EjrpqY',
@@ -1335,12 +1348,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'How the Black Death Gave Birth to the Modern World (Ep. 13)',
             eraEs: 'Florencia, Italia / Europa · 1347',
             eraEn: 'Florence, Italy / Europe · 1347',
-            category: 'antigua',
+            category: 'medieval',
             region: 'europe',
             lon: 11.25,
-            lat: 43.77,
-            descEs: 'Cómo la gran pandemia medieval derrumbó el feudalismo y transformó para siempre la economía, la medicina y la sociedad europea.',
-            descEn: 'How the great medieval pandemic shattered feudalism and forever transformed European medicine, labor, and society.'
+            lat: 43.77
         },
         {
             id: 'DYkaMwKC5u8',
@@ -1348,12 +1359,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Macabre Art of Post-Mortem Photography: Victorian England (Ep. 12)',
             eraEs: 'Londres, Inglaterra · Siglo XIX',
             eraEn: 'London, England · 19th Century',
-            category: 'misterios',
+            category: 'medieval',
             region: 'europe',
             lon: -0.13,
-            lat: 51.51,
-            descEs: 'El inquietante ritual victoriano de inmortalizar a los seres queridos fallecidos mediante los primeros daguerrotipos.',
-            descEn: 'The haunting Victorian ritual of immortalizing departed loved ones through early daguerreotype photography.'
+            lat: 51.51
         },
         {
             id: 'zIAwu_FxrFA',
@@ -1361,12 +1370,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Myth of the Reichstag: Asphyxiation and Steel in the Dark (Ep. 11)',
             eraEs: 'Berlín, Alemania · 1945',
             eraEn: 'Berlin, Germany · 1945',
-            category: 'tragedias',
+            category: 'ww2',
             region: 'europe',
             lon: 13.38,
-            lat: 52.52,
-            descEs: 'La brutal batalla habitación por habitación dentro del edificio del Reichstag durante los últimos días de la Segunda Guerra Mundial.',
-            descEn: 'The brutal room-by-room battle inside the Reichstag building during the final days of World War II in Berlin.'
+            lat: 52.52
         },
         {
             id: 'bhEAI_6xEgo',
@@ -1374,12 +1381,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The 1906 San Francisco Earthquake: Fire and Steel (Ep. 10)',
             eraEs: 'San Francisco, California · 1906',
             eraEn: 'San Francisco, California · 1906',
-            category: 'tragedias',
+            category: 'catastrofes',
             region: 'americas',
             lon: -122.42,
-            lat: 37.77,
-            descEs: 'Cuando la falla de San Andrés sacudió California y desató tres días de incendios que redujeron San Francisco a cenizas.',
-            descEn: 'When the San Andreas Fault shook California and unleashed three days of fires that reduced San Francisco to ashes.'
+            lat: 37.77
         },
         {
             id: 'rOfrwwANg9k',
@@ -1387,12 +1392,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'Havana in the 1950s: Casinos, Neon, and Concrete (Ep. 09)',
             eraEs: 'La Habana, Cuba · Años 1950',
             eraEn: 'Havana, Cuba · The 1950s',
-            category: 'tragedias',
+            category: 'cuba',
             region: 'americas',
             lon: -82.37,
-            lat: 23.11,
-            descEs: 'El esplendor arquitectónico, la vida nocturna y las contradicciones de la capital cubana en la década de 1950.',
-            descEn: 'The architectural splendor, vibrant nightlife, and contradictions of the Cuban capital during the 1950s.'
+            lat: 23.11
         },
         {
             id: 'CLxnnVoseeg',
@@ -1403,9 +1406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'antigua',
             region: 'americas',
             lon: -98.84,
-            lat: 19.69,
-            descEs: 'La colosal ingeniería mesoamericana detrás de la Pirámide del Sol y la Ciudad de los Dioses.',
-            descEn: 'The colossal Mesoamerican engineering behind the Pyramid of the Sun and the ancient City of the Gods.'
+            lat: 19.69
         },
         {
             id: 'dn-cp5YPNuY',
@@ -1413,12 +1414,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The 2004 Tsunami: The Deadly Trap That Deceived the World (Ep. 07)',
             eraEs: 'Sumatra, Océano Índico · 2004',
             eraEn: 'Sumatra, Indian Ocean · 2004',
-            category: 'tragedias',
+            category: 'catastrofes',
             region: 'asia',
             lon: 95.32,
-            lat: 5.55,
-            descEs: 'Cómo el megaterremoto submarino del Océano Índico retiró el mar antes de desatar una de las mayores tragedias modernas.',
-            descEn: 'How the Indian Ocean undersea megathrust earthquake pulled back the sea before unleashing a modern tragedy.'
+            lat: 5.55
         },
         {
             id: 'S4hg8P0gtzg',
@@ -1426,12 +1425,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Invasion of Poland: Birth of the Blitzkrieg (Ep. 06)',
             eraEs: 'Varsovia / Gdańsk, Polonia · 1939',
             eraEn: 'Warsaw / Gdansk, Poland · 1939',
-            category: 'tragedias',
+            category: 'ww2',
             region: 'europe',
             lon: 21.01,
-            lat: 52.23,
-            descEs: 'Septiembre de 1939: el estallido de la Segunda Guerra Mundial y la doctrina de la Blitzkrieg.',
-            descEn: 'September 1939: the outbreak of World War II and the birth of Blitzkrieg warfare.'
+            lat: 52.23
         },
         {
             id: '9MtSnB7sBog',
@@ -1439,12 +1436,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The 100 Most Brutal Days from D-Day to the Liberation of Paris (Ep. 05)',
             eraEs: 'Playas de Normandía, Francia · 1944',
             eraEn: 'Normandy Beaches, France · 1944',
-            category: 'tragedias',
+            category: 'ww2',
             region: 'europe',
             lon: -2.50,
-            lat: 49.34,
-            descEs: 'Desde el desembarco en las playas de Normandía hasta los combates por los setos franceses rumbo a París.',
-            descEn: 'From the amphibious landings on Normandy’s beaches to the hedgerow battles toward the liberation of Paris.'
+            lat: 49.34
         },
         {
             id: 'oRXFu8r5wHU',
@@ -1455,9 +1450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             category: 'misterios',
             region: 'americas',
             lon: -124.8,
-            lat: 40.5,
-            descEs: 'El aislamiento extremo, las celdas heladas de «La Roca» y los intentos de fuga en la Bahía de San Francisco.',
-            descEn: 'Extreme isolation, freezing cells on “The Rock,” and daring escape attempts in San Francisco Bay.'
+            lat: 40.5
         },
         {
             id: 'qCwGXLfWWuE',
@@ -1465,12 +1458,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'What Havana Was Like Before 1959 (Ep. 03 Pt. 1)',
             eraEs: 'La Habana, Cuba · Antes de 1959',
             eraEn: 'Havana, Cuba · Before 1959',
-            category: 'tragedias',
+            category: 'cuba',
             region: 'americas',
             lon: -79.4,
-            lat: 21.9,
-            descEs: 'Un recorrido histórico por los comercios, avenidas, tranvías y sociedad habanera antes de 1959.',
-            descEn: 'A historical journey through the avenues, streetcars, businesses, and society of Havana before 1959.'
+            lat: 21.9
         },
         {
             id: 'Q1Rjnt5_Gr4',
@@ -1478,12 +1469,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Mariel Boatlift: The Cuban Crossing That Changed Thousands (Ep. 02)',
             eraEs: 'Puerto del Mariel / Estrecho de la Florida · 1980',
             eraEn: 'Mariel Harbor / Straits of Florida · 1980',
-            category: 'tragedias',
+            category: 'cuba',
             region: 'americas',
             lon: -83.8,
-            lat: 24.8,
-            descEs: 'El éxodo marítimo de 1980 entre el puerto del Mariel y Cayo Hueso que marcó a más de 125.000 personas.',
-            descEn: 'The 1980 maritime exodus between Mariel Harbor and Key West that forever changed over 125,000 lives.'
+            lat: 24.8
         },
         {
             id: 'HTqDUWWZE7s',
@@ -1491,12 +1480,10 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'Daily Life of an Ordinary Cuban in 1910 Havana (Ep. 01)',
             eraEs: 'La Habana, Cuba · Año 1910',
             eraEn: 'Havana, Cuba · Year 1910',
-            category: 'antigua',
+            category: 'cuba',
             region: 'americas',
             lon: -76.2,
-            lat: 20.3,
-            descEs: 'Nuestro primer episodio: los oficios, mercados, cafés y calles adoquinadas de La Habana a inicios del siglo XX.',
-            descEn: 'Our premiere episode: the trades, markets, cafes, and cobblestone streets of Havana at the dawn of the 20th century.'
+            lat: 20.3
         }
     ];
 
@@ -1505,9 +1492,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function docEra(doc) {
         return currentLang === 'en' ? doc.eraEn : doc.eraEs;
-    }
-    function docDesc(doc) {
-        return currentLang === 'en' ? doc.descEn : doc.descEs;
     }
 
     const MAP_VIEWBOXES = {
@@ -1518,7 +1502,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let currentMapRegion = 'world';
-    let selectedMapDoc = DOCUMENTARIES[0];
+    let selectedMapDoc = null;
+    let mapCalloutPinned = false;
+    let mapHoverHideTimer = null;
     let currentFilterCat = 'all';
 
     function initRealEarthCountries() {
@@ -1542,6 +1528,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const leftPct = ((svgX - vb[0]) / vb[2]) * 100;
         const topPct = ((svgY - vb[1]) / vb[3]) * 100;
         return { leftPct, topPct };
+    }
+
+    function hideMapFloatingCallout() {
+        const polyline = document.getElementById('map-leader-polyline');
+        const originDot = document.getElementById('map-leader-origin-dot');
+        const endDot = document.getElementById('map-leader-end-dot');
+        const callout = document.getElementById('map-floating-callout');
+        if (polyline) polyline.classList.add('hidden');
+        if (originDot) originDot.classList.add('hidden');
+        if (endDot) endDot.classList.add('hidden');
+        if (callout) callout.classList.add('hidden');
+        document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
+        selectedMapDoc = null;
     }
 
     function showMapFloatingCallout(doc, leftPct, topPct) {
@@ -1611,9 +1610,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderInteractiveMap() {
         const svg = document.getElementById('real-earth-svg');
         const pinsLayer = document.getElementById('map-pins-layer');
-        const infoBox = document.getElementById('map-selected-info');
         const badge = document.getElementById('map-count-badge');
-        if (!svg || !pinsLayer || !infoBox) return;
+        if (!svg || !pinsLayer) return;
 
         if (badge) badge.textContent = t('map_docs_count');
 
@@ -1621,79 +1619,80 @@ document.addEventListener('DOMContentLoaded', () => {
         svg.setAttribute('viewBox', vb.join(' '));
 
         pinsLayer.innerHTML = '';
-        let activePinCoords = null;
+        hideMapFloatingCallout();
 
         DOCUMENTARIES.forEach((doc) => {
             const { leftPct, topPct } = projectLonLatToViewBoxPct(doc.lon, doc.lat, vb);
             if (leftPct < 1 || leftPct > 99 || topPct < 1 || topPct > 99) return;
 
-            const isSelected = selectedMapDoc && selectedMapDoc.id === doc.id;
             const pin = document.createElement('button');
             pin.type = 'button';
-            pin.className = `map-pin-btn ${isSelected ? 'active' : ''}`;
+            pin.className = 'map-pin-btn';
             pin.style.left = `${leftPct}%`;
             pin.style.top = `${topPct}%`;
             pin.setAttribute('aria-label', `${docEra(doc)} — ${docTitle(doc)}`);
 
-            const activatePin = () => {
+            // Al pasar el puntero encima aparece la línea y el texto
+            pin.addEventListener('mouseenter', () => {
+                if (mapHoverHideTimer) clearTimeout(mapHoverHideTimer);
                 selectedMapDoc = doc;
                 document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
                 pin.classList.add('active');
-                selectMapLocation(doc);
                 showMapFloatingCallout(doc, leftPct, topPct);
-            };
+            });
 
-            pin.addEventListener('mouseenter', activatePin);
+            // Al retirar el puntero del punto (si no se fijó con tap/click) desaparece la línea y el texto
+            pin.addEventListener('mouseleave', () => {
+                if (mapCalloutPinned) return;
+                mapHoverHideTimer = setTimeout(() => {
+                    hideMapFloatingCallout();
+                }, 80);
+            });
+
+            // Si se hace tap con el dedo o click, queda visible hasta tocar/clicar en otro lugar de la pantalla
             pin.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
-                activatePin();
+                if (mapHoverHideTimer) clearTimeout(mapHoverHideTimer);
+                mapCalloutPinned = true;
+                selectedMapDoc = doc;
+                document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
+                pin.classList.add('active');
+                showMapFloatingCallout(doc, leftPct, topPct);
             }, { passive: true });
+
             pin.addEventListener('click', (e) => {
                 e.stopPropagation();
-                activatePin();
+                if (mapHoverHideTimer) clearTimeout(mapHoverHideTimer);
+                mapCalloutPinned = true;
+                selectedMapDoc = doc;
+                document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
+                pin.classList.add('active');
+                showMapFloatingCallout(doc, leftPct, topPct);
             });
 
             pinsLayer.appendChild(pin);
-            if (isSelected) {
-                activePinCoords = { doc, leftPct, topPct };
-            }
         });
+    }
 
-        selectMapLocation(selectedMapDoc || DOCUMENTARIES[0]);
-        if (activePinCoords) {
-            setTimeout(() => {
-                showMapFloatingCallout(activePinCoords.doc, activePinCoords.leftPct, activePinCoords.topPct);
-            }, 60);
+    // Si el usuario hace tap o click en cualquier otro lugar de la pantalla, desaparece la línea y el texto
+    function handleGlobalMapDismiss(e) {
+        if (!selectedMapDoc) return;
+        const callout = document.getElementById('map-floating-callout');
+        if (e.target.closest('.map-pin-btn') || (callout && callout.contains(e.target))) {
+            return;
         }
+        mapCalloutPinned = false;
+        hideMapFloatingCallout();
     }
-
-    function selectMapLocation(doc) {
-        const infoBox = document.getElementById('map-selected-info');
-        if (!infoBox || !doc) return;
-        infoBox.innerHTML = `
-            <div style="flex:1;min-width:220px;">
-                <div class="doc-card-era"><i class="fa-solid fa-location-dot"></i> ${docEra(doc)}</div>
-                <div style="font-size:1.2rem;font-weight:700;color:var(--gold-light);margin:2px 0 4px;">${docTitle(doc)}</div>
-                <div style="font-size:1.02rem;color:var(--text-muted);">${docDesc(doc)}</div>
-            </div>
-            <button type="button" class="gold-submit-btn" id="map-play-selected-btn">
-                <i class="fa-solid fa-play"></i> ${t('btn_watch_here')}
-            </button>
-        `;
-        document.getElementById('map-play-selected-btn').addEventListener('click', () => {
-            playDocumentaryInMainPlayer(doc.id, docTitle(doc));
-        });
-    }
+    document.addEventListener('click', handleGlobalMapDismiss);
+    document.addEventListener('touchstart', handleGlobalMapDismiss, { passive: true });
 
     document.querySelectorAll('.map-region-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.map-region-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentMapRegion = btn.getAttribute('data-region') || 'world';
-            const firstInRegion = currentMapRegion === 'world'
-                ? DOCUMENTARIES[0]
-                : (DOCUMENTARIES.find(d => d.region === currentMapRegion) || DOCUMENTARIES[0]);
-            selectedMapDoc = firstInRegion;
+            mapCalloutPinned = false;
             renderInteractiveMap();
         });
     });
@@ -1707,6 +1706,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    function renderLibraryCategoryFilters() {
+        const filtersBox = document.getElementById('library-filters');
+        if (!filtersBox) return;
+        filtersBox.innerHTML = '';
+
+        LIBRARY_CATEGORIES.forEach(cat => {
+            const count = cat.key === 'all'
+                ? DOCUMENTARIES.length
+                : DOCUMENTARIES.filter(d => d.category === cat.key).length;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `lib-filter-btn ${currentFilterCat === cat.key ? 'active' : ''}`;
+            const label = currentLang === 'en' ? cat.en : cat.es;
+            btn.textContent = `${label} (${count})`;
+            btn.addEventListener('click', () => {
+                currentFilterCat = cat.key;
+                renderLibraryCategoryFilters();
+                renderDocumentaryLibrary(cat.key);
+            });
+            filtersBox.appendChild(btn);
+        });
+    }
 
     function renderDocumentaryLibrary(filterCat = currentFilterCat) {
         currentFilterCat = filterCat;
@@ -1738,90 +1761,399 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.querySelectorAll('.lib-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.lib-filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderDocumentaryLibrary(btn.getAttribute('data-cat'));
-        });
-    });
-
     initRealEarthCountries();
     renderInteractiveMap();
+    renderLibraryCategoryFilters();
     renderDocumentaryLibrary('all');
 
     // ==========================================
-    // MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD
+    // NAVEGACIÓN ENTRE VISTA PRINCIPAL Y MURO DE DEBATE A PANTALLA COMPLETA
+    // ==========================================
+    const homeThreeColumns = document.getElementById('home-three-columns');
+    const debateWallFullscreen = document.getElementById('debate-wall-fullscreen');
+    const navBtnHome = document.getElementById('nav-btn-home');
+    const navBtnDebate = document.getElementById('nav-btn-debate');
+    const openFullscreenWallBtn = document.getElementById('open-fullscreen-wall-btn');
+    const backToHomeBtn = document.getElementById('back-to-home-btn');
+
+    function switchMainView(viewName) {
+        const isDebate = viewName === 'debate';
+        if (homeThreeColumns) homeThreeColumns.classList.toggle('hidden', isDebate);
+        if (debateWallFullscreen) debateWallFullscreen.classList.toggle('hidden', !isDebate);
+        if (navBtnHome) navBtnHome.classList.toggle('active', !isDebate);
+        if (navBtnDebate) navBtnDebate.classList.toggle('active', isDebate);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (isDebate) {
+            updateComposerIdentity();
+            loadComments();
+        } else {
+            setTimeout(() => renderInteractiveMap(), 60);
+        }
+    }
+
+    if (navBtnHome) navBtnHome.addEventListener('click', () => switchMainView('home'));
+    if (navBtnDebate) navBtnDebate.addEventListener('click', () => switchMainView('debate'));
+    if (openFullscreenWallBtn) openFullscreenWallBtn.addEventListener('click', () => switchMainView('debate'));
+    if (backToHomeBtn) backToHomeBtn.addEventListener('click', () => switchMainView('home'));
+
+    // ==========================================
+    // MURO DE DEBATE TIPO FACEBOOK (PUBLICACIONES, LIKES Y COMENTARIOS ANIDADOS CON @REFERENCIA)
     // ==========================================
     const communityForm = document.getElementById('community-comment-form');
     const communityInput = document.getElementById('community-comment-input');
+    const communityDocSelect = document.getElementById('community-doc-tag');
     const communityList = document.getElementById('community-comments-list');
     let lastCommentsData = { comments: [], isAdmin: false };
+    let activeReplyTargets = {}; // postId -> { parentId, replyToAuthor }
 
-    async function loadComments() {
+    function populateDocSelect() {
+        if (!communityDocSelect) return;
+        const currentVal = communityDocSelect.value;
+        communityDocSelect.innerHTML = `<option value="">${t('opt_general_topic')}</option>`;
+        DOCUMENTARIES.forEach(doc => {
+            const opt = document.createElement('option');
+            opt.value = docTitle(doc);
+            opt.textContent = `🎬 ${docTitle(doc)}`;
+            communityDocSelect.appendChild(opt);
+        });
+        communityDocSelect.value = currentVal;
+    }
+
+    function updateComposerIdentity() {
+        const avatarEl = document.getElementById('composer-avatar');
+        const labelEl = document.getElementById('composer-author-label');
+        if (!avatarEl || !labelEl) return;
+        if (authToken && currentUser) {
+            const name = currentUser.role === 'admin' ? 'Huellas de la Humanidad (Admin)' : (currentUser.displayName || currentUser.username);
+            labelEl.textContent = name;
+            avatarEl.textContent = name.charAt(0).toUpperCase();
+        } else {
+            const guestName = t('poll_follower');
+            labelEl.textContent = guestName;
+            avatarEl.textContent = guestName.charAt(0).toUpperCase();
+        }
+    }
+
+    let lastPostsSignature = '';
+
+    async function loadComments(isBackgroundPoll = false) {
         try {
             const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-            const res = await fetch(`${API_BASE}/api/comments`, { headers });
+            const res = await fetch(`${API_BASE}/api/comments?voterId=${encodeURIComponent(voterId)}`, { headers });
             if (!res.ok) return;
             const data = await res.json();
-            renderComments(data.comments || [], Boolean(data.isAdmin));
+            const posts = data.comments || [];
+            const badge = document.getElementById('nav-debate-badge');
+            if (badge) badge.textContent = posts.length;
+
+            const sig = JSON.stringify(posts) + '|' + Boolean(data.isAdmin) + '|' + currentLang;
+            if (isBackgroundPoll) {
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.id && activeEl.id.startsWith('reply-input-')) {
+                    return;
+                }
+                if (sig === lastPostsSignature) {
+                    return;
+                }
+            }
+            lastPostsSignature = sig;
+            renderComments(posts, Boolean(data.isAdmin));
         } catch (e) {}
     }
 
-    function renderComments(comments, isAdmin) {
-        lastCommentsData = { comments, isAdmin };
+    function renderComments(posts, isAdmin) {
+        lastCommentsData = { comments: posts, isAdmin };
+        updateComposerIdentity();
         if (!communityList) return;
         communityList.innerHTML = '';
-        if (comments.length === 0) {
+
+        if (posts.length === 0) {
             communityList.innerHTML = `<p class="empty-conv-text">${t('wall_empty')}</p>`;
             return;
         }
-        comments.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'community-comment-item';
-            const top = document.createElement('div');
-            top.className = 'community-comment-top';
 
-            const authorSpan = document.createElement('span');
-            authorSpan.textContent = (!c.author || c.author === 'Seguidor') ? t('poll_follower') : c.author;
-            top.appendChild(authorSpan);
+        posts.forEach(post => {
+            const card = document.createElement('article');
+            card.className = 'fb-post-card';
 
-            const rightWrap = document.createElement('div');
-            rightWrap.style.display = 'flex';
-            rightWrap.style.alignItems = 'center';
-            rightWrap.style.gap = '8px';
+            const displayAuthor = (!post.author || post.author === 'Seguidor') ? t('poll_follower') : post.author;
+            const initial = displayAuthor.charAt(0).toUpperCase();
 
-            const dateSpan = document.createElement('span');
-            dateSpan.textContent = formatTime(c.createdAt);
-            rightWrap.appendChild(dateSpan);
+            // 1. Cabecera de la publicación
+            const header = document.createElement('div');
+            header.className = 'fb-post-header';
+
+            const authorWrap = document.createElement('div');
+            authorWrap.className = 'fb-post-author-wrap';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'fb-avatar';
+            avatar.textContent = initial;
+
+            const metaDiv = document.createElement('div');
+            const nameLine = document.createElement('div');
+            nameLine.className = 'fb-post-author-name';
+            nameLine.textContent = displayAuthor;
+            if (post.role === 'admin') {
+                const badge = document.createElement('span');
+                badge.className = 'admin-badge';
+                badge.innerHTML = '<i class="fa-solid fa-crown"></i> ADMIN';
+                nameLine.appendChild(badge);
+            }
+
+            const timeLine = document.createElement('div');
+            timeLine.className = 'fb-post-time';
+            timeLine.textContent = formatTime(post.createdAt);
+
+            metaDiv.appendChild(nameLine);
+            metaDiv.appendChild(timeLine);
+
+            if (post.docTag) {
+                const docPill = document.createElement('div');
+                docPill.className = 'fb-doc-pill';
+                docPill.innerHTML = `<i class="fa-solid fa-film"></i> ${post.docTag}`;
+                metaDiv.appendChild(docPill);
+            }
+
+            authorWrap.appendChild(avatar);
+            authorWrap.appendChild(metaDiv);
+            header.appendChild(authorWrap);
 
             if (isAdmin) {
                 const delBtn = document.createElement('button');
                 delBtn.type = 'button';
                 delBtn.className = 'delete-topic-btn';
                 delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-                delBtn.addEventListener('click', () => deleteComment(c.id));
-                rightWrap.appendChild(delBtn);
+                delBtn.addEventListener('click', () => deleteComment(post.id));
+                header.appendChild(delBtn);
             }
 
-            top.appendChild(rightWrap);
+            card.appendChild(header);
 
-            const textDiv = document.createElement('div');
-            textDiv.className = 'community-comment-text';
-            textDiv.textContent = c.text;
+            // 2. Cuerpo de la publicación
+            const body = document.createElement('div');
+            body.className = 'fb-post-body';
+            body.textContent = post.text;
+            card.appendChild(body);
 
-            div.appendChild(top);
-            div.appendChild(textDiv);
-            communityList.appendChild(div);
+            // 3. Barra de estadísticas (Likes y total de comentarios)
+            const replies = Array.isArray(post.replies) ? post.replies : [];
+            const stats = document.createElement('div');
+            stats.className = 'fb-post-stats';
+            stats.innerHTML = `
+                <span><i class="fa-solid fa-thumbs-up" style="color:var(--primary-color);"></i> ${post.likesCount || 0} ${t('fb_like')}</span>
+                <span>${replies.length} ${replies.length === 1 ? t('fb_comment_singular') : t('fb_comments_count')}</span>
+            `;
+            card.appendChild(stats);
+
+            // 4. Botones de Acción (Me gusta / Comentar)
+            const actions = document.createElement('div');
+            actions.className = 'fb-post-actions';
+
+            const likeBtn = document.createElement('button');
+            likeBtn.type = 'button';
+            likeBtn.className = `fb-action-btn ${post.likedByMe ? 'liked' : ''}`;
+            likeBtn.innerHTML = `<i class="fa-solid fa-thumbs-up"></i> ${t('fb_like')} (${post.likesCount || 0})`;
+            likeBtn.addEventListener('click', () => toggleLike(post.id, null));
+
+            const commentFocusBtn = document.createElement('button');
+            commentFocusBtn.type = 'button';
+            commentFocusBtn.className = 'fb-action-btn';
+            commentFocusBtn.innerHTML = `<i class="fa-solid fa-comment"></i> ${t('fb_comment')}`;
+
+            actions.appendChild(likeBtn);
+            actions.appendChild(commentFocusBtn);
+            card.appendChild(actions);
+
+            // 5. Hilo de Comentarios y Respuestas Anidadas (con referencia @Persona)
+            const thread = document.createElement('div');
+            thread.className = 'fb-comments-thread';
+
+            replies.forEach(r => {
+                const rAuthor = (!r.author || r.author === 'Seguidor') ? t('poll_follower') : r.author;
+                const row = document.createElement('div');
+                row.className = `fb-comment-row ${r.parentId ? 'is-nested-reply' : ''}`;
+
+                const rAvatar = document.createElement('div');
+                rAvatar.className = 'fb-avatar small';
+                rAvatar.textContent = rAuthor.charAt(0).toUpperCase();
+
+                const contentWrap = document.createElement('div');
+                contentWrap.className = 'fb-comment-content-wrap';
+
+                const bubble = document.createElement('div');
+                bubble.className = 'fb-comment-bubble';
+
+                const rHeader = document.createElement('div');
+                rHeader.className = 'fb-comment-author';
+                const rNameSpan = document.createElement('span');
+                rNameSpan.textContent = rAuthor;
+                const rTimeSpan = document.createElement('span');
+                rTimeSpan.style.fontWeight = '400';
+                rTimeSpan.style.color = 'var(--text-muted)';
+                rTimeSpan.textContent = formatTime(r.createdAt);
+                rHeader.appendChild(rNameSpan);
+                rHeader.appendChild(rTimeSpan);
+
+                const rText = document.createElement('div');
+                rText.className = 'fb-comment-text';
+                if (r.replyToAuthor) {
+                    const mention = document.createElement('span');
+                    mention.className = 'fb-reply-mention';
+                    mention.textContent = `@${r.replyToAuthor}`;
+                    rText.appendChild(mention);
+                }
+                rText.appendChild(document.createTextNode(r.text));
+
+                bubble.appendChild(rHeader);
+                bubble.appendChild(rText);
+                contentWrap.appendChild(bubble);
+
+                // Sub-acciones de cada comentario: Me gusta, Responder a esta persona, Eliminar (Admin)
+                const subActions = document.createElement('div');
+                subActions.className = 'fb-comment-subactions';
+
+                const rLikeBtn = document.createElement('button');
+                rLikeBtn.type = 'button';
+                rLikeBtn.className = `fb-subaction-link ${r.likedByMe ? 'liked' : ''}`;
+                rLikeBtn.innerHTML = `<i class="fa-solid fa-thumbs-up"></i> ${t('fb_like')} (${r.likesCount || 0})`;
+                rLikeBtn.addEventListener('click', () => toggleLike(post.id, r.id));
+
+                const rReplyBtn = document.createElement('button');
+                rReplyBtn.type = 'button';
+                rReplyBtn.className = 'fb-subaction-link';
+                rReplyBtn.innerHTML = `<i class="fa-solid fa-reply"></i> ${t('fb_reply')}`;
+                rReplyBtn.addEventListener('click', () => {
+                    activeReplyTargets[post.id] = {
+                        parentId: r.id,
+                        replyToAuthor: rAuthor
+                    };
+                    renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
+                    setTimeout(() => {
+                        const inp = document.getElementById(`reply-input-${post.id}`);
+                        if (inp) inp.focus();
+                    }, 40);
+                });
+
+                subActions.appendChild(rLikeBtn);
+                subActions.appendChild(rReplyBtn);
+
+                if (isAdmin) {
+                    const rDelBtn = document.createElement('button');
+                    rDelBtn.type = 'button';
+                    rDelBtn.className = 'fb-subaction-link';
+                    rDelBtn.style.color = '#ff9da6';
+                    rDelBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                    rDelBtn.addEventListener('click', () => deleteComment(post.id, r.id));
+                    subActions.appendChild(rDelBtn);
+                }
+
+                contentWrap.appendChild(subActions);
+                row.appendChild(rAvatar);
+                row.appendChild(contentWrap);
+                thread.appendChild(row);
+            });
+
+            // 6. Formulario para comentar la publicación o responder a un comentario específico (@Persona)
+            const replyTarget = activeReplyTargets[post.id] || null;
+            const replyForm = document.createElement('form');
+            replyForm.className = 'fb-inline-reply-form';
+
+            if (replyTarget) {
+                const pill = document.createElement('div');
+                pill.className = 'fb-replying-to-pill';
+                pill.innerHTML = `
+                    <span><i class="fa-solid fa-reply"></i> ${t('fb_replying_to')} <strong>@${replyTarget.replyToAuthor}</strong></span>
+                `;
+                const cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.className = 'fb-subaction-link';
+                cancelBtn.textContent = t('fb_cancel');
+                cancelBtn.addEventListener('click', () => {
+                    delete activeReplyTargets[post.id];
+                    renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
+                });
+                pill.appendChild(cancelBtn);
+                replyForm.appendChild(pill);
+            }
+
+            const replyInput = document.createElement('input');
+            replyInput.type = 'text';
+            replyInput.id = `reply-input-${post.id}`;
+            replyInput.maxLength = 900;
+            replyInput.required = true;
+            replyInput.placeholder = replyTarget
+                ? `${t('fb_write_reply')} @${replyTarget.replyToAuthor}...`
+                : t('fb_write_comment');
+
+            const replySubmit = document.createElement('button');
+            replySubmit.type = 'submit';
+            replySubmit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ${replyTarget ? t('fb_reply') : t('fb_comment')}`;
+
+            commentFocusBtn.addEventListener('click', () => {
+                delete activeReplyTargets[post.id];
+                replyInput.focus();
+            });
+
+            replyForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const text = replyInput.value.trim();
+                if (!text) return;
+                replyInput.value = '';
+                const target = activeReplyTargets[post.id] || null;
+                delete activeReplyTargets[post.id];
+                await submitReply(post.id, target ? target.parentId : null, target ? target.replyToAuthor : '', text);
+            });
+
+            replyForm.appendChild(replyInput);
+            replyForm.appendChild(replySubmit);
+            thread.appendChild(replyForm);
+
+            card.appendChild(thread);
+            communityList.appendChild(card);
         });
+    }
+
+    async function toggleLike(postId, replyId = null) {
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+            };
+            await fetch(`${API_BASE}/api/comments/like`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ postId, replyId, voterId })
+            });
+            loadComments();
+        } catch (err) {}
+    }
+
+    async function submitReply(postId, parentId, replyToAuthor, text) {
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+            };
+            const res = await fetch(`${API_BASE}/api/comments/reply`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ postId, parentId, replyToAuthor, text })
+            });
+            if (res.ok) {
+                loadComments();
+            }
+        } catch (err) {}
     }
 
     if (communityForm) {
         communityForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const text = communityInput.value.trim();
+            const docTag = communityDocSelect ? communityDocSelect.value : '';
             if (!text) return;
             communityInput.value = '';
+            if (communityDocSelect) communityDocSelect.value = '';
             try {
                 const headers = {
                     'Content-Type': 'application/json',
@@ -1830,7 +2162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await fetch(`${API_BASE}/api/comments/add`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({ text })
+                    body: JSON.stringify({ text, docTag })
                 });
                 if (res.ok) {
                     loadComments();
@@ -1839,7 +2171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function deleteComment(commentId) {
+    async function deleteComment(commentId, replyId = null) {
         if (!authToken) return;
         try {
             await fetch(`${API_BASE}/api/comments/delete`, {
@@ -1848,7 +2180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ commentId })
+                body: JSON.stringify({ commentId, replyId })
             });
             loadComments();
         } catch (err) {}
@@ -1877,10 +2209,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (key) el.setAttribute('placeholder', t(key));
         });
 
+        populateDocSelect();
         renderEphemeris();
         if (lastPollData) renderPoll(lastPollData);
         if (lastTriviaData) renderTrivia(lastTriviaData);
         renderInteractiveMap();
+        renderLibraryCategoryFilters();
         renderDocumentaryLibrary(currentFilterCat);
         renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
     }
@@ -1890,6 +2224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (langBtnEs) langBtnEs.addEventListener('click', () => applyLanguage('es'));
     if (langBtnEn) langBtnEn.addEventListener('click', () => applyLanguage('en'));
 
+    populateDocSelect();
     applyLanguage(currentLang);
     updatePollAdminControls();
     loadPoll();
@@ -1899,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(() => {
         loadPoll();
-        loadComments();
+        loadComments(true);
     }, 6000);
 
     if (authToken && currentUser) {

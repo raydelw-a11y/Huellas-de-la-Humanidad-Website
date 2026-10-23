@@ -807,24 +807,70 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
-  // --- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD ---
+  // --- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD (ESTILO FACEBOOK: POSTS, LIKES Y RESPUESTAS ANIDADAS) ---
   if (pathname === '/api/comments' && req.method === 'GET') {
     const session = getAuthSession(req);
+    const voterId = parsedUrl.searchParams.get('voterId') || '';
+    const voterKey = session ? `user:${session.username}` : `v:${voterId}`;
+
+    if (!Array.isArray(db.comments)) db.comments = [];
+    if (db.comments.length === 0) {
+      db.comments.push({
+        id: 'welcome-debate-post',
+        author: 'Huellas de la Humanidad',
+        role: 'admin',
+        docTag: 'El Louvre en el año 1200',
+        text: '¡Bienvenid@s al Muro de Debate de Huellas de la Humanidad! ¿Qué época histórica o documental del canal te ha impactado más hasta ahora? Comparte tu teoría, dale «Me gusta» o responde a los comentarios de otros seguidores.',
+        likes: [],
+        replies: [],
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    const formattedPosts = db.comments.slice(-60).reverse().map(post => {
+      const likesArr = Array.isArray(post.likes) ? post.likes : [];
+      const repliesArr = Array.isArray(post.replies) ? post.replies : [];
+      return {
+        id: post.id,
+        author: post.author || 'Seguidor',
+        role: post.role || 'guest',
+        docTag: post.docTag || '',
+        text: post.text || '',
+        createdAt: post.createdAt,
+        likesCount: likesArr.length,
+        likedByMe: Boolean(voterKey && likesArr.includes(voterKey)),
+        replies: repliesArr.map(r => {
+          const rLikes = Array.isArray(r.likes) ? r.likes : [];
+          return {
+            id: r.id,
+            parentId: r.parentId || null,
+            replyToAuthor: r.replyToAuthor || '',
+            author: r.author || 'Seguidor',
+            role: r.role || 'guest',
+            text: r.text || '',
+            createdAt: r.createdAt,
+            likesCount: rLikes.length,
+            likedByMe: Boolean(voterKey && rLikes.includes(voterKey))
+          };
+        })
+      };
+    });
+
     return sendJson(res, 200, {
-      comments: (db.comments || []).slice(-40).reverse(),
+      comments: formattedPosts,
       isAdmin: Boolean(session && session.role === 'admin')
     });
   }
 
   if (pathname === '/api/comments/add' && req.method === 'POST') {
-    const { text } = await parseBody(req);
+    const { text, docTag } = await parseBody(req);
     const session = getAuthSession(req);
     const cleanText = String(text || '').trim();
     if (!cleanText || cleanText.length < 2) {
-      return sendJson(res, 400, { error: 'Escribe un comentario antes de publicar.' });
+      return sendJson(res, 400, { error: 'Escribe una publicación antes de enviarla.' });
     }
     const author = session
-      ? (session.role === 'admin' ? 'Huellas de la Humanidad (Admin)' : (session.displayName || session.username))
+      ? (session.role === 'admin' ? 'Huellas de la Humanidad' : (session.displayName || session.username))
       : 'Seguidor';
 
     if (!Array.isArray(db.comments)) db.comments = [];
@@ -832,7 +878,10 @@ const server = http.createServer(async (req, res) => {
       id: crypto.randomUUID(),
       author,
       role: session ? session.role : 'guest',
-      text: cleanText.slice(0, 800),
+      docTag: String(docTag || '').trim().slice(0, 120),
+      text: cleanText.slice(0, 1500),
+      likes: [],
+      replies: [],
       createdAt: new Date().toISOString()
     });
     if (db.comments.length > 100) {
@@ -842,14 +891,85 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 201, { ok: true });
   }
 
+  if (pathname === '/api/comments/like' && req.method === 'POST') {
+    const { postId, replyId, voterId } = await parseBody(req);
+    const session = getAuthSession(req);
+    const voterKey = session ? `user:${session.username}` : `v:${String(voterId || 'anon').slice(0, 80)}`;
+
+    if (!Array.isArray(db.comments)) db.comments = [];
+    const post = db.comments.find(p => p.id === postId);
+    if (!post) {
+      return sendJson(res, 404, { error: 'Publicación no encontrada.' });
+    }
+
+    if (replyId) {
+      if (!Array.isArray(post.replies)) post.replies = [];
+      const reply = post.replies.find(r => r.id === replyId);
+      if (!reply) return sendJson(res, 404, { error: 'Comentario no encontrado.' });
+      if (!Array.isArray(reply.likes)) reply.likes = [];
+      const idx = reply.likes.indexOf(voterKey);
+      if (idx >= 0) reply.likes.splice(idx, 1);
+      else reply.likes.push(voterKey);
+    } else {
+      if (!Array.isArray(post.likes)) post.likes = [];
+      const idx = post.likes.indexOf(voterKey);
+      if (idx >= 0) post.likes.splice(idx, 1);
+      else post.likes.push(voterKey);
+    }
+
+    saveDatabase();
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/comments/reply' && req.method === 'POST') {
+    const { postId, parentId, replyToAuthor, text } = await parseBody(req);
+    const session = getAuthSession(req);
+    const cleanText = String(text || '').trim();
+    if (!cleanText) {
+      return sendJson(res, 400, { error: 'Escribe tu comentario.' });
+    }
+
+    if (!Array.isArray(db.comments)) db.comments = [];
+    const post = db.comments.find(p => p.id === postId);
+    if (!post) {
+      return sendJson(res, 404, { error: 'Publicación no encontrada.' });
+    }
+
+    const author = session
+      ? (session.role === 'admin' ? 'Huellas de la Humanidad' : (session.displayName || session.username))
+      : 'Seguidor';
+
+    if (!Array.isArray(post.replies)) post.replies = [];
+    post.replies.push({
+      id: crypto.randomUUID(),
+      parentId: parentId || null,
+      replyToAuthor: String(replyToAuthor || '').trim().slice(0, 60),
+      author,
+      role: session ? session.role : 'guest',
+      text: cleanText.slice(0, 1000),
+      likes: [],
+      createdAt: new Date().toISOString()
+    });
+
+    saveDatabase();
+    return sendJson(res, 201, { ok: true });
+  }
+
   if (pathname === '/api/comments/delete' && req.method === 'POST') {
     const session = getAuthSession(req);
     if (!session || session.role !== 'admin') {
-      return sendJson(res, 403, { error: 'Solo el Administrador puede eliminar comentarios.' });
+      return sendJson(res, 403, { error: 'Solo el Administrador puede eliminar publicaciones o comentarios.' });
     }
-    const { commentId } = await parseBody(req);
+    const { commentId, replyId } = await parseBody(req);
     if (Array.isArray(db.comments)) {
-      db.comments = db.comments.filter(c => c.id !== commentId);
+      if (replyId) {
+        const post = db.comments.find(c => c.id === commentId);
+        if (post && Array.isArray(post.replies)) {
+          post.replies = post.replies.filter(r => r.id !== replyId && r.parentId !== replyId);
+        }
+      } else {
+        db.comments = db.comments.filter(c => c.id !== commentId);
+      }
       saveDatabase();
     }
     return sendJson(res, 200, { ok: true });

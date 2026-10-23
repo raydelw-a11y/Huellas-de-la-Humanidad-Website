@@ -35,8 +35,19 @@
                 </div>
             </div>
 
-            <!-- OPCIONES DEBAJO DEL LOGO Y ESLOGAN: IDIOMA + INICIAR SESIÓN / CREAR CUENTA / OPCIONES DE CUENTA CON SUBMENÚ -->
+            <!-- OPCIONES DEBAJO DEL LOGO Y ESLOGAN: SECCIONES + IDIOMA + CUENTA CON SUBMENÚ -->
             <div class="top-account-bar">
+                <!-- Pestañas Principales: Inicio vs Muro de Debate a Pantalla Completa -->
+                <div class="main-view-tabs" role="tablist">
+                    <button type="button" id="nav-btn-home" class="view-tab-btn active">
+                        <i class="fa-solid fa-landmark"></i> <span data-i18n="nav_home">Inicio y Documentales</span>
+                    </button>
+                    <button type="button" id="nav-btn-debate" class="view-tab-btn">
+                        <i class="fa-solid fa-comments"></i> <span data-i18n="wall_title">Muro de Debate</span>
+                        <span id="nav-debate-badge" class="debate-count-pill">1</span>
+                    </button>
+                </div>
+
                 <!-- Selector de Idioma (Español por defecto / Inglés) -->
                 <div class="lang-switcher" role="group" aria-label="Idioma / Language">
                     <button type="button" id="lang-btn-es" class="lang-btn active" data-lang="es">
@@ -151,7 +162,7 @@
         </header>
 
         <!-- 3 HILERAS VERTICALES DEBAJO DEL LOGO Y ESLOGAN -->
-        <div class="three-columns-layout">
+        <div id="home-three-columns" class="three-columns-layout">
             
             <!-- HILERA IZQUIERDA: PROPONER TEMAS, CUENTA REGRESIVA, EFEMÉRIDES Y TRIVIA -->
             <aside class="side-column left-column">
@@ -319,19 +330,12 @@
                                 </button>
                             </div>
                         </div>
-
-                        <div id="map-selected-info" class="map-selected-info"></div>
                     </div>
 
-                    <!-- 6. Biblioteca / Archivo Completo de los 25 Documentales -->
+                    <!-- 6. Biblioteca / Archivo Completo de los 25 Documentales con Categorías y Conteos () -->
                     <div class="library-card glass-panel">
                         <h3><i class="fa-solid fa-film"></i> <span data-i18n="library_title">Biblioteca de Documentales</span></h3>
-                        <div class="library-filters" id="library-filters">
-                            <button type="button" class="lib-filter-btn active" data-cat="all" data-i18n="cat_all">Todos (25)</button>
-                            <button type="button" class="lib-filter-btn" data-cat="antigua" data-i18n="cat_ancient">Edad Antigua y Media</button>
-                            <button type="button" class="lib-filter-btn" data-cat="tragedias" data-i18n="cat_modern">Tragedias e Historia Moderna</button>
-                            <button type="button" class="lib-filter-btn" data-cat="misterios" data-i18n="cat_mysteries">Casos y Misterios Reales</button>
-                        </div>
+                        <div class="library-filters" id="library-filters"></div>
                         <div id="library-grid" class="library-grid"></div>
                     </div>
 
@@ -424,30 +428,63 @@
                     </div>
                 </section>
 
-                <!-- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD -->
-                <section class="community-wall-section glass-panel">
-                    <h2><i class="fa-solid fa-comments"></i> <span data-i18n="wall_title">Muro de Debate</span></h2>
-                    <p class="chat-subtitle" data-i18n="wall_subtitle">Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.</p>
-
-                    <form id="community-comment-form" class="topic-suggest-form">
-                        <input type="text" id="community-comment-input" data-i18n-placeholder="ph_wall_comment" placeholder="Escribe tu comentario público..." maxlength="800" required>
-                        <button type="submit" class="gold-submit-btn suggest-btn">
-                            <i class="fa-solid fa-feather"></i> <span data-i18n="btn_post_wall">Publicar en el Muro</span>
+                    <!-- Acceso rápido al Muro de Debate a Pantalla Completa -->
+                    <div class="wall-promo-card glass-panel">
+                        <h2><i class="fa-solid fa-comments"></i> <span data-i18n="wall_title">Muro de Debate</span></h2>
+                        <p class="chat-subtitle" data-i18n="wall_subtitle">Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.</p>
+                        <button type="button" id="open-fullscreen-wall-btn" class="gold-submit-btn full-width-btn">
+                            <i class="fa-solid fa-up-right-from-square"></i> <span data-i18n="btn_open_wall_full">Entrar al Muro de Debate</span>
                         </button>
-                    </form>
-
-                    <div id="community-comments-list" class="community-comments-list"></div>
-                </section>
+                    </div>
             </aside>
 
         </div>
+
+        <!-- SECCIÓN APARTE A PANTALLA COMPLETA DEBAJO DEL ENCABEZADO: MURO DE DEBATE TIPO FACEBOOK -->
+        <section id="debate-wall-fullscreen" class="debate-wall-fullscreen hidden">
+            <div class="fb-wall-container">
+                <div class="fb-wall-top-bar glass-panel">
+                    <div>
+                        <h2><i class="fa-solid fa-comments"></i> <span data-i18n="wall_title">Muro de Debate</span></h2>
+                        <p class="chat-subtitle" style="margin-bottom:0;" data-i18n="wall_subtitle">Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.</p>
+                    </div>
+                    <button type="button" id="back-to-home-btn" class="top-menu-btn">
+                        <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_home">Volver a Inicio</span>
+                    </button>
+                </div>
+
+                <!-- Creador de Publicación estilo Facebook -->
+                <div class="fb-composer-card glass-panel">
+                    <form id="community-comment-form" class="fb-composer-form">
+                        <div class="fb-composer-header">
+                            <div class="fb-avatar" id="composer-avatar">H</div>
+                            <div class="fb-composer-meta">
+                                <span id="composer-author-label" class="fb-composer-author">Seguidor</span>
+                                <select id="community-doc-tag" class="fb-doc-select">
+                                    <option value="" data-i18n="opt_general_topic">📌 Tema general del canal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <textarea id="community-comment-input" rows="3" data-i18n-placeholder="ph_wall_comment" placeholder="¿Qué teoría, pregunta o comentario sobre nuestros documentales quieres compartir hoy?" maxlength="1500" required></textarea>
+                        <div class="fb-composer-footer">
+                            <button type="submit" class="gold-submit-btn">
+                                <i class="fa-solid fa-feather"></i> <span data-i18n="btn_post_wall">Publicar en el Muro</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Feed de Publicaciones con Scroll tipo Facebook -->
+                <div id="community-comments-list" class="fb-feed-list"></div>
+            </div>
+        </section>
         
         <footer>
             <p>&copy; 2026 Huellas de la Humanidad. <span data-i18n="footer_rights">Todos los derechos reservados.</span></p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 08:59 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 09:24 PM - 10/22/2026</div>
 
     <script src="world-map-data.js"></script>
     <script src="script.js"></script>

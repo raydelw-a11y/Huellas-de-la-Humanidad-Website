@@ -1760,8 +1760,9 @@ footer {
 .library-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.9rem;
-    max-height: 1540px;
+    grid-auto-rows: 240px;
+    gap: 14px;
+    max-height: 1515px;
     overflow-y: auto;
     padding-right: 8px;
 }
@@ -1789,6 +1790,7 @@ footer {
     transition: transform 0.25s ease, border-color 0.25s ease;
     display: flex;
     flex-direction: column;
+    height: 240px;
 }
 
 .doc-card:hover {
@@ -1799,7 +1801,9 @@ footer {
 .doc-thumb-wrap {
     position: relative;
     width: 100%;
-    padding-bottom: 52%;
+    height: 155px;
+    padding-bottom: 0;
+    flex-shrink: 0;
     background: #000;
 }
 

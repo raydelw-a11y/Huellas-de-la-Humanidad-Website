@@ -1825,14 +1825,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const worldMapStage = document.getElementById('world-map-stage');
     if (worldMapStage) {
         function clampViewBox(x, y, w, h) {
-            const clampedW = Math.max(220, Math.min(1000, w));
+            const clampedW = Math.max(160, Math.min(1000, w));
             const clampedH = clampedW * 0.48;
             const clampedX = Math.max(0, Math.min(1000 - clampedW, x));
             const clampedY = Math.max(0, Math.min(480 - clampedH, y));
             return [clampedX, clampedY, clampedW, clampedH];
         }
 
-        // 1. Zoom suave y menos sensible con scroll del mouse / trackpad
+        // 1. Zoom equilibrado con scroll del mouse / trackpad
         worldMapStage.addEventListener('wheel', (e) => {
             e.preventDefault();
             const rect = worldMapStage.getBoundingClientRect();
@@ -1840,11 +1840,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / (rect.height || 1)));
 
             const [vbX, vbY, vbW, vbH] = currentViewBox;
-            const rawDelta = e.deltaMode === 1 ? e.deltaY * 18 : e.deltaY;
-            const clampedDelta = Math.max(-35, Math.min(35, rawDelta));
-            // Sensibilidad suave y progresiva (~3.5% máximo por evento de scroll)
-            const zoomFactor = Math.exp(clampedDelta * 0.001);
-            const newW = Math.max(220, Math.min(1000, vbW * zoomFactor));
+            const rawDelta = e.deltaMode === 1 ? e.deltaY * 22 : e.deltaY;
+            const clampedDelta = Math.max(-75, Math.min(75, rawDelta));
+            // Sensibilidad equilibrada (~8%–15% por paso de rueda)
+            const zoomFactor = Math.exp(clampedDelta * 0.0024);
+            const newW = Math.max(160, Math.min(1000, vbW * zoomFactor));
             const newH = newW * 0.48;
             const newX = vbX + (vbW - newW) * relX;
             const newY = vbY + (vbH - newH) * relY;
@@ -1918,8 +1918,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const t1 = e.touches[1];
                 const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
                 const rawScale = pinchStartDist / Math.max(20, dist);
-                const dampedScale = 1 + (rawScale - 1) * 0.45;
-                const newW = Math.max(220, Math.min(1000, pinchStartVb[2] * dampedScale));
+                const dampedScale = 1 + (rawScale - 1) * 0.72;
+                const newW = Math.max(160, Math.min(1000, pinchStartVb[2] * dampedScale));
                 const newH = newW * 0.48;
                 const newX = pinchStartVb[0] + (pinchStartVb[2] - newW) * pinchStartMid.x;
                 const newY = pinchStartVb[1] + (pinchStartVb[3] - newH) * pinchStartMid.y;

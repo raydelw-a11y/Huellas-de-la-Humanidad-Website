@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const I18N = {
         es: {
-            header_bio: '«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»',
+            header_bio: '«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy.\nCada historia deja una huella. Aquí seguimos sus rastros.»',
             btn_login: 'Iniciar Sesión',
             btn_register: 'Crear Cuenta',
             btn_settings: 'Opciones de la Cuenta',
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             followers_total_label: 'Seguidores'
         },
         en: {
-            header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today. Every story leaves a footprint. Here we follow their traces.”',
+            header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
             btn_login: 'Sign In',
             btn_register: 'Create Account',
             btn_settings: 'Account Settings',

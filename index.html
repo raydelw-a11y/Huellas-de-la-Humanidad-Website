@@ -30,20 +30,30 @@
                 </div>
                 <div class="header-content">
                     <h1 class="sr-only">Huellas de la Humanidad</h1>
-                    <p class="bio">«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
+                    <p class="bio" data-i18n="header_bio">«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                     <div class="ancient-divider" aria-hidden="true"><span>✦</span></div>
                 </div>
             </div>
 
-            <!-- OPCIONES DEBAJO DEL LOGO Y ESLOGAN: INICIAR SESIÓN / CREAR CUENTA / OPCIONES DE CUENTA CON SUBMENÚ -->
+            <!-- OPCIONES DEBAJO DEL LOGO Y ESLOGAN: IDIOMA + INICIAR SESIÓN / CREAR CUENTA / OPCIONES DE CUENTA CON SUBMENÚ -->
             <div class="top-account-bar">
+                <!-- Selector de Idioma (Español por defecto / Inglés) -->
+                <div class="lang-switcher" role="group" aria-label="Idioma / Language">
+                    <button type="button" id="lang-btn-es" class="lang-btn active" data-lang="es">
+                        <i class="fa-solid fa-globe"></i> Español
+                    </button>
+                    <button type="button" id="lang-btn-en" class="lang-btn" data-lang="en">
+                        <i class="fa-solid fa-earth-americas"></i> English
+                    </button>
+                </div>
+
                 <!-- Botones cuando NO ha iniciado sesión -->
                 <div id="guest-top-buttons" class="top-account-buttons">
                     <button type="button" id="btn-open-login" class="top-menu-btn">
-                        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                        <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_login">Iniciar Sesión</span> <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                     </button>
                     <button type="button" id="btn-open-register" class="top-menu-btn">
-                        <i class="fa-solid fa-user-plus"></i> Crear Cuenta <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                        <i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_register">Crear Cuenta</span> <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                     </button>
                 </div>
 
@@ -54,10 +64,10 @@
                         <span id="top-user-display"></span>
                     </span>
                     <button type="button" id="btn-open-settings" class="top-menu-btn">
-                        <i class="fa-solid fa-gear"></i> Opciones de la Cuenta <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                        <i class="fa-solid fa-gear"></i> <span data-i18n="btn_settings">Opciones de la Cuenta</span> <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                     </button>
                     <button type="button" id="btn-top-logout" class="logout-btn">
-                        <i class="fa-solid fa-power-off"></i> Cerrar Sesión
+                        <i class="fa-solid fa-power-off"></i> <span data-i18n="btn_logout">Cerrar Sesión</span>
                     </button>
                 </div>
             </div>
@@ -72,69 +82,69 @@
 
                 <!-- Submenú 1: Iniciar Sesión -->
                 <form id="login-form" class="auth-form hidden">
-                    <h3 class="submenu-title"><i class="fa-solid fa-key"></i> Iniciar Sesión</h3>
+                    <h3 class="submenu-title"><i class="fa-solid fa-key"></i> <span data-i18n="btn_login">Iniciar Sesión</span></h3>
                     <div class="form-group">
-                        <label for="login-username">Usuario</label>
-                        <input type="text" id="login-username" placeholder="Ingresa tu usuario" autocomplete="username" required>
+                        <label for="login-username" data-i18n="label_username">Usuario</label>
+                        <input type="text" id="login-username" data-i18n-placeholder="ph_login_user" placeholder="Ingresa tu usuario" autocomplete="username" required>
                     </div>
                     <div class="form-group">
-                        <label for="login-password">Contraseña</label>
+                        <label for="login-password" data-i18n="label_password">Contraseña</label>
                         <div class="password-input-wrap">
-                            <input type="password" id="login-password" placeholder="Ingresa tu contraseña" autocomplete="current-password" required>
+                            <input type="password" id="login-password" data-i18n-placeholder="ph_login_pwd" placeholder="Ingresa tu contraseña" autocomplete="current-password" required>
                             <button type="button" class="toggle-pwd-btn" data-target="login-password" aria-label="Mostrar u ocultar contraseña">
                                 <i class="fa-regular fa-eye"></i>
                             </button>
                         </div>
                     </div>
                     <button type="submit" class="gold-submit-btn">
-                        <i class="fa-solid fa-right-to-bracket"></i> Entrar a mi Cuenta
+                        <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_enter_account">Entrar a mi Cuenta</span>
                     </button>
                 </form>
 
                 <!-- Submenú 2: Crear Cuenta -->
                 <form id="register-form" class="auth-form hidden">
-                    <h3 class="submenu-title"><i class="fa-solid fa-user-plus"></i> Crear Cuenta</h3>
+                    <h3 class="submenu-title"><i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_register">Crear Cuenta</span></h3>
                     <div class="form-group">
-                        <label for="reg-username">Elige tu Nombre de Usuario</label>
-                        <input type="text" id="reg-username" placeholder="Ej: historiador_99" autocomplete="username" minlength="3" maxlength="30" required>
+                        <label for="reg-username" data-i18n="label_choose_user">Elige tu Nombre de Usuario</label>
+                        <input type="text" id="reg-username" data-i18n-placeholder="ph_reg_user" placeholder="Ej: historiador_99" autocomplete="username" minlength="3" maxlength="30" required>
                     </div>
                     <div class="form-group">
-                        <label for="reg-password">Crea tu Contraseña</label>
+                        <label for="reg-password" data-i18n="label_create_pwd">Crea tu Contraseña</label>
                         <div class="password-input-wrap">
-                            <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" autocomplete="new-password" required>
+                            <input type="password" id="reg-password" data-i18n-placeholder="ph_reg_pwd" placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" autocomplete="new-password" required>
                             <button type="button" class="toggle-pwd-btn" data-target="reg-password" aria-label="Mostrar u ocultar contraseña">
                                 <i class="fa-regular fa-eye"></i>
                             </button>
                         </div>
                         <ul class="pwd-rules-list" id="pwd-rules">
-                            <li id="rule-length"><i class="fa-regular fa-circle"></i> Mínimo 8 caracteres</li>
-                            <li id="rule-number"><i class="fa-regular fa-circle"></i> Al menos 1 número (0-9)</li>
-                            <li id="rule-symbol"><i class="fa-regular fa-circle"></i> Al menos 1 símbolo (!@#$%^&*...)</li>
+                            <li id="rule-length"><i class="fa-regular fa-circle"></i> <span data-i18n="rule_len">Mínimo 8 caracteres</span></li>
+                            <li id="rule-number"><i class="fa-regular fa-circle"></i> <span data-i18n="rule_num">Al menos 1 número (0-9)</span></li>
+                            <li id="rule-symbol"><i class="fa-regular fa-circle"></i> <span data-i18n="rule_sym">Al menos 1 símbolo (!@#$%^&*...)</span></li>
                         </ul>
                     </div>
                     <div class="form-group">
-                        <label for="reg-email">Correo Electrónico <span class="optional-tag">(Opcional · Notificaciones de YouTube)</span></label>
-                        <input type="email" id="reg-email" placeholder="tucorreo@ejemplo.com (puedes agregarlo ahora o más tarde)" autocomplete="email">
-                        <small class="field-hint"><i class="fa-brands fa-youtube"></i> Si lo ingresas, te avisaremos por correo cada vez que subamos un nuevo video a YouTube.</small>
+                        <label for="reg-email"><span data-i18n="label_email">Correo Electrónico</span> <span class="optional-tag" data-i18n="label_email_opt">(Opcional · Notificaciones de YouTube)</span></label>
+                        <input type="email" id="reg-email" data-i18n-placeholder="ph_reg_email" placeholder="tucorreo@ejemplo.com (puedes agregarlo ahora o más tarde)" autocomplete="email">
+                        <small class="field-hint"><i class="fa-brands fa-youtube"></i> <span data-i18n="hint_email_yt">Si lo ingresas, te avisaremos por correo cada vez que subamos un nuevo video a YouTube.</span></small>
                     </div>
                     <button type="submit" class="gold-submit-btn">
-                        <i class="fa-solid fa-user-check"></i> Crear Cuenta
+                        <i class="fa-solid fa-user-check"></i> <span data-i18n="btn_register">Crear Cuenta</span>
                     </button>
                 </form>
 
                 <!-- Submenú 3: Opciones de la Cuenta (Agregar / Editar Correo para Notificaciones de YouTube) -->
                 <form id="account-settings-form" class="auth-form hidden">
-                    <h3 class="submenu-title"><i class="fa-solid fa-sliders"></i> Opciones de la Cuenta</h3>
+                    <h3 class="submenu-title"><i class="fa-solid fa-sliders"></i> <span data-i18n="btn_settings">Opciones de la Cuenta</span></h3>
                     <div class="form-group">
-                        <label for="settings-email">Correo Electrónico para Notificaciones</label>
-                        <input type="email" id="settings-email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+                        <label for="settings-email" data-i18n="label_settings_email">Correo Electrónico para Notificaciones</label>
+                        <input type="email" id="settings-email" data-i18n-placeholder="ph_settings_email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
                     </div>
                     <label class="checkbox-row" for="settings-notify-yt">
                         <input type="checkbox" id="settings-notify-yt" checked>
-                        <span>Recibir una notificación por correo electrónico cuando se suba un nuevo video a YouTube</span>
+                        <span data-i18n="label_notify_chk">Recibir una notificación por correo electrónico cuando se suba un nuevo video a YouTube</span>
                     </label>
                     <button type="submit" class="gold-submit-btn">
-                        <i class="fa-solid fa-floppy-disk"></i> Guardar Opciones
+                        <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_settings">Guardar Opciones</span>
                     </button>
                 </form>
             </div>
@@ -148,7 +158,7 @@
                 <!-- 1. Tema del Próximo Video -->
                 <section id="proximo-tema" class="poll-section glass-panel">
                     <div class="poll-header-row">
-                        <h2><i class="fa-solid fa-scroll"></i> Tema del Próximo Video</h2>
+                        <h2><i class="fa-solid fa-scroll"></i> <span data-i18n="poll_title">Tema del Próximo Video</span></h2>
                         <span id="poll-stage-badge" class="poll-stage-badge">Propuestas: 0 / 5</span>
                     </div>
                     <p id="poll-description" class="chat-subtitle">Propón el suceso histórico, misterio o documental que quieres ver. Al establecerse los 5 temas, se abrirán las votaciones.</p>
@@ -156,9 +166,9 @@
                     <div id="poll-feedback" class="auth-feedback hidden"></div>
 
                     <form id="topic-suggest-form" class="topic-suggest-form">
-                        <input type="text" id="topic-title-input" placeholder="Escribe tu propuesta de tema..." maxlength="140" required>
+                        <input type="text" id="topic-title-input" data-i18n-placeholder="ph_suggest_topic" placeholder="Escribe tu propuesta de tema..." maxlength="140" required>
                         <button type="submit" class="gold-submit-btn suggest-btn">
-                            <i class="fa-solid fa-plus"></i> Proponer Tema
+                            <i class="fa-solid fa-plus"></i> <span data-i18n="btn_suggest_topic">Proponer Tema</span>
                         </button>
                     </form>
 
@@ -166,20 +176,20 @@
 
                     <div id="poll-admin-controls" class="poll-admin-controls hidden">
                         <button type="button" id="poll-reset-btn" class="logout-btn">
-                            <i class="fa-solid fa-rotate-right"></i> Reiniciar Ronda (5 temas)
+                            <i class="fa-solid fa-rotate-right"></i> <span data-i18n="btn_reset_poll">Reiniciar Ronda (5 temas)</span>
                         </button>
                     </div>
                 </section>
 
                 <!-- 2. Próximo Estreno en Producción (Cuenta Regresiva) -->
                 <section class="countdown-section glass-panel">
-                    <h2><i class="fa-solid fa-hourglass-half"></i> Próximo Estreno</h2>
+                    <h2><i class="fa-solid fa-hourglass-half"></i> <span data-i18n="countdown_title">Próximo Estreno</span></h2>
                     <p id="release-title-display" class="release-title-display">Próximo Documental Especial en Producción</p>
                     <div class="countdown-grid">
-                        <div class="cd-box"><span id="cd-days">00</span><small>Días</small></div>
-                        <div class="cd-box"><span id="cd-hours">00</span><small>Horas</small></div>
-                        <div class="cd-box"><span id="cd-mins">00</span><small>Min</small></div>
-                        <div class="cd-box"><span id="cd-secs">00</span><small>Seg</small></div>
+                        <div class="cd-box"><span id="cd-days">00</span><small data-i18n="cd_days">Días</small></div>
+                        <div class="cd-box"><span id="cd-hours">00</span><small data-i18n="cd_hours">Horas</small></div>
+                        <div class="cd-box"><span id="cd-mins">00</span><small data-i18n="cd_mins">Min</small></div>
+                        <div class="cd-box"><span id="cd-secs">00</span><small data-i18n="cd_secs">Seg</small></div>
                     </div>
 
                     <!-- Editor exclusivo para raydeladmin -->
@@ -193,20 +203,20 @@
 
                 <!-- 3. Un Día Como Hoy en la Historia -->
                 <section class="ephemeris-section glass-panel">
-                    <h2><i class="fa-solid fa-compass"></i> Un Día Como Hoy</h2>
+                    <h2><i class="fa-solid fa-compass"></i> <span data-i18n="ephemeris_title">Un Día Como Hoy</span></h2>
                     <div id="ephemeris-date-badge" class="ephemeris-date-badge">Efeméride Histórica</div>
                     <div id="ephemeris-list" class="ephemeris-list"></div>
                 </section>
 
                 <!-- 4. Reto Histórico Semanal (Trivia + Cuadro de Honor) -->
                 <section class="trivia-section glass-panel">
-                    <h2><i class="fa-solid fa-trophy"></i> Reto Histórico</h2>
+                    <h2><i class="fa-solid fa-trophy"></i> <span data-i18n="trivia_title">Reto Histórico</span></h2>
                     <p id="trivia-question-text" class="trivia-question-text"></p>
                     <div id="trivia-options-box" class="trivia-options-box"></div>
                     <div id="trivia-feedback" class="auth-feedback hidden"></div>
 
                     <div class="leaderboard-box">
-                        <h4><i class="fa-solid fa-medal"></i> Cuadro de Honor de Historiadores</h4>
+                        <h4><i class="fa-solid fa-medal"></i> <span data-i18n="leaderboard_title">Cuadro de Honor de Historiadores</span></h4>
                         <ul id="leaderboard-list" class="leaderboard-list"></ul>
                     </div>
 
@@ -226,7 +236,7 @@
             <!-- HILERA CENTRAL: REDES, VIDEOS, MAPA INTERACTIVO Y BIBLIOTECA -->
             <div class="center-column">
                 <section class="social-links glass-panel">
-                    <h2>Nuestras Redes</h2>
+                    <h2 data-i18n="socials_title">Nuestras Redes</h2>
                     <div class="links-grid">
                         <a href="https://www.youtube.com/@huellas_de_la_humanidad" class="social-btn youtube" target="_blank" rel="noopener noreferrer">
                             <i class="fa-brands fa-youtube"></i> YouTube
@@ -242,55 +252,91 @@
 
                 <section class="latest-videos">
                     <div id="main-youtube-card" class="video-card glass-panel">
-                        <h3 id="main-youtube-heading"><i class="fa-brands fa-youtube"></i> Último en YouTube</h3>
+                        <h3 id="main-youtube-heading"><i class="fa-brands fa-youtube"></i> <span data-i18n="latest_yt_title">Último en YouTube</span></h3>
                         <div class="youtube-wrapper">
                             <iframe id="youtube-latest-player" width="560" height="315" src="https://www.youtube.com/embed/rJdAGfxEYkw" title="Huellas de la Humanidad - YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                         </div>
                     </div>
 
-                    <!-- 5. Mapa Interactivo de las Huellas -->
+                    <!-- 5. Mapa Interactivo Real de la Tierra con las 25 Huellas -->
                     <div class="map-card glass-panel">
-                        <h3><i class="fa-solid fa-earth-americas"></i> Mapa Interactivo de las «Huellas»</h3>
-                        <p class="chat-subtitle">Toca cualquiera de los pines dorados sobre el mapa para explorar el lugar histórico y reproducir su documental.</p>
-                        <div class="world-map-stage" id="world-map-stage">
-                            <svg viewBox="0 0 1000 500" class="ancient-world-svg" aria-label="Mapa Histórico">
-                                <rect width="1000" height="500" fill="#0d0b08"/>
-                                <!-- Cuadrícula cartográfica antigua -->
-                                <g stroke="rgba(212,175,55,0.12)" stroke-width="1" stroke-dasharray="4,4">
-                                    <line x1="0" y1="125" x2="1000" y2="125"/>
-                                    <line x1="0" y1="250" x2="1000" y2="250"/>
-                                    <line x1="0" y1="375" x2="1000" y2="375"/>
-                                    <line x1="250" y1="0" x2="250" y2="500"/>
-                                    <line x1="500" y1="0" x2="500" y2="500"/>
-                                    <line x1="750" y1="0" x2="750" y2="500"/>
-                                </g>
-                                <!-- Siluetas continentales estilizadas -->
-                                <path d="M110,90 Q190,60 280,100 L310,175 L255,235 L210,220 L165,165 Z" fill="rgba(212,175,55,0.18)" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
-                                <path d="M245,250 L325,285 L340,365 L290,455 L255,425 L235,315 Z" fill="rgba(212,175,55,0.18)" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
-                                <path d="M445,85 Q520,65 595,95 L585,175 L515,185 L455,155 Z" fill="rgba(212,175,55,0.22)" stroke="rgba(212,175,55,0.5)" stroke-width="1.5"/>
-                                <path d="M455,195 L575,200 L615,285 L565,415 L495,395 L450,275 Z" fill="rgba(212,175,55,0.18)" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
-                                <path d="M600,85 Q740,65 885,115 L875,265 L745,295 L625,215 Z" fill="rgba(212,175,55,0.16)" stroke="rgba(212,175,55,0.4)" stroke-width="1.5"/>
-                                <path d="M775,345 L885,345 L895,425 L785,435 Z" fill="rgba(212,175,55,0.15)" stroke="rgba(212,175,55,0.4)" stroke-width="1.5"/>
-                            </svg>
-                            <div id="map-pins-layer" class="map-pins-layer"></div>
+                        <div class="map-header-top">
+                            <h3><i class="fa-solid fa-earth-americas"></i> <span data-i18n="map_title">Mapa Interactivo de las «Huellas»</span></h3>
+                            <span id="map-count-badge" class="poll-stage-badge">25 Documentales</span>
                         </div>
+                        <p class="chat-subtitle" data-i18n="map_subtitle">Pasa el puntero o toca con el dedo cualquier punto dorado del mapa terrestre para desplegar su línea flotante con el título, ubicación e historia.</p>
+
+                        <!-- Botones de Región / Zoom Cartográfico -->
+                        <div class="map-region-controls" id="map-region-controls">
+                            <button type="button" class="map-region-btn active" data-region="world" data-i18n="region_world">🌍 Mapa Mundial (25)</button>
+                            <button type="button" class="map-region-btn" data-region="europe" data-i18n="region_europe">🏛️ Europa y Mediterráneo (12)</button>
+                            <button type="button" class="map-region-btn" data-region="americas" data-i18n="region_americas">🌎 América y Caribe (11)</button>
+                            <button type="button" class="map-region-btn" data-region="asia" data-i18n="region_asia">🌏 Asia e Indonesia (2)</button>
+                        </div>
+
+                        <div class="world-map-stage" id="world-map-stage">
+                            <svg id="real-earth-svg" viewBox="0 0 1000 480" class="ancient-world-svg" aria-label="Mapa Real de la Tierra">
+                                <defs>
+                                    <radialGradient id="oceanGlow" cx="50%" cy="45%" r="65%">
+                                        <stop offset="0%" stop-color="#14100b"/>
+                                        <stop offset="100%" stop-color="#070504"/>
+                                    </radialGradient>
+                                </defs>
+                                <!-- Océano con paleta obsidiana profunda -->
+                                <rect x="-200" y="-200" width="1400" height="900" fill="url(#oceanGlow)"/>
+                                <!-- Cuadrícula de paralelos y meridianos reales -->
+                                <g class="map-graticules" stroke="rgba(212,175,55,0.10)" stroke-width="0.6" stroke-dasharray="3,4">
+                                    <line x1="0" y1="80" x2="1000" y2="80"/>
+                                    <line x1="0" y1="160" x2="1000" y2="160"/>
+                                    <line x1="0" y1="281" x2="1000" y2="281" stroke="rgba(212,175,55,0.22)" stroke-dasharray="none"/>
+                                    <line x1="0" y1="360" x2="1000" y2="360"/>
+                                    <line x1="166.7" y1="0" x2="166.7" y2="480"/>
+                                    <line x1="333.3" y1="0" x2="333.3" y2="480"/>
+                                    <line x1="500" y1="0" x2="500" y2="480" stroke="rgba(212,175,55,0.18)"/>
+                                    <line x1="666.7" y1="0" x2="666.7" y2="480"/>
+                                    <line x1="833.3" y1="0" x2="833.3" y2="480"/>
+                                </g>
+                                <!-- Siluetas reales de los 176 países de la Tierra (Natural Earth) -->
+                                <g id="real-earth-countries-group"></g>
+                            </svg>
+
+                            <!-- Capa SVG para la línea flotante indicadora (callout leader line) -->
+                            <svg id="map-leader-svg" class="map-leader-svg" aria-hidden="true">
+                                <polyline id="map-leader-polyline" points="" fill="none" stroke="#f5df98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"/>
+                                <circle id="map-leader-origin-dot" cx="0" cy="0" r="4.5" fill="#f5df98" class="hidden"/>
+                                <circle id="map-leader-end-dot" cx="0" cy="0" r="3.5" fill="#d4af37" stroke="#0c0a08" stroke-width="1.2" class="hidden"/>
+                            </svg>
+
+                            <!-- Capa de los 25 puntos dorados sobre el mapa -->
+                            <div id="map-pins-layer" class="map-pins-layer"></div>
+
+                            <!-- Tarjeta flotante conectada a la línea al pasar el puntero o tocar con el dedo -->
+                            <div id="map-floating-callout" class="map-floating-callout hidden" role="dialog" aria-live="polite">
+                                <div class="callout-location" id="callout-location"></div>
+                                <div class="callout-title" id="callout-title"></div>
+                                <button type="button" id="callout-watch-btn" class="callout-watch-btn">
+                                    <i class="fa-solid fa-play"></i> <span data-i18n="btn_watch_doc">Ver Documental</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <div id="map-selected-info" class="map-selected-info"></div>
                     </div>
 
-                    <!-- 6. Biblioteca / Archivo de Documentales por Categorías -->
+                    <!-- 6. Biblioteca / Archivo Completo de los 25 Documentales -->
                     <div class="library-card glass-panel">
-                        <h3><i class="fa-solid fa-film"></i> Biblioteca de Documentales</h3>
+                        <h3><i class="fa-solid fa-film"></i> <span data-i18n="library_title">Biblioteca de Documentales</span></h3>
                         <div class="library-filters" id="library-filters">
-                            <button type="button" class="lib-filter-btn active" data-cat="all">Todos</button>
-                            <button type="button" class="lib-filter-btn" data-cat="antigua">Edad Antigua y Media</button>
-                            <button type="button" class="lib-filter-btn" data-cat="tragedias">Tragedias e Historia Moderna</button>
-                            <button type="button" class="lib-filter-btn" data-cat="misterios">Casos y Misterios Reales</button>
+                            <button type="button" class="lib-filter-btn active" data-cat="all" data-i18n="cat_all">Todos (25)</button>
+                            <button type="button" class="lib-filter-btn" data-cat="antigua" data-i18n="cat_ancient">Edad Antigua y Media</button>
+                            <button type="button" class="lib-filter-btn" data-cat="tragedias" data-i18n="cat_modern">Tragedias e Historia Moderna</button>
+                            <button type="button" class="lib-filter-btn" data-cat="misterios" data-i18n="cat_mysteries">Casos y Misterios Reales</button>
                         </div>
                         <div id="library-grid" class="library-grid"></div>
                     </div>
 
                     <div class="video-card glass-panel">
-                        <h3><i class="fa-brands fa-tiktok"></i> Últimos en TikTok</h3>
+                        <h3><i class="fa-brands fa-tiktok"></i> <span data-i18n="latest_tiktok_title">Últimos en TikTok</span></h3>
                         <div class="tiktok-wrapper">
                             <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@huellas_de_la_humanidad" data-unique-id="huellas_de_la_humanidad" data-embed-from="oembed" data-embed-type="creator" style="max-width: 780px; min-width: 288px;">
                                 <section>
@@ -302,7 +348,7 @@
                     </div>
 
                     <div class="video-card glass-panel">
-                        <h3><i class="fa-brands fa-facebook"></i> Último en Facebook</h3>
+                        <h3><i class="fa-brands fa-facebook"></i> <span data-i18n="latest_fb_title">Último en Facebook</span></h3>
                         <div class="youtube-wrapper">
                             <iframe src="https://www.facebook.com/plugins/video.php?height=314&href=https%3A%2F%2Fwww.facebook.com%2Fhuellasdelahumanidaddocumentales%2Fvideos%2F1977531949871048%2F&show_text=false&width=560&t=0" width="560" height="314" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
                         </div>
@@ -313,17 +359,17 @@
             <!-- HILERA DERECHA: PONTE EN CONTACTO (CHAT) Y MURO DE DEBATE DE LA COMUNIDAD -->
             <aside class="side-column right-column">
                 <section id="contacto-chat" class="chat-section glass-panel">
-                    <h2><i class="fa-solid fa-feather-pointed"></i> Ponte en Contacto</h2>
-                    <p class="chat-subtitle">Escríbenos en directo a través del chat.</p>
+                    <h2><i class="fa-solid fa-feather-pointed"></i> <span data-i18n="chat_title">Ponte en Contacto</span></h2>
+                    <p class="chat-subtitle" data-i18n="chat_subtitle">Escríbenos en directo a través del chat.</p>
 
                     <div id="chat-guest-prompt" class="chat-guest-prompt">
-                        <p>Para conversar en directo con nosotros, inicia sesión o crea tu cuenta en el menú superior.</p>
+                        <p data-i18n="chat_guest_msg">Para conversar en directo con nosotros, inicia sesión o crea tu cuenta en el menú superior.</p>
                         <div class="guest-prompt-actions">
                             <button type="button" id="chat-trigger-login" class="gold-submit-btn">
-                                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                                <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_login">Iniciar Sesión</span>
                             </button>
                             <button type="button" id="chat-trigger-register" class="top-menu-btn full-width-btn">
-                                <i class="fa-solid fa-user-plus"></i> Crear Cuenta
+                                <i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_register">Crear Cuenta</span>
                             </button>
                         </div>
                     </div>
@@ -332,16 +378,16 @@
                         <div class="chat-top-bar">
                             <div class="chat-user-info">
                                 <span class="status-dot online"></span>
-                                <span>Conectado como <strong id="current-user-label"></strong></span>
+                                <span><span data-i18n="connected_as">Conectado como</span> <strong id="current-user-label"></strong></span>
                             </div>
                         </div>
 
                         <div id="user-messages-box" class="messages-box"></div>
 
                         <form id="user-chat-form" class="chat-input-form">
-                            <input type="text" id="user-msg-input" placeholder="Escribe tu mensaje..." maxlength="1500" autocomplete="off" required>
+                            <input type="text" id="user-msg-input" data-i18n-placeholder="ph_chat_msg" placeholder="Escribe tu mensaje..." maxlength="1500" autocomplete="off" required>
                             <button type="submit" class="send-msg-btn">
-                                <i class="fa-solid fa-paper-plane"></i> Enviar
+                                <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send">Enviar</span>
                             </button>
                         </form>
                     </div>
@@ -356,21 +402,21 @@
 
                         <div class="admin-dashboard-stack">
                             <div class="admin-users-sidebar">
-                                <h4>Conversaciones de Seguidores</h4>
+                                <h4 data-i18n="admin_convs_title">Conversaciones de Seguidores</h4>
                                 <div id="admin-conversations-list" class="conversations-list">
-                                    <p class="empty-conv-text">Aún no hay mensajes de seguidores.</p>
+                                    <p class="empty-conv-text" data-i18n="admin_no_msgs">Aún no hay mensajes de seguidores.</p>
                                 </div>
                             </div>
 
                             <div class="admin-chat-main">
-                                <div id="admin-active-header" class="admin-active-header">
+                                <div id="admin-active-header" class="admin-active-header" data-i18n="admin_select_prompt">
                                     Selecciona un seguidor arriba para responder
                                 </div>
                                 <div id="admin-messages-box" class="messages-box"></div>
                                 <form id="admin-chat-form" class="chat-input-form">
-                                    <input type="text" id="admin-msg-input" placeholder="Escribe tu respuesta..." maxlength="1500" autocomplete="off" disabled required>
+                                    <input type="text" id="admin-msg-input" data-i18n-placeholder="ph_admin_reply" placeholder="Escribe tu respuesta..." maxlength="1500" autocomplete="off" disabled required>
                                     <button type="submit" id="admin-send-btn" class="send-msg-btn" disabled>
-                                        <i class="fa-solid fa-reply"></i> Responder
+                                        <i class="fa-solid fa-reply"></i> <span data-i18n="btn_reply">Responder</span>
                                     </button>
                                 </form>
                             </div>
@@ -380,13 +426,13 @@
 
                 <!-- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD -->
                 <section class="community-wall-section glass-panel">
-                    <h2><i class="fa-solid fa-comments"></i> Muro de Debate</h2>
-                    <p class="chat-subtitle">Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.</p>
+                    <h2><i class="fa-solid fa-comments"></i> <span data-i18n="wall_title">Muro de Debate</span></h2>
+                    <p class="chat-subtitle" data-i18n="wall_subtitle">Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.</p>
 
                     <form id="community-comment-form" class="topic-suggest-form">
-                        <input type="text" id="community-comment-input" placeholder="Escribe tu comentario público..." maxlength="800" required>
+                        <input type="text" id="community-comment-input" data-i18n-placeholder="ph_wall_comment" placeholder="Escribe tu comentario público..." maxlength="800" required>
                         <button type="submit" class="gold-submit-btn suggest-btn">
-                            <i class="fa-solid fa-feather"></i> Publicar en el Muro
+                            <i class="fa-solid fa-feather"></i> <span data-i18n="btn_post_wall">Publicar en el Muro</span>
                         </button>
                     </form>
 
@@ -397,12 +443,13 @@
         </div>
         
         <footer>
-            <p>&copy; 2026 Huellas de la Humanidad. Todos los derechos reservados.</p>
+            <p>&copy; 2026 Huellas de la Humanidad. <span data-i18n="footer_rights">Todos los derechos reservados.</span></p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 08:43 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 08:59 PM - 10/22/2026</div>
 
+    <script src="world-map-data.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -890,18 +890,23 @@ function buildBrandEmailHtml({ title, greetingName, bodyHtml, ctaText, ctaUrl })
           <img src="${EMAIL_LOGO_URL}" alt="Huellas de la Humanidad" width="165" style="width:165px;max-width:165px;height:auto;display:block;margin:0 auto;border:0;" />
         </a>
       </div>
-      <div style="height:1px;background:linear-gradient(90deg,transparent,#d4af37,transparent);margin:16px auto 22px;max-width:320px;"></div>
+      <div style="border-top:1px solid #d4af37;margin:16px auto 22px;max-width:320px;"></div>
       <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;font-size:20px;margin:0 0 16px;">${title}</h2>
       <p style="font-size:17px;color:#f4ebd9;margin:0 0 14px;">¡Bienvenid@, <strong>${greetingName}</strong>!</p>
       <div style="font-size:16px;line-height:1.6;color:#dfd2b8;margin-bottom:26px;">
         ${bodyHtml}
       </div>
-      <div style="margin:28px 0;">
-        <a href="${ctaUrl}" target="_blank" style="background:linear-gradient(135deg,#d4af37,#99741c);color:#0c0a08;padding:13px 26px;text-decoration:none;font-weight:bold;border-radius:8px;display:inline-block;letter-spacing:1px;text-transform:uppercase;font-size:14px;">
-          ${ctaText}
-        </a>
-      </div>
-      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,55,0.4),transparent);margin:24px auto 14px;max-width:260px;"></div>
+      <!-- Botón Dorado Compatible con todos los Clientes de Correo (Yahoo, Gmail, Apple Mail, Outlook) -->
+      <table role="presentation" align="center" cellspacing="0" cellpadding="0" border="0" style="margin:28px auto;">
+        <tr>
+          <td align="center" bgcolor="#d4af37" style="background-color:#d4af37;border:2px solid #f5df98;border-radius:8px;">
+            <a href="${ctaUrl}" target="_blank" style="background-color:#d4af37;color:#0c0a08 !important;padding:14px 28px;text-decoration:none;font-weight:bold;border-radius:6px;display:inline-block;letter-spacing:1px;text-transform:uppercase;font-size:14px;font-family:Georgia,'Times New Roman',serif;">
+              <span style="color:#0c0a08;text-decoration:none;">${ctaText}</span>
+            </a>
+          </td>
+        </tr>
+      </table>
+      <div style="border-top:1px solid rgba(212,175,55,0.45);margin:24px auto 14px;max-width:260px;"></div>
       <p style="font-size:13px;font-style:italic;color:#a09580;margin:0;">
         «Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy. Cada historia deja una huella. Aquí seguimos sus rastros.»
       </p>

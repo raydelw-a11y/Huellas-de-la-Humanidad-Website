@@ -19,6 +19,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- Video de Fondo Vertical 9:16 con recorrido vertical al hacer scroll y audio -->
+    <div class="bg-video-stage" aria-hidden="true">
+        <video id="bg-scroll-video" class="bg-scroll-video" src="bg-video.mp4" poster="bg-poster.jpg" autoplay loop playsinline preload="auto"></video>
+        <div class="bg-video-vignette"></div>
+    </div>
     <div class="background-animation"></div>
     
     <main class="page-wrapper">
@@ -47,6 +52,12 @@
                         <span id="nav-debate-badge" class="debate-count-pill">1</span>
                     </button>
                 </div>
+
+                <!-- Control de Audio del Video de Fondo -->
+                <button type="button" id="bg-audio-toggle-btn" class="top-menu-btn bg-audio-btn" title="Activar o silenciar el audio del video de fondo">
+                    <i id="bg-audio-icon" class="fa-solid fa-volume-high"></i>
+                    <span id="bg-audio-label" data-i18n="btn_bg_audio_on">Audio Fondo: ON</span>
+                </button>
 
                 <!-- Selector de Idioma (Español por defecto / Inglés) -->
                 <div class="lang-switcher" role="group" aria-label="Idioma / Language">
@@ -493,7 +504,7 @@
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 12:36 AM - 10/23/2026</div>
+    <div class="build-timestamp">Actualizado: 08:27 AM - 10/23/2026</div>
 
     <script src="world-map-data.js"></script>
     <script src="script.js"></script>

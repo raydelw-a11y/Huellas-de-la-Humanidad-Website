@@ -154,7 +154,9 @@ document.addEventListener('DOMContentLoaded', () => {
             poll_vote_btn: 'Votar',
             wall_empty: 'Sé el primero en crear una publicación en el Muro de Debate.',
             lb_empty: 'Inicia sesión y acierta para inaugurar el Cuadro de Honor',
-            map_docs_count: '25 Documentales'
+            map_docs_count: '25 Documentales',
+            btn_bg_audio_on: 'Audio Fondo: ON',
+            btn_bg_audio_off: 'Audio Fondo: OFF'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today. Every story leaves a footprint. Here we follow their traces.”',
@@ -262,7 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
             poll_vote_btn: 'Vote',
             wall_empty: 'Be the first to create a post on the Debate Wall.',
             lb_empty: 'Sign in and answer correctly to inaugurate the Hall of Fame',
-            map_docs_count: '25 Documentaries'
+            map_docs_count: '25 Documentaries',
+            btn_bg_audio_on: 'BG Audio: ON',
+            btn_bg_audio_off: 'BG Audio: OFF'
         }
     };
 
@@ -270,8 +274,94 @@ document.addEventListener('DOMContentLoaded', () => {
         return (I18N[currentLang] && I18N[currentLang][key]) || I18N.es[key] || key;
     }
 
+    // ==========================================
+    // VIDEO DE FONDO VERTICAL 9:16 (RECORRIDO VERTICAL CON SCROLL + AUDIO)
+    // ==========================================
+    const bgScrollVideo = document.getElementById('bg-scroll-video');
+    const bgAudioToggleBtn = document.getElementById('bg-audio-toggle-btn');
+    const bgAudioIcon = document.getElementById('bg-audio-icon');
+    const bgAudioLabel = document.getElementById('bg-audio-label');
+    let userManuallyMutedBg = false;
+
+    function updateBgAudioButtonUI() {
+        if (!bgScrollVideo || !bgAudioToggleBtn) return;
+        const isMuted = bgScrollVideo.muted;
+        bgAudioToggleBtn.classList.toggle('muted', isMuted);
+        if (bgAudioIcon) {
+            bgAudioIcon.className = isMuted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+        }
+        if (bgAudioLabel) {
+            bgAudioLabel.setAttribute('data-i18n', isMuted ? 'btn_bg_audio_off' : 'btn_bg_audio_on');
+            bgAudioLabel.textContent = t(isMuted ? 'btn_bg_audio_off' : 'btn_bg_audio_on');
+        }
+    }
+
+    function updateBgVideoVerticalScroll() {
+        if (!bgScrollVideo) return;
+        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        const scrollProgress = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+        const videoHeight = bgScrollVideo.offsetHeight || window.innerHeight;
+        const maxPanY = Math.max(0, videoHeight - window.innerHeight);
+        const translateY = -(scrollProgress * maxPanY);
+        bgScrollVideo.style.transform = `translate3d(-50%, ${translateY.toFixed(1)}px, 0)`;
+    }
+
+    if (bgScrollVideo) {
+        bgScrollVideo.volume = 0.75;
+        bgScrollVideo.muted = false;
+
+        // Intentar reproducir con audio desde el inicio; si el navegador requiere interacción previa, arrancar en reproducción y activar audio al primer gesto
+        const playPromise = bgScrollVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                updateBgAudioButtonUI();
+            }).catch(() => {
+                bgScrollVideo.muted = true;
+                bgScrollVideo.play().catch(() => {});
+                updateBgAudioButtonUI();
+
+                const unlockAudioOnFirstGesture = () => {
+                    if (!userManuallyMutedBg && bgScrollVideo.muted) {
+                        bgScrollVideo.muted = false;
+                        bgScrollVideo.play().catch(() => {});
+                        updateBgAudioButtonUI();
+                    }
+                    window.removeEventListener('click', unlockAudioOnFirstGesture);
+                    window.removeEventListener('touchstart', unlockAudioOnFirstGesture);
+                    window.removeEventListener('keydown', unlockAudioOnFirstGesture);
+                };
+                window.addEventListener('click', unlockAudioOnFirstGesture, { passive: true });
+                window.addEventListener('touchstart', unlockAudioOnFirstGesture, { passive: true });
+                window.addEventListener('keydown', unlockAudioOnFirstGesture, { passive: true });
+            });
+        }
+
+        if (bgAudioToggleBtn) {
+            bgAudioToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bgScrollVideo.muted = !bgScrollVideo.muted;
+                userManuallyMutedBg = bgScrollVideo.muted;
+                if (!bgScrollVideo.muted) {
+                    bgScrollVideo.play().catch(() => {});
+                }
+                updateBgAudioButtonUI();
+            });
+        }
+
+        bgScrollVideo.addEventListener('loadedmetadata', updateBgVideoVerticalScroll);
+        window.addEventListener('scroll', updateBgVideoVerticalScroll, { passive: true });
+        window.addEventListener('resize', updateBgVideoVerticalScroll, { passive: true });
+        setTimeout(updateBgVideoVerticalScroll, 150);
+    }
+
     function playDocumentaryInMainPlayer(videoId, title) {
         if (!ytIframe) return;
+        // Silenciar el video de fondo al reproducir un documental para que no se crucen los audios
+        if (bgScrollVideo && !bgScrollVideo.muted) {
+            bgScrollVideo.muted = true;
+            userManuallyMutedBg = true;
+            updateBgAudioButtonUI();
+        }
         ytIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
         if (mainYtHeading) {
             mainYtHeading.innerHTML = `<i class="fa-brands fa-youtube"></i> ${t('watching_prefix')} ${title}`;

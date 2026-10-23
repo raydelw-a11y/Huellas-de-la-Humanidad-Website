@@ -5,8 +5,8 @@
     --bg-dark: #0c0a08;
     --text-light: #f4ebd9; /* Parchment Ivory */
     --text-muted: #dfd2b8;
-    --glass-bg: rgba(24, 19, 14, 0.72);
-    --glass-border: rgba(212, 175, 55, 0.28);
+    --glass-bg: rgba(16, 12, 8, 0.60);
+    --glass-border: rgba(212, 175, 55, 0.34);
     --glass-shadow: 0 10px 36px 0 rgba(0, 0, 0, 0.65);
     
     /* Social Colors */
@@ -35,6 +35,50 @@ body {
     overflow-x: hidden;
 }
 
+/* Video de Fondo Vertical 9:16 con Desplazamiento Vertical por Scroll */
+.bg-video-stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    overflow: hidden;
+    background-color: #080604;
+    pointer-events: none;
+}
+
+.bg-scroll-video {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 100vw;
+    height: calc(100vw * 16 / 9);
+    min-height: 145vh;
+    min-width: calc(145vh * 9 / 16);
+    object-fit: cover;
+    transform: translate3d(-50%, 0px, 0);
+    will-change: transform;
+    filter: contrast(1.04) saturate(1.06);
+}
+
+.bg-video-vignette {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(8, 6, 4, 0.32) 0%,
+        rgba(8, 6, 4, 0.22) 50%,
+        rgba(8, 6, 4, 0.42) 100%
+    );
+    pointer-events: none;
+}
+
+.bg-audio-btn.muted {
+    opacity: 0.78;
+    border-color: rgba(212, 175, 55, 0.28);
+}
+
 /* Dynamic Animated Background */
 .background-animation {
     position: fixed;
@@ -43,8 +87,9 @@ body {
     width: 100vw;
     height: 100vh;
     z-index: -1;
-    background: radial-gradient(circle at 20% 35%, rgba(212, 175, 55, 0.14), transparent 55%),
-                radial-gradient(circle at 80% 70%, rgba(153, 116, 28, 0.1), transparent 50%);
+    pointer-events: none;
+    background: radial-gradient(circle at 20% 35%, rgba(212, 175, 55, 0.08), transparent 55%),
+                radial-gradient(circle at 80% 70%, rgba(153, 116, 28, 0.06), transparent 50%);
     animation: pulse 15s ease-in-out infinite alternate;
 }
 

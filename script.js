@@ -156,7 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
             lb_empty: 'Inicia sesión y acierta para inaugurar el Cuadro de Honor',
             map_docs_count: '25 Documentales',
             btn_bg_audio_on: 'Audio Fondo: ON',
-            btn_bg_audio_off: 'Audio Fondo: OFF'
+            btn_bg_audio_off: 'Audio Fondo: OFF',
+            btn_become_member: 'Convertirse en Miembro'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today. Every story leaves a footprint. Here we follow their traces.”',
@@ -266,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
             lb_empty: 'Sign in and answer correctly to inaugurate the Hall of Fame',
             map_docs_count: '25 Documentaries',
             btn_bg_audio_on: 'BG Audio: ON',
-            btn_bg_audio_off: 'BG Audio: OFF'
+            btn_bg_audio_off: 'BG Audio: OFF',
+            btn_become_member: 'Become a Member'
         }
     };
 

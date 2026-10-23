@@ -148,26 +148,34 @@ body {
 .top-account-bar {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     border-top: 1px solid rgba(212, 175, 55, 0.22);
-    padding-top: 1rem;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+    padding-top: 0.9rem;
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    white-space: nowrap;
+}
+
+.top-account-bar::-webkit-scrollbar {
+    display: none;
 }
 
 .top-account-buttons {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
 }
 
 .top-menu-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    padding: 0.6rem 1.15rem;
+    letter-spacing: 0.04em;
+    padding: 0.46rem 0.78rem;
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.4);
     background: rgba(212, 175, 55, 0.1);
@@ -175,8 +183,24 @@ body {
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.25s ease;
+}
+
+.yt-member-btn {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.24), rgba(153, 116, 28, 0.28));
+    border-color: #d4af37;
+    color: #f5df98;
+    font-weight: 700;
+}
+
+.yt-member-btn:hover {
+    background: linear-gradient(135deg, #d4af37, #99741c);
+    color: #0c0a08;
+    box-shadow: 0 0 16px rgba(212, 175, 55, 0.4);
 }
 
 .top-menu-btn:hover,
@@ -1836,15 +1860,17 @@ footer {
     border: 1px solid rgba(212, 175, 55, 0.42);
     border-radius: 30px;
     padding: 3px;
-    gap: 4px;
+    gap: 3px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .view-tab-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
-    padding: 0.4rem 0.9rem;
+    letter-spacing: 0.04em;
+    padding: 0.36rem 0.72rem;
     border-radius: 24px;
     border: none;
     background: transparent;
@@ -1852,7 +1878,8 @@ footer {
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
+    white-space: nowrap;
     transition: all 0.22s ease;
 }
 

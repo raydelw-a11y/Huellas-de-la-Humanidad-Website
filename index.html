@@ -117,7 +117,8 @@
                     <h3 class="submenu-title"><i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_register">Crear Cuenta</span></h3>
                     <div class="form-group">
                         <label for="reg-username" data-i18n="label_choose_user">Elige tu Nombre de Usuario</label>
-                        <input type="text" id="reg-username" data-i18n-placeholder="ph_reg_user" placeholder="Ej: historiador_99" autocomplete="username" minlength="3" maxlength="30" required>
+                        <input type="text" id="reg-username" data-i18n-placeholder="ph_reg_user" placeholder="Ej: historiador_99 (no uses tu correo)" autocomplete="off" minlength="3" maxlength="30" required>
+                        <small class="field-hint"><i class="fa-solid fa-user-shield"></i> <span data-i18n="hint_user_no_email">El correo electrónico no se puede usar como nombre de usuario.</span></small>
                     </div>
                     <div class="form-group">
                         <label for="reg-password" data-i18n="label_create_pwd">Crea tu Contraseña</label>
@@ -134,9 +135,9 @@
                         </ul>
                     </div>
                     <div class="form-group">
-                        <label for="reg-email"><span data-i18n="label_email">Correo Electrónico</span> <span class="optional-tag" data-i18n="label_email_opt">(Opcional · Notificaciones de YouTube)</span></label>
-                        <input type="email" id="reg-email" data-i18n-placeholder="ph_reg_email" placeholder="tucorreo@ejemplo.com (puedes agregarlo ahora o más tarde)" autocomplete="email">
-                        <small class="field-hint"><i class="fa-brands fa-youtube"></i> <span data-i18n="hint_email_yt">Si lo ingresas, te avisaremos por correo cada vez que subamos un nuevo video a YouTube.</span></small>
+                        <label for="reg-email"><span data-i18n="label_email">Correo Electrónico</span> <span class="optional-tag" data-i18n="label_email_opt">(Opcional · Solo visible para ti)</span></label>
+                        <input type="email" id="reg-email" data-i18n-placeholder="ph_reg_email" placeholder="tucorreo@ejemplo.com (privado, solo visible para ti)" autocomplete="email">
+                        <small class="field-hint"><i class="fa-solid fa-lock"></i> <span data-i18n="hint_email_yt">Tu correo electrónico es privado (solo visible para ti) y sirve para avisarte cuando subamos un nuevo video a YouTube.</span></small>
                     </div>
                     <button type="submit" class="gold-submit-btn">
                         <i class="fa-solid fa-user-check"></i> <span data-i18n="btn_register">Crear Cuenta</span>
@@ -147,8 +148,9 @@
                 <form id="account-settings-form" class="auth-form hidden">
                     <h3 class="submenu-title"><i class="fa-solid fa-sliders"></i> <span data-i18n="btn_settings">Opciones de la Cuenta</span></h3>
                     <div class="form-group">
-                        <label for="settings-email" data-i18n="label_settings_email">Correo Electrónico para Notificaciones</label>
+                        <label for="settings-email"><span data-i18n="label_settings_email">Correo Electrónico para Notificaciones</span> <span class="optional-tag" data-i18n="label_only_visible_you">(Solo visible para ti)</span></label>
                         <input type="email" id="settings-email" data-i18n-placeholder="ph_settings_email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+                        <small class="field-hint"><i class="fa-solid fa-lock"></i> <span data-i18n="hint_settings_email_priv">Tu correo electrónico es confidencial y únicamente visible para ti en esta sección.</span></small>
                     </div>
                     <label class="checkbox-row" for="settings-notify-yt">
                         <input type="checkbox" id="settings-notify-yt" checked>
@@ -491,7 +493,7 @@
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 09:46 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 10:12 PM - 10/22/2026</div>
 
     <script src="world-map-data.js"></script>
     <script src="script.js"></script>

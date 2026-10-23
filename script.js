@@ -60,17 +60,22 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_login_pwd: 'Ingresa tu contraseña',
             btn_enter_account: 'Entrar a mi Cuenta',
             label_choose_user: 'Elige tu Nombre de Usuario',
-            ph_reg_user: 'Ej: historiador_99',
+            ph_reg_user: 'Ej: historiador_99 (no uses tu correo)',
+            hint_user_no_email: 'El correo electrónico no se puede usar como nombre de usuario.',
             label_create_pwd: 'Crea tu Contraseña',
             ph_reg_pwd: 'Mínimo 8 caracteres, 1 número y 1 símbolo',
             rule_len: 'Mínimo 8 caracteres',
             rule_num: 'Al menos 1 número (0-9)',
             rule_sym: 'Al menos 1 símbolo (!@#$%^&*...)',
             label_email: 'Correo Electrónico',
-            label_email_opt: '(Opcional · Notificaciones de YouTube)',
-            ph_reg_email: 'tucorreo@ejemplo.com (puedes agregarlo ahora o más tarde)',
-            hint_email_yt: 'Si lo ingresas, te avisaremos por correo cada vez que subamos un nuevo video a YouTube.',
+            label_email_opt: '(Opcional · Solo visible para ti)',
+            ph_reg_email: 'tucorreo@ejemplo.com (privado, solo visible para ti)',
+            hint_email_yt: 'Tu correo electrónico es privado (solo visible para ti) y sirve para avisarte cuando subamos un nuevo video a YouTube.',
             label_settings_email: 'Correo Electrónico para Notificaciones',
+            label_only_visible_you: '(Solo visible para ti)',
+            hint_settings_email_priv: 'Tu correo electrónico es confidencial y únicamente visible para ti en esta sección.',
+            err_email_as_user: 'El correo electrónico no se puede usar como nombre de usuario. Elige un apodo único (tu correo es privado y solo es visible para ti).',
+            err_login_no_email: 'Inicia sesión con tu nombre de usuario, no con tu correo electrónico.',
             ph_settings_email: 'tucorreo@ejemplo.com',
             label_notify_chk: 'Recibir una notificación por correo electrónico cuando se suba un nuevo video a YouTube',
             btn_save_settings: 'Guardar Opciones',
@@ -163,17 +168,22 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_login_pwd: 'Enter your password',
             btn_enter_account: 'Sign In to My Account',
             label_choose_user: 'Choose Your Username',
-            ph_reg_user: 'E.g. historian_99',
+            ph_reg_user: 'E.g. historian_99 (do not use your email)',
+            hint_user_no_email: 'An email address cannot be used as a username.',
             label_create_pwd: 'Create Your Password',
             ph_reg_pwd: 'Min 8 characters, 1 number & 1 symbol',
             rule_len: 'Minimum 8 characters',
             rule_num: 'At least 1 number (0-9)',
             rule_sym: 'At least 1 symbol (!@#$%^&*...)',
             label_email: 'Email Address',
-            label_email_opt: '(Optional · YouTube Notifications)',
-            ph_reg_email: 'youremail@example.com (add now or later)',
-            hint_email_yt: 'If entered, we will email you whenever we upload a new documentary to YouTube.',
+            label_email_opt: '(Optional · Only visible to you)',
+            ph_reg_email: 'youremail@example.com (private, only visible to you)',
+            hint_email_yt: 'Your email address is private (only visible to you) and used to notify you when we upload a new documentary to YouTube.',
             label_settings_email: 'Email Address for Notifications',
+            label_only_visible_you: '(Only visible to you)',
+            hint_settings_email_priv: 'Your email address is confidential and only visible to you in this section.',
+            err_email_as_user: 'An email address cannot be used as a username. Please choose a unique nickname (your email is private and only visible to you).',
+            err_login_no_email: 'Please sign in with your username, not your email address.',
             ph_settings_email: 'youremail@example.com',
             label_notify_chk: 'Receive an email notification whenever a new video is uploaded to YouTube',
             btn_save_settings: 'Save Settings',
@@ -433,6 +443,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    function isEmailLikeUsername(username, email = '') {
+        const clean = String(username || '').trim().toLowerCase();
+        const cleanMail = String(email || '').trim().toLowerCase();
+        if (!clean) return false;
+        if (clean.includes('@')) return true;
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) return true;
+        if (/\.(com|net|org|es|edu|gov|io|co|us|mx|ar|cl|pe|ve|cu|info|biz|me|live|outlook|hotmail|gmail|yahoo|icloud)$/i.test(clean)) return true;
+        if (cleanMail && clean === cleanMail) return true;
+        return false;
+    }
+
+    const regUsernameInput = document.getElementById('reg-username');
+    if (regUsernameInput) {
+        regUsernameInput.addEventListener('input', () => {
+            if (regUsernameInput.value.includes('@')) {
+                showFeedback(t('err_email_as_user'));
+            } else {
+                clearFeedback();
+            }
+        });
+    }
+
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearFeedback();
@@ -440,6 +472,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('reg-username').value.trim();
         const password = regPasswordInput.value;
         const email = document.getElementById('reg-email').value.trim();
+
+        if (isEmailLikeUsername(username, email)) {
+            return showFeedback(t('err_email_as_user'));
+        }
 
         if (!checkPasswordRules(password)) {
             return showFeedback('La contraseña debe tener mínimo 8 caracteres, al menos 1 número y 1 símbolo.');
@@ -469,6 +505,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const username = document.getElementById('login-username').value.trim();
         const password = document.getElementById('login-password').value;
+
+        if (username.includes('@')) {
+            return showFeedback(t('err_login_no_email'));
+        }
 
         try {
             const res = await fetch(`${API_BASE}/api/login`, {
@@ -748,6 +788,22 @@ document.addEventListener('DOMContentLoaded', () => {
         loadReleaseCountdown();
         loadTrivia();
         loadComments();
+
+        // Sincronizar datos privados de la cuenta (correo solo visible para el propio usuario)
+        fetch(`${API_BASE}/api/account/me`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && data.user) {
+                    saveSession(authToken, data.user);
+                    const emailEl = document.getElementById('settings-email');
+                    if (emailEl && activeSubmenu === 'settings') {
+                        emailEl.value = data.user.email || '';
+                    }
+                }
+            })
+            .catch(() => {});
     }
 
     // ==========================================
@@ -1015,10 +1071,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) return;
             const data = await res.json();
             const titleEl = document.getElementById('release-title-display');
-            if (data.nextRelease && data.nextRelease.targetDate) {
-                const ts = new Date(data.nextRelease.targetDate).getTime();
+            const rel = data.nextRelease;
+            const isDefaultPlaceholder = !rel ||
+                !rel.confirmedByAdmin ||
+                rel.title === 'Próximo Documental Especial en Producción' ||
+                rel.title === 'Próximo Gran Documental Histórico';
+
+            if (!isDefaultPlaceholder && rel.targetDate) {
+                const ts = new Date(rel.targetDate).getTime();
                 if (!isNaN(ts) && ts > Date.now()) {
-                    if (titleEl) titleEl.textContent = `«${data.nextRelease.title}»`;
+                    if (titleEl) titleEl.textContent = `«${rel.title}»`;
                     releaseTargetTimestamp = ts;
                     updateCountdownDisplayMode();
                     tickCountdown();
@@ -1763,14 +1825,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const worldMapStage = document.getElementById('world-map-stage');
     if (worldMapStage) {
         function clampViewBox(x, y, w, h) {
-            const clampedW = Math.max(85, Math.min(1000, w));
+            const clampedW = Math.max(220, Math.min(1000, w));
             const clampedH = clampedW * 0.48;
             const clampedX = Math.max(0, Math.min(1000 - clampedW, x));
             const clampedY = Math.max(0, Math.min(480 - clampedH, y));
             return [clampedX, clampedY, clampedW, clampedH];
         }
 
-        // 1. Zoom con scroll del mouse
+        // 1. Zoom suave y menos sensible con scroll del mouse / trackpad
         worldMapStage.addEventListener('wheel', (e) => {
             e.preventDefault();
             const rect = worldMapStage.getBoundingClientRect();
@@ -1778,8 +1840,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / (rect.height || 1)));
 
             const [vbX, vbY, vbW, vbH] = currentViewBox;
-            const zoomFactor = e.deltaY < 0 ? 0.85 : 1.18;
-            const newW = Math.max(85, Math.min(1000, vbW * zoomFactor));
+            const rawDelta = e.deltaMode === 1 ? e.deltaY * 18 : e.deltaY;
+            const clampedDelta = Math.max(-35, Math.min(35, rawDelta));
+            // Sensibilidad suave y progresiva (~3.5% máximo por evento de scroll)
+            const zoomFactor = Math.exp(clampedDelta * 0.001);
+            const newW = Math.max(220, Math.min(1000, vbW * zoomFactor));
             const newH = newW * 0.48;
             const newX = vbX + (vbW - newW) * relX;
             const newY = vbY + (vbH - newH) * relY;
@@ -1852,8 +1917,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const t0 = e.touches[0];
                 const t1 = e.touches[1];
                 const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
-                const scale = pinchStartDist / Math.max(10, dist);
-                const newW = Math.max(85, Math.min(1000, pinchStartVb[2] * scale));
+                const rawScale = pinchStartDist / Math.max(20, dist);
+                const dampedScale = 1 + (rawScale - 1) * 0.45;
+                const newW = Math.max(220, Math.min(1000, pinchStartVb[2] * dampedScale));
                 const newH = newW * 0.48;
                 const newX = pinchStartVb[0] + (pinchStartVb[2] - newW) * pinchStartMid.x;
                 const newY = pinchStartVb[1] + (pinchStartVb[3] - newH) * pinchStartMid.y;

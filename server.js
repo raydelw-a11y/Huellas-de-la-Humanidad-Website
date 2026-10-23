@@ -58,10 +58,7 @@ let db = {
     lastVideoTitle: '',
     lastNotifiedAt: null
   },
-  nextRelease: {
-    title: 'Próximo Documental Especial en Producción',
-    targetDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
-  },
+  nextRelease: null,
   trivia: {
     id: 'trivia-louvre-1200',
     question: '¿Alrededor de qué año se erigió originalmente el Louvre como una fortaleza medieval para defender París?',
@@ -154,7 +151,7 @@ async function loadDatabase() {
         if (parsed.youtubeNotifier) {
           db.youtubeNotifier = parsed.youtubeNotifier;
         }
-        if (parsed.nextRelease) db.nextRelease = parsed.nextRelease;
+        if ('nextRelease' in parsed) db.nextRelease = parsed.nextRelease;
         if (parsed.trivia) db.trivia = parsed.trivia;
         if (parsed.scores) db.scores = parsed.scores;
         if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
@@ -181,7 +178,7 @@ async function loadDatabase() {
           if (parsed.youtubeNotifier) {
             db.youtubeNotifier = parsed.youtubeNotifier;
           }
-          if (parsed.nextRelease) db.nextRelease = parsed.nextRelease;
+          if ('nextRelease' in parsed) db.nextRelease = parsed.nextRelease;
           if (parsed.trivia) db.trivia = parsed.trivia;
           if (parsed.scores) db.scores = parsed.scores;
           if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
@@ -191,6 +188,17 @@ async function loadDatabase() {
     } catch (e) {
       console.error('Error loading GitHub DB:', e.message);
     }
+  }
+
+  // Limpiar cualquier próximo estreno automático que no haya sido confirmado explícitamente por el Admin
+  if (
+    db.nextRelease &&
+    (!db.nextRelease.confirmedByAdmin ||
+      db.nextRelease.title === 'Próximo Documental Especial en Producción' ||
+      db.nextRelease.title === 'Próximo Gran Documental Histórico')
+  ) {
+    db.nextRelease = null;
+    saveDatabase();
   }
 
   // Garantizar siempre que la cuenta maestra raydeladmin exista con su contraseña oficial
@@ -332,8 +340,20 @@ const server = http.createServer(async (req, res) => {
     const cleanUser = String(username || '').trim().toLowerCase();
     const cleanEmail = String(email || '').trim().toLowerCase();
 
+    const looksLikeEmail =
+      cleanUser.includes('@') ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanUser) ||
+      /\.(com|net|org|es|edu|gov|io|co|us|mx|ar|cl|pe|ve|cu|info|biz|me|live|outlook|hotmail|gmail|yahoo|icloud)$/i.test(cleanUser) ||
+      (cleanEmail && cleanUser === cleanEmail);
+
+    if (looksLikeEmail) {
+      return sendJson(res, 400, {
+        error: 'El correo electrónico no se puede usar como nombre de usuario. Elige un apodo único (tu correo es privado y solo es visible para ti).'
+      });
+    }
+
     if (!cleanUser || cleanUser.length < 3 || cleanUser.length > 30 || !/^[a-z0-9_.-]+$/.test(cleanUser)) {
-      return sendJson(res, 400, { error: 'El usuario debe tener entre 3 y 30 caracteres (letras, números, punto o guion).' });
+      return sendJson(res, 400, { error: 'El usuario debe tener entre 3 y 30 caracteres (letras, números, punto o guion, sin usar un correo).' });
     }
 
     const pwdError = validatePasswordRules(password);
@@ -402,6 +422,11 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/login' && req.method === 'POST') {
     const { username, password } = await parseBody(req);
     const cleanUser = String(username || '').trim().toLowerCase();
+
+    if (cleanUser.includes('@')) {
+      return sendJson(res, 400, { error: 'Inicia sesión con tu nombre de usuario, no con tu correo electrónico.' });
+    }
+
     const userRecord = db.users[cleanUser];
 
     if (!userRecord || !verifyPassword(String(password || ''), userRecord.passwordHash)) {
@@ -690,8 +715,9 @@ const server = http.createServer(async (req, res) => {
   // --- PRÓXIMO ESTRENO EN PRODUCCIÓN (COUNTDOWN) ---
   if (pathname === '/api/release' && req.method === 'GET') {
     const session = getAuthSession(req);
+    const validRelease = (db.nextRelease && db.nextRelease.confirmedByAdmin) ? db.nextRelease : null;
     return sendJson(res, 200, {
-      nextRelease: db.nextRelease || null,
+      nextRelease: validRelease,
       isAdmin: Boolean(session && session.role === 'admin')
     });
   }
@@ -714,7 +740,8 @@ const server = http.createServer(async (req, res) => {
     }
     db.nextRelease = {
       title: cleanTitle.slice(0, 140),
-      targetDate: parsedDate.toISOString()
+      targetDate: parsedDate.toISOString(),
+      confirmedByAdmin: true
     };
     saveDatabase();
     return sendJson(res, 200, { ok: true, nextRelease: db.nextRelease });

@@ -547,20 +547,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4500);
     }
 
-    function updatePollAdminControls(serverIsAdmin = null, serverUsername = null) {
+    function updatePollAdminControls(serverIsAdmin = null) {
         const isAdmin = serverIsAdmin !== null
             ? Boolean(serverIsAdmin)
             : Boolean(authToken && currentUser && currentUser.role === 'admin');
 
-        const suggestIdentityLabel = document.getElementById('suggest-identity-label');
-        if (suggestIdentityLabel) {
-            const activeName = serverUsername || (authToken && currentUser ? (currentUser.role === 'admin' ? currentUser.username : (currentUser.displayName || currentUser.username)) : null);
-            if (activeName) {
-                suggestIdentityLabel.innerHTML = `Proponiendo desde tu cuenta: <strong>${activeName}</strong>`;
-            } else {
-                suggestIdentityLabel.innerHTML = 'Proponiendo sin cuenta como: <strong>Seguidor</strong>';
-            }
-        }
         if (!pollAdminControls) return;
         if (isAdmin) {
             pollAdminControls.classList.remove('hidden');

@@ -1691,8 +1691,8 @@ footer {
 .library-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    max-height: 785px;
+    gap: 0.9rem;
+    max-height: 1540px;
     overflow-y: auto;
     padding-right: 8px;
 }
@@ -1730,7 +1730,7 @@ footer {
 .doc-thumb-wrap {
     position: relative;
     width: 100%;
-    padding-bottom: 56.25%;
+    padding-bottom: 52%;
     background: #000;
 }
 
@@ -1756,25 +1756,31 @@ footer {
 }
 
 .doc-card-body {
-    padding: 0.75rem 0.9rem;
+    padding: 0.65rem 0.85rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
 }
 
 .doc-card-era {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     color: var(--primary-color);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    line-height: 1.3;
 }
 
 .doc-card-title {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
     font-weight: 600;
     color: var(--text-light);
-    line-height: 1.35;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.6em;
 }
 
 /* Pestañas de Vista Principal (Inicio vs Muro de Debate a Pantalla Completa) */

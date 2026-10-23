@@ -133,6 +133,7 @@ body {
     flex-direction: column;
     gap: 1.25rem;
     padding: 1.5rem 2.25rem;
+    container-type: inline-size;
 }
 
 .profile-header {
@@ -147,32 +148,32 @@ body {
 
 .top-account-bar {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: space-between;
     border-top: 1px solid rgba(212, 175, 55, 0.22);
     padding-top: 1rem;
     flex-wrap: nowrap;
-    gap: 0.7rem;
-    overflow: hidden;
+    gap: 0.45cqw;
     white-space: nowrap;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .top-account-buttons {
     display: flex;
-    align-items: center;
-    gap: 0.6rem;
+    align-items: stretch;
+    gap: 0.45cqw;
     flex-wrap: nowrap;
-    flex-shrink: 1;
+    flex: 1 1 auto;
     min-width: 0;
 }
 
 .top-menu-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: clamp(0.75rem, 0.84vw, 0.88rem);
+    font-size: 0.65cqw;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    padding: 0.52rem clamp(0.75rem, 0.95vw, 1.05rem);
+    letter-spacing: 0.02em;
+    padding: 0.5rem 0.55cqw;
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.4);
     background: rgba(212, 175, 55, 0.1);
@@ -180,10 +181,12 @@ body {
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    justify-content: center;
+    gap: 0.32cqw;
     text-decoration: none;
     white-space: nowrap;
-    flex-shrink: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     transition: all 0.25s ease;
 }
 
@@ -208,32 +211,40 @@ body {
 }
 
 .submenu-arrow {
-    font-size: 0.72rem;
+    font-size: 0.58cqw;
     opacity: 0.85;
 }
 
 .top-user-greeting {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    justify-content: center;
+    gap: 0.32cqw;
     font-family: 'Cinzel', Georgia, serif;
-    font-size: clamp(0.75rem, 0.84vw, 0.88rem);
+    font-size: 0.65cqw;
     color: var(--gold-light);
-    padding: 0.5rem 0.9rem;
+    padding: 0.48rem 0.55cqw;
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid rgba(212, 175, 55, 0.22);
     border-radius: 10px;
     white-space: nowrap;
-    flex-shrink: 1;
+    flex: 0 1 auto;
+    max-width: 12cqw;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .top-account-bar .logout-btn {
-    font-size: clamp(0.75rem, 0.84vw, 0.88rem);
-    padding: 0.52rem clamp(0.75rem, 0.95vw, 1.05rem);
-    letter-spacing: 0.04em;
-    gap: 6px;
+    font-size: 0.65cqw;
+    padding: 0.5rem 0.55cqw;
+    letter-spacing: 0.02em;
+    gap: 0.32cqw;
     white-space: nowrap;
-    flex-shrink: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .top-submenu-dropdown {
@@ -395,13 +406,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 12px;
     margin-top: 2px;
-    padding-top: 3px;
+    padding-top: 4px;
     border-top: 1px solid rgba(212, 175, 55, 0.2);
-    font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.58rem;
-    color: var(--text-muted);
+    width: 100%;
+    font-size: 0.78rem;
 }
 
 .followers-platforms-mini span {
@@ -1561,20 +1571,22 @@ footer {
 /* Selector de Idioma (Español / Inglés) */
 .lang-switcher {
     display: inline-flex;
-    align-items: center;
+    align-items: stretch;
     background: rgba(12, 10, 8, 0.78);
     border: 1px solid rgba(212, 175, 55, 0.4);
     border-radius: 30px;
-    padding: 4px;
-    gap: 4px;
+    padding: 3px;
+    gap: 0.25cqw;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .lang-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: clamp(0.74rem, 0.82vw, 0.86rem);
+    font-size: 0.65cqw;
     font-weight: 700;
-    letter-spacing: 0.03em;
-    padding: 0.45rem clamp(0.7rem, 0.88vw, 0.95rem);
+    letter-spacing: 0.02em;
+    padding: 0.42rem 0.52cqw;
     border-radius: 24px;
     border: none;
     background: transparent;
@@ -1582,7 +1594,9 @@ footer {
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 0.3cqw;
+    flex: 1 1 auto;
     white-space: nowrap;
     transition: all 0.22s ease;
 }
@@ -1931,22 +1945,23 @@ footer {
 /* Pestañas de Vista Principal (Inicio vs Muro de Debate a Pantalla Completa) */
 .main-view-tabs {
     display: inline-flex;
-    align-items: center;
+    align-items: stretch;
     background: rgba(12, 10, 8, 0.78);
     border: 1px solid rgba(212, 175, 55, 0.42);
     border-radius: 30px;
-    padding: 4px;
-    gap: 4px;
-    flex-shrink: 0;
+    padding: 3px;
+    gap: 0.25cqw;
+    flex: 1 1 auto;
+    min-width: 0;
     white-space: nowrap;
 }
 
 .view-tab-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: clamp(0.75rem, 0.84vw, 0.88rem);
+    font-size: 0.65cqw;
     font-weight: 700;
-    letter-spacing: 0.03em;
-    padding: 0.46rem clamp(0.72rem, 0.9vw, 0.98rem);
+    letter-spacing: 0.02em;
+    padding: 0.42rem 0.55cqw;
     border-radius: 24px;
     border: none;
     background: transparent;
@@ -1954,7 +1969,9 @@ footer {
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 0.3cqw;
+    flex: 1 1 auto;
     white-space: nowrap;
     transition: all 0.22s ease;
 }
@@ -1972,8 +1989,8 @@ footer {
 .debate-count-pill {
     background: rgba(12, 10, 8, 0.85);
     color: var(--gold-light);
-    font-size: 0.68rem;
-    padding: 1px 7px;
+    font-size: 0.58cqw;
+    padding: 1px 0.38cqw;
     border-radius: 12px;
     border: 1px solid rgba(212, 175, 55, 0.45);
 }

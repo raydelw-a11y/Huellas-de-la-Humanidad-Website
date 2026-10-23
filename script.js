@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_on: 'Audio: ON',
             btn_bg_audio_off: 'Audio: OFF',
             btn_become_member: 'Convertirse en Miembro',
-            followers_total_label: 'Seguidores Totales'
+            followers_total_label: 'Seguidores'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today. Every story leaves a footprint. Here we follow their traces.”',
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_on: 'BG Audio: ON',
             btn_bg_audio_off: 'BG Audio: OFF',
             btn_become_member: 'Become a Member',
-            followers_total_label: 'Total Followers'
+            followers_total_label: 'Followers'
         }
     };
 
@@ -2631,18 +2631,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const total = Number(data.total) || (yt + tk + fb);
 
             animateTotalFollowers(total);
-
-            const ytMini = document.getElementById('yt-followers-mini');
-            const tkMini = document.getElementById('tk-followers-mini');
-            const fbMini = document.getElementById('fb-followers-mini');
-            if (ytMini) ytMini.innerHTML = `<i class="fa-brands fa-youtube"></i> ${formatCompactFollowers(yt)}`;
-            if (tkMini) tkMini.innerHTML = `<i class="fa-brands fa-tiktok"></i> ${formatCompactFollowers(tk)}`;
-            if (fbMini) fbMini.innerHTML = `<i class="fa-brands fa-facebook"></i> ${formatCompactFollowers(fb)}`;
-
-            const counterBox = document.getElementById('logo-followers-counter');
-            if (counterBox) {
-                counterBox.title = `YouTube: ${yt.toLocaleString('en-US')} | TikTok: ${tk.toLocaleString('en-US')} | Facebook: ${fb.toLocaleString('en-US')}`;
-            }
         } catch (err) {
             // Mantiene el último valor conocido si hay error temporal de red
         }

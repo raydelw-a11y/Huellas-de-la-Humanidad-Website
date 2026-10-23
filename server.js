@@ -880,24 +880,10 @@ loadDatabase().then(() => {
 
 const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
 const EMAIL_LOGO_URL = 'https://huellasdelahumanidad.com/logo.png';
-const EMAIL_AVATAR_URL = 'https://huellasdelahumanidad.com/favicon.png';
 
 function buildBrandEmailHtml({ title, greetingName, bodyHtml, ctaText, ctaUrl }) {
   return `
     <div style="background-color:#0c0a08;color:#f4ebd9;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;border:1px solid #d4af37;border-radius:16px;max-width:580px;margin:0 auto;text-align:center;">
-      <!-- Cabecera de Perfil de Remitente con Avatar Circular -->
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:18px;border-bottom:1px solid rgba(212,175,55,0.25);padding-bottom:14px;">
-        <tr>
-          <td width="48" valign="middle" style="text-align:left;">
-            <img src="${EMAIL_AVATAR_URL}" alt="Huellas de la Humanidad" width="42" height="42" style="width:42px;height:42px;border-radius:50%;border:1.5px solid #d4af37;display:block;" />
-          </td>
-          <td valign="middle" style="text-align:left;padding-left:10px;">
-            <div style="color:#f5df98;font-weight:bold;font-size:15px;letter-spacing:0.5px;">Huellas de la Humanidad</div>
-            <div style="color:#a09580;font-size:12px;">notificaciones@huellasdelahumanidad.com</div>
-          </td>
-        </tr>
-      </table>
-
       <!-- Logotipo Completo en el Cuerpo del Correo -->
       <div style="margin-bottom:20px;">
         <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">

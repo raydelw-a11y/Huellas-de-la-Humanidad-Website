@@ -343,11 +343,10 @@ body {
 }
 
 .side-column {
-    position: sticky;
-    top: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.75rem;
+    min-width: 0;
 }
 
 .center-column {
@@ -361,7 +360,13 @@ body {
 .social-links h2,
 .video-card h3,
 .chat-section h2,
-.poll-section h2 {
+.poll-section h2,
+.countdown-section h2,
+.ephemeris-section h2,
+.trivia-section h2,
+.map-card h3,
+.library-card h3,
+.community-wall-section h2 {
     font-family: 'Cinzel', Georgia, serif;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -460,7 +465,13 @@ body {
 
 .video-card h3 i,
 .chat-section h2 i,
-.poll-section h2 i {
+.poll-section h2 i,
+.countdown-section h2 i,
+.ephemeris-section h2 i,
+.trivia-section h2 i,
+.map-card h3 i,
+.library-card h3 i,
+.community-wall-section h2 i {
     -webkit-text-fill-color: var(--primary-color);
     color: var(--primary-color);
 }
@@ -1174,6 +1185,410 @@ footer {
     color: var(--text-muted);
     font-size: 0.85rem;
     opacity: 0.8;
+}
+
+/* ==========================================
+   NUEVAS 6 SECCIONES INTERACTIVAS
+   ========================================== */
+.countdown-section h2,
+.ephemeris-section h2,
+.trivia-section h2,
+.community-wall-section h2 {
+    text-align: center;
+    font-size: 1.22rem;
+    margin-bottom: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.map-card h3,
+.library-card h3 {
+    margin-bottom: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.22rem;
+}
+
+.release-title-display {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.55rem;
+}
+
+.cd-box {
+    background: rgba(12, 10, 8, 0.8);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 10px;
+    padding: 0.65rem 0.3rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cd-box span {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--gold-light);
+}
+
+.cd-box small {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.admin-inline-form {
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px dashed rgba(212, 175, 55, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.admin-inline-form h4 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.8rem;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+}
+
+.admin-inline-form input {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--text-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.05rem;
+}
+
+/* Un Día Como Hoy en la Historia */
+.ephemeris-date-badge {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.78rem;
+    text-align: center;
+    color: var(--gold-light);
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 20px;
+    padding: 0.3rem 0.85rem;
+    margin: 0 auto 1rem;
+    width: fit-content;
+}
+
+.ephemeris-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ephemeris-item {
+    background: rgba(12, 10, 8, 0.65);
+    border-left: 3px solid var(--primary-color);
+    padding: 0.75rem 0.95rem;
+    border-radius: 0 10px 10px 0;
+}
+
+.ephemeris-year {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 0.06em;
+}
+
+.ephemeris-text {
+    font-size: 1.08rem;
+    color: var(--text-light);
+    line-height: 1.45;
+}
+
+/* Trivia Semanal y Cuadro de Honor */
+.trivia-question-text {
+    font-size: 1.18rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-align: center;
+    margin-bottom: 0.9rem;
+    line-height: 1.4;
+}
+
+.trivia-options-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.trivia-opt-btn {
+    text-align: left;
+    padding: 0.65rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(12, 10, 8, 0.75);
+    color: var(--text-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.08rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trivia-opt-btn:hover:not(:disabled) {
+    background: rgba(212, 175, 55, 0.16);
+    border-color: var(--primary-color);
+}
+
+.trivia-opt-btn.correct {
+    background: rgba(40, 167, 69, 0.25);
+    border-color: #2ecc71;
+    color: #98f5b1;
+}
+
+.trivia-opt-btn.wrong {
+    background: rgba(220, 53, 69, 0.22);
+    border-color: #e74c3c;
+    color: #ff9da6;
+}
+
+.leaderboard-box {
+    background: rgba(12, 10, 8, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    border-radius: 12px;
+    padding: 0.85rem;
+}
+
+.leaderboard-box h4 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.8rem;
+    color: var(--gold-light);
+    text-align: center;
+    margin-bottom: 0.55rem;
+    letter-spacing: 0.05em;
+}
+
+.leaderboard-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.leaderboard-list li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+/* Mapa Interactivo de las Huellas */
+.world-map-stage {
+    position: relative;
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    background: #0d0b08;
+}
+
+.ancient-world-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.map-pins-layer {
+    position: absolute;
+    inset: 0;
+}
+
+.map-pin-btn {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #0c0a08;
+    background: radial-gradient(circle, #f5df98 0%, #d4af37 70%, #99741c 100%);
+    color: #0c0a08;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    box-shadow: 0 0 14px rgba(212, 175, 55, 0.85);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.map-pin-btn:hover,
+.map-pin-btn.active {
+    transform: translate(-50%, -50%) scale(1.25);
+    box-shadow: 0 0 22px #f5df98;
+    z-index: 5;
+}
+
+.map-selected-info {
+    margin-top: 1rem;
+    padding: 1rem 1.2rem;
+    background: rgba(12, 10, 8, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.32);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Biblioteca de Documentales */
+.library-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.15rem;
+}
+
+.lib-filter-btn {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 0.45rem 0.85rem;
+    border-radius: 20px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(12, 10, 8, 0.6);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lib-filter-btn.active,
+.lib-filter-btn:hover {
+    background: linear-gradient(135deg, #d4af37, #99741c);
+    color: #0c0a08;
+    font-weight: 700;
+}
+
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 1rem;
+}
+
+.doc-card {
+    background: rgba(12, 10, 8, 0.78);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.doc-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary-color);
+}
+
+.doc-thumb-wrap {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    background: #000;
+}
+
+.doc-thumb-wrap img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.doc-play-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(12, 10, 8, 0.85);
+    border: 1px solid var(--primary-color);
+    color: var(--gold-light);
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.doc-card-body {
+    padding: 0.75rem 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.doc-card-era {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.68rem;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.doc-card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-light);
+    line-height: 1.35;
+}
+
+/* Muro de Debate de la Comunidad */
+.community-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.community-comment-item {
+    background: rgba(12, 10, 8, 0.72);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+}
+
+.community-comment-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.76rem;
+    color: var(--gold-light);
+    margin-bottom: 0.25rem;
+}
+
+.community-comment-text {
+    font-size: 1.05rem;
+    color: var(--text-light);
+    line-height: 1.4;
 }
 
 .build-timestamp {

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const observerOptions = {
         root: null,
         rootMargin: '0px',
-        threshold: 0.1
+        threshold: 0.08
     };
 
     const observer = new IntersectionObserver((entries, observer) => {
@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-update latest YouTube video from channel RSS feed
     const CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
     const ytIframe = document.getElementById('youtube-latest-player');
+    const mainYtHeading = document.getElementById('main-youtube-heading');
     if (ytIframe) {
         const rssUrl = encodeURIComponent(`https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`);
         fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`)
@@ -38,6 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             })
             .catch(() => {});
+    }
+
+    function playDocumentaryInMainPlayer(videoId, title) {
+        if (!ytIframe) return;
+        ytIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        if (mainYtHeading) {
+            mainYtHeading.innerHTML = `<i class="fa-brands fa-youtube"></i> Viendo: ${title}`;
+        }
+        const card = document.getElementById('main-youtube-card');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     // ==========================================
@@ -84,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedAdminUser = null;
     let pollTimer = null;
-    let activeSubmenu = null; // 'login' | 'register' | 'settings' | null
+    let activeSubmenu = null;
 
     function showFeedback(msg, type = 'error') {
         authFeedback.textContent = msg;
@@ -148,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mostrar / Ocultar contraseña
     document.querySelectorAll('.toggle-pwd-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const targetId = btn.getAttribute('data-target');
@@ -164,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Validación en vivo de reglas de contraseña (mín. 8 caracteres, 1 número, 1 símbolo)
     function checkPasswordRules(pwd) {
         const hasLen = pwd.length >= 8;
         const hasNum = /[0-9]/.test(pwd);
@@ -193,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkPasswordRules(regPasswordInput.value);
     });
 
-    // Soporte explícito para tecla Enter en todos los formularios del submenú
     [loginForm, registerForm, accountSettingsForm].forEach(form => {
         if (!form) return;
         form.addEventListener('keydown', (e) => {
@@ -204,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Registro de cuenta nueva (con correo opcional)
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearFeedback();
@@ -235,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Inicio de sesión (Usuario o Admin)
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearFeedback();
@@ -261,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Guardar Opciones de la Cuenta (Correo electrónico y notificaciones de YouTube)
     accountSettingsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearFeedback();
@@ -309,8 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
         userChatView.classList.add('hidden');
         adminChatView.classList.add('hidden');
         chatGuestPrompt.classList.remove('hidden');
-        updatePollAdminControls(false, null);
+        updatePollAdminControls(false);
         loadPoll();
+        loadReleaseCountdown();
+        loadTrivia();
+        loadComments();
     }
 
     btnTopLogout.addEventListener('click', logout);
@@ -442,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {}
     }
 
-    // Enviar mensaje (Seguidor)
     const userChatForm = document.getElementById('user-chat-form');
     userChatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -466,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {}
     });
 
-    // Enviar respuesta (Admin)
     const adminChatForm = document.getElementById('admin-chat-form');
     adminChatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -518,10 +526,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updatePollAdminControls();
         loadPoll();
+        loadReleaseCountdown();
+        loadTrivia();
+        loadComments();
     }
 
     // ==========================================
-    // SECCIÓN TEMA DEL PRÓXIMO VIDEO (5 TEMAS -> VOTACIÓN)
+    // 1. TEMA DEL PRÓXIMO VIDEO (5 TEMAS -> VOTACIÓN)
     // ==========================================
     let voterId = localStorage.getItem('huellas_voter_id');
     if (!voterId) {
@@ -552,11 +563,16 @@ document.addEventListener('DOMContentLoaded', () => {
             ? Boolean(serverIsAdmin)
             : Boolean(authToken && currentUser && currentUser.role === 'admin');
 
-        if (!pollAdminControls) return;
-        if (isAdmin) {
-            pollAdminControls.classList.remove('hidden');
-        } else {
-            pollAdminControls.classList.add('hidden');
+        if (pollAdminControls) {
+            pollAdminControls.classList.toggle('hidden', !isAdmin);
+        }
+        const adminReleaseForm = document.getElementById('admin-release-form');
+        if (adminReleaseForm) {
+            adminReleaseForm.classList.toggle('hidden', !isAdmin);
+        }
+        const adminTriviaForm = document.getElementById('admin-trivia-form');
+        if (adminTriviaForm) {
+            adminTriviaForm.classList.toggle('hidden', !isAdmin);
         }
     }
 
@@ -575,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isVoting = topics.length >= 5;
         const totalVotes = data.totalVotes || 0;
         const isAdmin = Boolean(data.isAdmin);
-        updatePollAdminControls(isAdmin, data.currentUsername);
+        updatePollAdminControls(isAdmin);
 
         if (isVoting) {
             pollStageBadge.textContent = `¡Votaciones Abiertas! (${totalVotes} ${totalVotes === 1 ? 'voto' : 'votos'})`;
@@ -750,9 +766,476 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 2. PRÓXIMO ESTRENO EN PRODUCCIÓN (COUNTDOWN)
+    // ==========================================
+    let releaseTargetTimestamp = Date.now() + 5 * 86400000;
+    async function loadReleaseCountdown() {
+        try {
+            const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            const res = await fetch(`${API_BASE}/api/release`, { headers });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.nextRelease) {
+                document.getElementById('release-title-display').textContent = `«${data.nextRelease.title}»`;
+                releaseTargetTimestamp = new Date(data.nextRelease.targetDate).getTime();
+            }
+        } catch (e) {}
+    }
+
+    function tickCountdown() {
+        const diff = Math.max(0, releaseTargetTimestamp - Date.now());
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        document.getElementById('cd-days').textContent = String(d).padStart(2, '0');
+        document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
+        document.getElementById('cd-mins').textContent = String(m).padStart(2, '0');
+        document.getElementById('cd-secs').textContent = String(s).padStart(2, '0');
+    }
+    setInterval(tickCountdown, 1000);
+    tickCountdown();
+
+    const adminReleaseForm = document.getElementById('admin-release-form');
+    if (adminReleaseForm) {
+        adminReleaseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('admin-release-title').value.trim();
+            const targetDate = document.getElementById('admin-release-date').value;
+            if (!title || !targetDate) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/release`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ title, targetDate: new Date(targetDate).toISOString() })
+                });
+                if (res.ok) {
+                    loadReleaseCountdown();
+                }
+            } catch (err) {}
+        });
+    }
+
+    // ==========================================
+    // 3. UN DÍA COMO HOY EN LA HISTORIA (AUTOMÁTICO)
+    // ==========================================
+    function renderEphemeris() {
+        const now = new Date();
+        const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const day = now.getDate();
+        const monthName = months[now.getMonth()];
+        document.getElementById('ephemeris-date-badge').textContent = `${day} de ${monthName} en la Historia`;
+
+        const milestones = [
+            { year: '79 d.C.', text: 'El Monte Vesubio sepulta la ciudad romana de Pompeya bajo un manto ardiente de ceniza y piedra pómez, congelando en el tiempo la vida cotidiana del Imperio.' },
+            { year: '1200', text: 'El rey Felipe II Augusto ordena levantar la imponente fortaleza medieval del Louvre a orillas del Sena para proteger las murallas de París.' },
+            { year: '1912', text: 'En los astilleros de Harland & Wolff culminan las pruebas del RMS Titanic, el coloso transatlántico cuyo viaje inaugural marcaría la historia marítima.' }
+        ];
+
+        const container = document.getElementById('ephemeris-list');
+        container.innerHTML = '';
+        milestones.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'ephemeris-item';
+            div.innerHTML = `<div class="ephemeris-year">Año ${item.year}</div><div class="ephemeris-text">${item.text}</div>`;
+            container.appendChild(div);
+        });
+    }
+    renderEphemeris();
+
+    // ==========================================
+    // 4. RETO HISTÓRICO SEMANAL (TRIVIA + RANKING)
+    // ==========================================
+    async function loadTrivia() {
+        try {
+            const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            const res = await fetch(`${API_BASE}/api/trivia?voterId=${encodeURIComponent(voterId)}`, { headers });
+            if (!res.ok) return;
+            const data = await res.json();
+            renderTrivia(data);
+        } catch (e) {}
+    }
+
+    function renderTrivia(data) {
+        document.getElementById('trivia-question-text').textContent = data.question || '';
+        const box = document.getElementById('trivia-options-box');
+        box.innerHTML = '';
+        const answered = data.myAnswer !== null && data.myAnswer !== undefined;
+
+        (data.options || []).forEach((optText, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'trivia-opt-btn';
+            if (answered) {
+                btn.disabled = true;
+                if (idx === data.correctIndex) btn.classList.add('correct');
+                else if (idx === data.myAnswer) btn.classList.add('wrong');
+            }
+            btn.textContent = optText;
+            btn.addEventListener('click', () => submitTriviaAnswer(idx));
+            box.appendChild(btn);
+        });
+
+        const lbList = document.getElementById('leaderboard-list');
+        lbList.innerHTML = '';
+        const lb = data.leaderboard || [];
+        if (lb.length === 0) {
+            lbList.innerHTML = '<li><span>Inicia sesión y acierta para inaugurar el Cuadro de Honor</span><span>+10 pts</span></li>';
+        } else {
+            lb.forEach((entry, i) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>#${i + 1} · <strong>${entry.name}</strong></span><span>${entry.points} pts</span>`;
+                lbList.appendChild(li);
+            });
+        }
+    }
+
+    async function submitTriviaAnswer(optionIndex) {
+        const fb = document.getElementById('trivia-feedback');
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+            };
+            const res = await fetch(`${API_BASE}/api/trivia/answer`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ optionIndex, voterId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                fb.textContent = data.isCorrect
+                    ? '¡Respuesta correcta! Has demostrado gran conocimiento histórico.'
+                    : 'Respuesta incorrecta. ¡Sigue explorando nuestros documentales!';
+                fb.className = `auth-feedback ${data.isCorrect ? 'success' : 'error'}`;
+                loadTrivia();
+            }
+        } catch (err) {}
+    }
+
+    const adminTriviaForm = document.getElementById('admin-trivia-form');
+    if (adminTriviaForm) {
+        adminTriviaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const question = document.getElementById('admin-trivia-q').value.trim();
+            const options = [
+                document.getElementById('admin-trivia-o0').value.trim(),
+                document.getElementById('admin-trivia-o1').value.trim(),
+                document.getElementById('admin-trivia-o2').value.trim(),
+                document.getElementById('admin-trivia-o3').value.trim()
+            ];
+            try {
+                const res = await fetch(`${API_BASE}/api/trivia/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ question, options, correctIndex: 0 })
+                });
+                if (res.ok) {
+                    adminTriviaForm.reset();
+                    loadTrivia();
+                }
+            } catch (err) {}
+        });
+    }
+
+    // ==========================================
+    // 5. MAPA INTERACTIVO Y 6. BIBLIOTECA DE DOCUMENTALES REALES
+    // ==========================================
+    const DOCUMENTARIES = [
+        {
+            id: 'rJdAGfxEYkw',
+            title: 'El Louvre en el año 1200: La fortaleza olvidada de París',
+            era: 'París, Francia · Año 1200',
+            category: 'antigua',
+            mapX: 48.5,
+            mapY: 23.5,
+            desc: 'Descubre los cimientos subterráneos y la vida militar dentro de la fortaleza medieval antes de convertirse en palacio y museo.'
+        },
+        {
+            id: 'PVVdxqlf5XQ',
+            title: 'El Horno Térmico de Pompeya: La Falsa Salvación de la Élite Romana',
+            era: 'Pompeya, Italia · 79 d.C.',
+            category: 'antigua',
+            mapX: 52.2,
+            mapY: 28.0,
+            desc: 'La reconstrucción minuto a minuto del destino de los habitantes de Pompeya ante la furia piroclástica del Vesubio.'
+        },
+        {
+            id: '27AZ11nTUz0',
+            title: 'El Secreto de los Constructores de Giza: 2570 a.C.',
+            era: 'Giza, Egipto · 2570 a.C.',
+            category: 'antigua',
+            mapX: 56.8,
+            mapY: 36.5,
+            desc: '¿Cómo vivían, comían y trabajaban los miles de artesanos e ingenieros que levantaron la Gran Pirámide?'
+        },
+        {
+            id: 'O-ewFhxFahk',
+            title: 'Así era vivir en Nazaret antes de Cristo',
+            era: 'Galilea · Siglo I a.C.',
+            category: 'antigua',
+            mapX: 59.2,
+            mapY: 34.0,
+            desc: 'Un viaje arqueológico a las casas excavadas en roca, costumbres y oficios de una aldea judía del siglo I.'
+        },
+        {
+            id: 'OT_2LgSxUtY',
+            title: '11 de septiembre de 2001: La evacuación de Manhattan',
+            era: 'Nueva York, EE. UU. · 2001',
+            category: 'tragedias',
+            mapX: 27.5,
+            mapY: 27.5,
+            desc: 'La mayor evacuación marítima y civil en la historia moderna de Nueva York narrada desde dentro.'
+        },
+        {
+            id: 'T8BdFd4Zm7Q',
+            title: 'El Restaurante en las Alturas de las Torres Gemelas',
+            era: 'Nueva York, EE. UU. · Piso 107',
+            category: 'tragedias',
+            mapX: 28.2,
+            mapY: 26.8,
+            desc: 'La historia de Windows on the World, el legendario restaurante en la cima de la Torre Norte.'
+        },
+        {
+            id: 'muZvqVzTTQ4',
+            title: 'Así era ser oficinista en las Torres Gemelas',
+            era: 'Nueva York · Años 80 y 90',
+            category: 'tragedias',
+            mapX: 26.8,
+            mapY: 28.2,
+            desc: 'Una inmersión en los ascensores expresos, pasillos y rutinas de la ciudad vertical más famosa del siglo XX.'
+        },
+        {
+            id: '8I2sy6C4l10',
+            title: 'La vida cotidiana en las Torres Gemelas antes del colapso',
+            era: 'Manhattan · Historia Contemporánea',
+            category: 'tragedias',
+            mapX: 27.2,
+            mapY: 29.0,
+            desc: 'Cómo funcionaba por dentro el complejo que albergaba a más de 50,000 trabajadores cada día.'
+        },
+        {
+            id: '7lgpnoQpDXc',
+            title: 'Así se Construyó el Titanic: La Negligencia que Sepultó un Gigante',
+            era: 'Belfast / Atlántico Norte · 1909–1912',
+            category: 'tragedias',
+            mapX: 45.2,
+            mapY: 20.5,
+            desc: 'Los secretos industriales, remaches y decisiones de diseño detrás del transatlántico más famoso de la historia.'
+        },
+        {
+            id: 'AdulsJeHVIU',
+            title: 'El hombre que fingió ser médico durante 18 años: La Gran Mentira',
+            era: 'Ginebra / Francia · Caso Forense Real',
+            category: 'misterios',
+            mapX: 49.8,
+            mapY: 25.2,
+            desc: 'El impactante caso psicológico y criminal de una vida entera construida sobre una farsa.'
+        }
+    ];
+
+    function renderInteractiveMap() {
+        const pinsLayer = document.getElementById('map-pins-layer');
+        const infoBox = document.getElementById('map-selected-info');
+        if (!pinsLayer || !infoBox) return;
+
+        pinsLayer.innerHTML = '';
+        DOCUMENTARIES.forEach((doc, idx) => {
+            const pin = document.createElement('button');
+            pin.type = 'button';
+            pin.className = `map-pin-btn ${idx === 0 ? 'active' : ''}`;
+            pin.style.left = `${doc.mapX}%`;
+            pin.style.top = `${doc.mapY}%`;
+            pin.title = `${doc.era} — ${doc.title}`;
+            pin.innerHTML = '<i class="fa-solid fa-shoe-prints"></i>';
+            pin.addEventListener('click', () => {
+                document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
+                pin.classList.add('active');
+                selectMapLocation(doc);
+            });
+            pinsLayer.appendChild(pin);
+        });
+
+        selectMapLocation(DOCUMENTARIES[0]);
+    }
+
+    function selectMapLocation(doc) {
+        const infoBox = document.getElementById('map-selected-info');
+        if (!infoBox) return;
+        infoBox.innerHTML = `
+            <div style="flex:1;min-width:220px;">
+                <div class="doc-card-era">${doc.era}</div>
+                <div style="font-size:1.2rem;font-weight:700;color:var(--gold-light);margin:2px 0 4px;">${doc.title}</div>
+                <div style="font-size:1.02rem;color:var(--text-muted);">${doc.desc}</div>
+            </div>
+            <button type="button" class="gold-submit-btn" id="map-play-selected-btn">
+                <i class="fa-solid fa-play"></i> Ver Documental Aquí
+            </button>
+        `;
+        document.getElementById('map-play-selected-btn').addEventListener('click', () => {
+            playDocumentaryInMainPlayer(doc.id, doc.title);
+        });
+    }
+
+    function renderDocumentaryLibrary(filterCat = 'all') {
+        const grid = document.getElementById('library-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const filtered = filterCat === 'all'
+            ? DOCUMENTARIES
+            : DOCUMENTARIES.filter(d => d.category === filterCat);
+
+        filtered.forEach(doc => {
+            const card = document.createElement('div');
+            card.className = 'doc-card';
+            card.innerHTML = `
+                <div class="doc-thumb-wrap">
+                    <img src="https://i.ytimg.com/vi/${doc.id}/hqdefault.jpg" alt="${doc.title}" loading="lazy">
+                    <span class="doc-play-badge"><i class="fa-solid fa-play"></i> Reproducir</span>
+                </div>
+                <div class="doc-card-body">
+                    <span class="doc-card-era">${doc.era}</span>
+                    <div class="doc-card-title">${doc.title}</div>
+                </div>
+            `;
+            card.addEventListener('click', () => {
+                playDocumentaryInMainPlayer(doc.id, doc.title);
+            });
+            grid.appendChild(card);
+        });
+    }
+
+    document.querySelectorAll('.lib-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.lib-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderDocumentaryLibrary(btn.getAttribute('data-cat'));
+        });
+    });
+
+    renderInteractiveMap();
+    renderDocumentaryLibrary('all');
+
+    // ==========================================
+    // MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD
+    // ==========================================
+    const communityForm = document.getElementById('community-comment-form');
+    const communityInput = document.getElementById('community-comment-input');
+    const communityList = document.getElementById('community-comments-list');
+
+    async function loadComments() {
+        try {
+            const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            const res = await fetch(`${API_BASE}/api/comments`, { headers });
+            if (!res.ok) return;
+            const data = await res.json();
+            renderComments(data.comments || [], Boolean(data.isAdmin));
+        } catch (e) {}
+    }
+
+    function renderComments(comments, isAdmin) {
+        if (!communityList) return;
+        communityList.innerHTML = '';
+        if (comments.length === 0) {
+            communityList.innerHTML = '<p class="empty-conv-text">Sé el primero en dejar tu comentario sobre nuestros documentales.</p>';
+            return;
+        }
+        comments.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'community-comment-item';
+            const top = document.createElement('div');
+            top.className = 'community-comment-top';
+
+            const authorSpan = document.createElement('span');
+            authorSpan.textContent = c.author || 'Seguidor';
+            top.appendChild(authorSpan);
+
+            const rightWrap = document.createElement('div');
+            rightWrap.style.display = 'flex';
+            rightWrap.style.alignItems = 'center';
+            rightWrap.style.gap = '8px';
+
+            const dateSpan = document.createElement('span');
+            dateSpan.textContent = formatTime(c.createdAt);
+            rightWrap.appendChild(dateSpan);
+
+            if (isAdmin) {
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'delete-topic-btn';
+                delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                delBtn.addEventListener('click', () => deleteComment(c.id));
+                rightWrap.appendChild(delBtn);
+            }
+
+            top.appendChild(rightWrap);
+
+            const textDiv = document.createElement('div');
+            textDiv.className = 'community-comment-text';
+            textDiv.textContent = c.text;
+
+            div.appendChild(top);
+            div.appendChild(textDiv);
+            communityList.appendChild(div);
+        });
+    }
+
+    if (communityForm) {
+        communityForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = communityInput.value.trim();
+            if (!text) return;
+            communityInput.value = '';
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                };
+                const res = await fetch(`${API_BASE}/api/comments/add`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ text })
+                });
+                if (res.ok) {
+                    loadComments();
+                }
+            } catch (err) {}
+        });
+    }
+
+    async function deleteComment(commentId) {
+        if (!authToken) return;
+        try {
+            await fetch(`${API_BASE}/api/comments/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ commentId })
+            });
+            loadComments();
+        } catch (err) {}
+    }
+
     updatePollAdminControls();
     loadPoll();
-    setInterval(loadPoll, 5000);
+    loadReleaseCountdown();
+    loadTrivia();
+    loadComments();
+
+    setInterval(() => {
+        loadPoll();
+        loadComments();
+    }, 6000);
 
     if (authToken && currentUser) {
         enterChatView();

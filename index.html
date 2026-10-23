@@ -143,8 +143,9 @@
         <!-- 3 HILERAS VERTICALES DEBAJO DEL LOGO Y ESLOGAN -->
         <div class="three-columns-layout">
             
-            <!-- HILERA IZQUIERDA: TEMA DEL PRÓXIMO VIDEO (PROPONER Y VOTAR) -->
+            <!-- HILERA IZQUIERDA: PROPONER TEMAS, CUENTA REGRESIVA, EFEMÉRIDES Y TRIVIA -->
             <aside class="side-column left-column">
+                <!-- 1. Tema del Próximo Video -->
                 <section id="proximo-tema" class="poll-section glass-panel">
                     <div class="poll-header-row">
                         <h2><i class="fa-solid fa-scroll"></i> Tema del Próximo Video</h2>
@@ -154,7 +155,6 @@
 
                     <div id="poll-feedback" class="auth-feedback hidden"></div>
 
-                    <!-- Formulario para sugerir tema (Visible mientras haya menos de 5 temas) -->
                     <form id="topic-suggest-form" class="topic-suggest-form">
                         <input type="text" id="topic-title-input" placeholder="Escribe tu propuesta de tema..." maxlength="140" required>
                         <button type="submit" class="gold-submit-btn suggest-btn">
@@ -162,19 +162,68 @@
                         </button>
                     </form>
 
-                    <!-- Lista de los 5 temas / Tarjetas de Votación -->
                     <div id="poll-topics-list" class="poll-topics-list"></div>
 
-                    <!-- Controles de Administrador (Solo visibles cuando el Admin inicia sesión) -->
                     <div id="poll-admin-controls" class="poll-admin-controls hidden">
                         <button type="button" id="poll-reset-btn" class="logout-btn">
                             <i class="fa-solid fa-rotate-right"></i> Reiniciar Ronda (5 temas)
                         </button>
                     </div>
                 </section>
+
+                <!-- 2. Próximo Estreno en Producción (Cuenta Regresiva) -->
+                <section class="countdown-section glass-panel">
+                    <h2><i class="fa-solid fa-hourglass-half"></i> Próximo Estreno</h2>
+                    <p id="release-title-display" class="release-title-display">Próximo Documental Especial en Producción</p>
+                    <div class="countdown-grid">
+                        <div class="cd-box"><span id="cd-days">00</span><small>Días</small></div>
+                        <div class="cd-box"><span id="cd-hours">00</span><small>Horas</small></div>
+                        <div class="cd-box"><span id="cd-mins">00</span><small>Min</small></div>
+                        <div class="cd-box"><span id="cd-secs">00</span><small>Seg</small></div>
+                    </div>
+
+                    <!-- Editor exclusivo para raydeladmin -->
+                    <form id="admin-release-form" class="admin-inline-form hidden">
+                        <h4><i class="fa-solid fa-crown"></i> Configurar Próximo Estreno (Admin)</h4>
+                        <input type="text" id="admin-release-title" placeholder="Título del documental en producción..." required>
+                        <input type="datetime-local" id="admin-release-date" required>
+                        <button type="submit" class="gold-submit-btn">Actualizar Cuenta Regresiva</button>
+                    </form>
+                </section>
+
+                <!-- 3. Un Día Como Hoy en la Historia -->
+                <section class="ephemeris-section glass-panel">
+                    <h2><i class="fa-solid fa-compass"></i> Un Día Como Hoy</h2>
+                    <div id="ephemeris-date-badge" class="ephemeris-date-badge">Efeméride Histórica</div>
+                    <div id="ephemeris-list" class="ephemeris-list"></div>
+                </section>
+
+                <!-- 4. Reto Histórico Semanal (Trivia + Cuadro de Honor) -->
+                <section class="trivia-section glass-panel">
+                    <h2><i class="fa-solid fa-trophy"></i> Reto Histórico</h2>
+                    <p id="trivia-question-text" class="trivia-question-text"></p>
+                    <div id="trivia-options-box" class="trivia-options-box"></div>
+                    <div id="trivia-feedback" class="auth-feedback hidden"></div>
+
+                    <div class="leaderboard-box">
+                        <h4><i class="fa-solid fa-medal"></i> Cuadro de Honor de Historiadores</h4>
+                        <ul id="leaderboard-list" class="leaderboard-list"></ul>
+                    </div>
+
+                    <!-- Editor de Trivia exclusivo para raydeladmin -->
+                    <form id="admin-trivia-form" class="admin-inline-form hidden">
+                        <h4><i class="fa-solid fa-crown"></i> Nueva Pregunta de Trivia (Admin)</h4>
+                        <input type="text" id="admin-trivia-q" placeholder="Escribe la nueva pregunta..." required>
+                        <input type="text" id="admin-trivia-o0" placeholder="Opción 1 (Correcta)" required>
+                        <input type="text" id="admin-trivia-o1" placeholder="Opción 2" required>
+                        <input type="text" id="admin-trivia-o2" placeholder="Opción 3" required>
+                        <input type="text" id="admin-trivia-o3" placeholder="Opción 4" required>
+                        <button type="submit" class="gold-submit-btn">Publicar Nueva Trivia</button>
+                    </form>
+                </section>
             </aside>
 
-            <!-- HILERA CENTRAL: REDES SOCIALES Y ÚLTIMOS VIDEOS -->
+            <!-- HILERA CENTRAL: REDES, VIDEOS, MAPA INTERACTIVO Y BIBLIOTECA -->
             <div class="center-column">
                 <section class="social-links glass-panel">
                     <h2>Nuestras Redes</h2>
@@ -192,11 +241,52 @@
                 </section>
 
                 <section class="latest-videos">
-                    <div class="video-card glass-panel">
-                        <h3><i class="fa-brands fa-youtube"></i> Último en YouTube</h3>
+                    <div id="main-youtube-card" class="video-card glass-panel">
+                        <h3 id="main-youtube-heading"><i class="fa-brands fa-youtube"></i> Último en YouTube</h3>
                         <div class="youtube-wrapper">
                             <iframe id="youtube-latest-player" width="560" height="315" src="https://www.youtube.com/embed/rJdAGfxEYkw" title="Huellas de la Humanidad - YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                         </div>
+                    </div>
+
+                    <!-- 5. Mapa Interactivo de las Huellas -->
+                    <div class="map-card glass-panel">
+                        <h3><i class="fa-solid fa-earth-americas"></i> Mapa Interactivo de las «Huellas»</h3>
+                        <p class="chat-subtitle">Toca cualquiera de los pines dorados sobre el mapa para explorar el lugar histórico y reproducir su documental.</p>
+                        <div class="world-map-stage" id="world-map-stage">
+                            <svg viewBox="0 0 1000 500" class="ancient-world-svg" aria-label="Mapa Histórico">
+                                <rect width="1000" height="500" fill="#0d0b08"/>
+                                <!-- Cuadrícula cartográfica antigua -->
+                                <g stroke="rgba(212,175,55,0.12)" stroke-width="1" stroke-dasharray="4,4">
+                                    <line x1="0" y1="125" x2="1000" y2="125"/>
+                                    <line x1="0" y1="250" x2="1000" y2="250"/>
+                                    <line x1="0" y1="375" x2="1000" y2="375"/>
+                                    <line x1="250" y1="0" x2="250" y2="500"/>
+                                    <line x1="500" y1="0" x2="500" y2="500"/>
+                                    <line x1="750" y1="0" x2="750" y2="500"/>
+                                </g>
+                                <!-- Siluetas continentales estilizadas -->
+                                <path d="M110,90 Q190,60 280,100 L310,175 L255,235 L210,220 L165,165 Z" fill="rgba(212,175,55,0.18)" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
+                                <path d="M245,250 L325,285 L340,365 L290,455 L255,425 L235,315 Z" fill="rgba(212,175,55,0.18)" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
+                                <path d="M445,85 Q520,65 595,95 L585,175 L515,185 L455,155 Z" fill="rgba(212,175,55,0.22)" stroke="rgba(212,175,55,0.5)" stroke-width="1.5"/>
+                                <path d="M455,195 L575,200 L615,285 L565,415 L495,395 L450,275 Z" fill="rgba(212,175,55,0.18)" stroke="rgba(212,175,55,0.45)" stroke-width="1.5"/>
+                                <path d="M600,85 Q740,65 885,115 L875,265 L745,295 L625,215 Z" fill="rgba(212,175,55,0.16)" stroke="rgba(212,175,55,0.4)" stroke-width="1.5"/>
+                                <path d="M775,345 L885,345 L895,425 L785,435 Z" fill="rgba(212,175,55,0.15)" stroke="rgba(212,175,55,0.4)" stroke-width="1.5"/>
+                            </svg>
+                            <div id="map-pins-layer" class="map-pins-layer"></div>
+                        </div>
+                        <div id="map-selected-info" class="map-selected-info"></div>
+                    </div>
+
+                    <!-- 6. Biblioteca / Archivo de Documentales por Categorías -->
+                    <div class="library-card glass-panel">
+                        <h3><i class="fa-solid fa-film"></i> Biblioteca de Documentales</h3>
+                        <div class="library-filters" id="library-filters">
+                            <button type="button" class="lib-filter-btn active" data-cat="all">Todos</button>
+                            <button type="button" class="lib-filter-btn" data-cat="antigua">Edad Antigua y Media</button>
+                            <button type="button" class="lib-filter-btn" data-cat="tragedias">Tragedias e Historia Moderna</button>
+                            <button type="button" class="lib-filter-btn" data-cat="misterios">Casos y Misterios Reales</button>
+                        </div>
+                        <div id="library-grid" class="library-grid"></div>
                     </div>
 
                     <div class="video-card glass-panel">
@@ -220,13 +310,12 @@
                 </section>
             </div>
 
-            <!-- HILERA DERECHA: PONTE EN CONTACTO (CHAT EN VIVO) -->
+            <!-- HILERA DERECHA: PONTE EN CONTACTO (CHAT) Y MURO DE DEBATE DE LA COMUNIDAD -->
             <aside class="side-column right-column">
                 <section id="contacto-chat" class="chat-section glass-panel">
                     <h2><i class="fa-solid fa-feather-pointed"></i> Ponte en Contacto</h2>
                     <p class="chat-subtitle">Escríbenos en directo a través del chat.</p>
 
-                    <!-- VISTA 1: INVITACIÓN A INICIAR SESIÓN O CREAR CUENTA EN EL MENÚ SUPERIOR -->
                     <div id="chat-guest-prompt" class="chat-guest-prompt">
                         <p>Para conversar en directo con nosotros, inicia sesión o crea tu cuenta en el menú superior.</p>
                         <div class="guest-prompt-actions">
@@ -239,7 +328,6 @@
                         </div>
                     </div>
 
-                    <!-- VISTA 2: CHAT DE USUARIO (SEGUIDOR) -->
                     <div id="user-chat-view" class="chat-view hidden">
                         <div class="chat-top-bar">
                             <div class="chat-user-info">
@@ -258,7 +346,6 @@
                         </form>
                     </div>
 
-                    <!-- VISTA 3: PANEL DE ADMINISTRADOR (RESPONDER A USUARIOS) -->
                     <div id="admin-chat-view" class="chat-view hidden">
                         <div class="chat-top-bar admin-bar">
                             <div class="chat-user-info">
@@ -290,6 +377,21 @@
                         </div>
                     </div>
                 </section>
+
+                <!-- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD -->
+                <section class="community-wall-section glass-panel">
+                    <h2><i class="fa-solid fa-comments"></i> Muro de Debate</h2>
+                    <p class="chat-subtitle">Comparte tu opinión o teoría sobre nuestros documentales con toda la comunidad.</p>
+
+                    <form id="community-comment-form" class="topic-suggest-form">
+                        <input type="text" id="community-comment-input" placeholder="Escribe tu comentario público..." maxlength="800" required>
+                        <button type="submit" class="gold-submit-btn suggest-btn">
+                            <i class="fa-solid fa-feather"></i> Publicar en el Muro
+                        </button>
+                    </form>
+
+                    <div id="community-comments-list" class="community-comments-list"></div>
+                </section>
             </aside>
 
         </div>
@@ -299,7 +401,7 @@
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 08:05 PM - 10/22/2026</div>
+    <div class="build-timestamp">Actualizado: 08:21 PM - 10/22/2026</div>
 
     <script src="script.js"></script>
 </body>

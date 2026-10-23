@@ -57,7 +57,33 @@ let db = {
     lastVideoId: 'rJdAGfxEYkw',
     lastVideoTitle: '',
     lastNotifiedAt: null
-  }
+  },
+  nextRelease: {
+    title: 'Próximo Documental Especial en Producción',
+    targetDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  trivia: {
+    id: 'trivia-louvre-1200',
+    question: '¿Alrededor de qué año se erigió originalmente el Louvre como una fortaleza medieval para defender París?',
+    options: [
+      'Año 1200 (bajo el rey Felipe II Augusto)',
+      'Año 1546 (durante el Renacimiento francés)',
+      'Año 1789 (al estallar la Revolución Francesa)',
+      'Año 1358 (durante la Guerra de los Cien Años)'
+    ],
+    correctIndex: 0,
+    answeredBy: {} // { [voterKey]: selectedIndex }
+  },
+  scores: {}, // { [displayName]: points }
+  comments: [
+    {
+      id: 'welcome-comment-1',
+      author: 'Huellas de la Humanidad',
+      role: 'admin',
+      text: '¡Bienvenid@s al Muro de Debate de la Comunidad! Comparte aquí tus teorías, impresiones o momentos favoritos de nuestros documentales.',
+      createdAt: new Date().toISOString()
+    }
+  ]
 };
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'huellas-secret-key-2026-ancient-history';
@@ -128,6 +154,10 @@ async function loadDatabase() {
         if (parsed.youtubeNotifier) {
           db.youtubeNotifier = parsed.youtubeNotifier;
         }
+        if (parsed.nextRelease) db.nextRelease = parsed.nextRelease;
+        if (parsed.trivia) db.trivia = parsed.trivia;
+        if (parsed.scores) db.scores = parsed.scores;
+        if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
       }
     }
   } catch (e) {
@@ -151,6 +181,10 @@ async function loadDatabase() {
           if (parsed.youtubeNotifier) {
             db.youtubeNotifier = parsed.youtubeNotifier;
           }
+          if (parsed.nextRelease) db.nextRelease = parsed.nextRelease;
+          if (parsed.trivia) db.trivia = parsed.trivia;
+          if (parsed.scores) db.scores = parsed.scores;
+          if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
           console.log('Database loaded from GitHub cloud backup.');
         }
       }
@@ -164,11 +198,24 @@ async function loadDatabase() {
     username: 'raydeladmin',
     displayName: 'Huellas de la Humanidad',
     passwordHash: hashPassword(ADMIN_DEFAULT_PWD),
+    email: (db.users.raydeladmin && db.users.raydeladmin.email) || '',
+    notifyYoutube: (db.users.raydeladmin && db.users.raydeladmin.notifyYoutube) !== false,
     role: 'admin',
     createdAt: (db.users.raydeladmin && db.users.raydeladmin.createdAt) || new Date().toISOString()
   };
   delete db.users.admin;
   delete db.users.raydel;
+
+  // Actualizar saludo automático existente a Bienvenid@
+  Object.values(db.conversations || {}).forEach(conv => {
+    if (conv && Array.isArray(conv.messages)) {
+      conv.messages.forEach(m => {
+        if (m.role === 'admin' && typeof m.text === 'string' && m.text.startsWith('¡Bienvenido,')) {
+          m.text = m.text.replace('¡Bienvenido,', '¡Bienvenid@,');
+        }
+      });
+    }
+  });
 }
 
 async function saveDatabase() {
@@ -324,7 +371,7 @@ const server = http.createServer(async (req, res) => {
             id: crypto.randomUUID(),
             sender: 'Huellas de la Humanidad',
             role: 'admin',
-            text: `¡Bienvenido, ${String(username).trim()}! Gracias por unirte a Huellas de la Humanidad. Escríbenos aquí cualquier mensaje, sugerencia o consulta y te responderemos directamente.`,
+            text: `¡Bienvenid@, ${String(username).trim()}! Gracias por unirte a Huellas de la Humanidad. Escríbenos aquí cualquier mensaje, sugerencia o consulta y te responderemos directamente.`,
             createdAt: new Date().toISOString()
           }
         ]
@@ -640,6 +687,174 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
+  // --- PRÓXIMO ESTRENO EN PRODUCCIÓN (COUNTDOWN) ---
+  if (pathname === '/api/release' && req.method === 'GET') {
+    const session = getAuthSession(req);
+    return sendJson(res, 200, {
+      nextRelease: db.nextRelease || {
+        title: 'Próximo Documental Especial en Producción',
+        targetDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      isAdmin: Boolean(session && session.role === 'admin')
+    });
+  }
+
+  if (pathname === '/api/release' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Solo el Administrador puede configurar el próximo estreno.' });
+    }
+    const { title, targetDate } = await parseBody(req);
+    const cleanTitle = String(title || '').trim();
+    const parsedDate = new Date(targetDate);
+    if (!cleanTitle || isNaN(parsedDate.getTime())) {
+      return sendJson(res, 400, { error: 'Ingresa un título y una fecha válida.' });
+    }
+    db.nextRelease = {
+      title: cleanTitle.slice(0, 140),
+      targetDate: parsedDate.toISOString()
+    };
+    saveDatabase();
+    return sendJson(res, 200, { ok: true, nextRelease: db.nextRelease });
+  }
+
+  // --- TRIVIA HISTÓRICA SEMANAL Y CUADRO DE HONOR ---
+  if (pathname === '/api/trivia' && req.method === 'GET') {
+    const voterId = String(parsedUrl.searchParams.get('voterId') || '').trim();
+    const session = getAuthSession(req);
+    const voterKey = session ? `user:${session.username}` : (voterId ? `anon:${voterId}` : '');
+
+    if (!db.trivia) {
+      db.trivia = {
+        id: 'trivia-1',
+        question: '¿Alrededor de qué año se erigió originalmente el Louvre como una fortaleza medieval para defender París?',
+        options: ['Año 1200 (bajo Felipe II Augusto)', 'Año 1546', 'Año 1789', 'Año 1358'],
+        correctIndex: 0,
+        answeredBy: {}
+      };
+    }
+    const answeredBy = db.trivia.answeredBy || {};
+    const myAnswer = voterKey && answeredBy[voterKey] !== undefined ? answeredBy[voterKey] : null;
+
+    const leaderboard = Object.entries(db.scores || {})
+      .map(([name, points]) => ({ name, points }))
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 5);
+
+    return sendJson(res, 200, {
+      id: db.trivia.id,
+      question: db.trivia.question,
+      options: db.trivia.options,
+      myAnswer,
+      correctIndex: myAnswer !== null ? db.trivia.correctIndex : null,
+      leaderboard,
+      isAdmin: Boolean(session && session.role === 'admin')
+    });
+  }
+
+  if (pathname === '/api/trivia/answer' && req.method === 'POST') {
+    const { optionIndex, voterId } = await parseBody(req);
+    const session = getAuthSession(req);
+    const voterKey = session ? `user:${session.username}` : (voterId ? `anon:${String(voterId).trim()}` : '');
+
+    if (!voterKey) return sendJson(res, 400, { error: 'No se pudo registrar la respuesta.' });
+    if (!db.trivia) return sendJson(res, 404, { error: 'No hay trivia activa.' });
+    if (!db.trivia.answeredBy) db.trivia.answeredBy = {};
+
+    if (db.trivia.answeredBy[voterKey] !== undefined) {
+      return sendJson(res, 409, { error: 'Ya respondiste el reto histórico de esta semana.' });
+    }
+
+    const idx = Number(optionIndex);
+    db.trivia.answeredBy[voterKey] = idx;
+    const isCorrect = idx === Number(db.trivia.correctIndex);
+
+    if (isCorrect) {
+      const displayHolder = session
+        ? (session.role === 'admin' ? session.username : (session.displayName || session.username))
+        : 'Seguidor';
+      if (!db.scores) db.scores = {};
+      if (displayHolder !== 'Seguidor') {
+        db.scores[displayHolder] = (db.scores[displayHolder] || 0) + 10;
+      }
+    }
+
+    saveDatabase();
+    return sendJson(res, 200, {
+      ok: true,
+      isCorrect,
+      correctIndex: db.trivia.correctIndex
+    });
+  }
+
+  if (pathname === '/api/trivia/update' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Solo el Administrador puede cambiar la pregunta de trivia.' });
+    }
+    const { question, options, correctIndex } = await parseBody(req);
+    if (!question || !Array.isArray(options) || options.length < 2) {
+      return sendJson(res, 400, { error: 'Ingresa la pregunta y las opciones.' });
+    }
+    db.trivia = {
+      id: 'trivia-' + Date.now(),
+      question: String(question).trim(),
+      options: options.map(o => String(o).trim()).filter(Boolean),
+      correctIndex: Number(correctIndex) || 0,
+      answeredBy: {}
+    };
+    saveDatabase();
+    return sendJson(res, 200, { ok: true });
+  }
+
+  // --- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD ---
+  if (pathname === '/api/comments' && req.method === 'GET') {
+    const session = getAuthSession(req);
+    return sendJson(res, 200, {
+      comments: (db.comments || []).slice(-40).reverse(),
+      isAdmin: Boolean(session && session.role === 'admin')
+    });
+  }
+
+  if (pathname === '/api/comments/add' && req.method === 'POST') {
+    const { text } = await parseBody(req);
+    const session = getAuthSession(req);
+    const cleanText = String(text || '').trim();
+    if (!cleanText || cleanText.length < 2) {
+      return sendJson(res, 400, { error: 'Escribe un comentario antes de publicar.' });
+    }
+    const author = session
+      ? (session.role === 'admin' ? 'Huellas de la Humanidad (Admin)' : (session.displayName || session.username))
+      : 'Seguidor';
+
+    if (!Array.isArray(db.comments)) db.comments = [];
+    db.comments.push({
+      id: crypto.randomUUID(),
+      author,
+      role: session ? session.role : 'guest',
+      text: cleanText.slice(0, 800),
+      createdAt: new Date().toISOString()
+    });
+    if (db.comments.length > 100) {
+      db.comments = db.comments.slice(-100);
+    }
+    saveDatabase();
+    return sendJson(res, 201, { ok: true });
+  }
+
+  if (pathname === '/api/comments/delete' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Solo el Administrador puede eliminar comentarios.' });
+    }
+    const { commentId } = await parseBody(req);
+    if (Array.isArray(db.comments)) {
+      db.comments = db.comments.filter(c => c.id !== commentId);
+      saveDatabase();
+    }
+    return sendJson(res, 200, { ok: true });
+  }
+
   // --- STATIC FILES ---
   let filePath = pathname === '/' ? '/index.html' : pathname;
   const safePath = path.normalize(filePath).replace(/^(\.\.[\/\\])+/, '');
@@ -665,10 +880,25 @@ loadDatabase().then(() => {
 
 const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
 const EMAIL_LOGO_URL = 'https://huellasdelahumanidad.com/logo.png';
+const EMAIL_AVATAR_URL = 'https://huellasdelahumanidad.com/favicon.png';
 
 function buildBrandEmailHtml({ title, greetingName, bodyHtml, ctaText, ctaUrl }) {
   return `
-    <div style="background-color:#0c0a08;color:#f4ebd9;padding:32px 24px;font-family:Georgia,'Times New Roman',serif;border:1px solid #d4af37;border-radius:16px;max-width:580px;margin:0 auto;text-align:center;">
+    <div style="background-color:#0c0a08;color:#f4ebd9;padding:28px 22px;font-family:Georgia,'Times New Roman',serif;border:1px solid #d4af37;border-radius:16px;max-width:580px;margin:0 auto;text-align:center;">
+      <!-- Cabecera de Perfil de Remitente con Avatar Circular -->
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:18px;border-bottom:1px solid rgba(212,175,55,0.25);padding-bottom:14px;">
+        <tr>
+          <td width="48" valign="middle" style="text-align:left;">
+            <img src="${EMAIL_AVATAR_URL}" alt="Huellas de la Humanidad" width="42" height="42" style="width:42px;height:42px;border-radius:50%;border:1.5px solid #d4af37;display:block;" />
+          </td>
+          <td valign="middle" style="text-align:left;padding-left:10px;">
+            <div style="color:#f5df98;font-weight:bold;font-size:15px;letter-spacing:0.5px;">Huellas de la Humanidad</div>
+            <div style="color:#a09580;font-size:12px;">notificaciones@huellasdelahumanidad.com</div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Logotipo Completo en el Cuerpo del Correo -->
       <div style="margin-bottom:20px;">
         <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">
           <img src="${EMAIL_LOGO_URL}" alt="Huellas de la Humanidad" width="165" style="width:165px;max-width:165px;height:auto;display:block;margin:0 auto;border:0;" />
@@ -676,7 +906,7 @@ function buildBrandEmailHtml({ title, greetingName, bodyHtml, ctaText, ctaUrl })
       </div>
       <div style="height:1px;background:linear-gradient(90deg,transparent,#d4af37,transparent);margin:16px auto 22px;max-width:320px;"></div>
       <h2 style="color:#d4af37;text-transform:uppercase;letter-spacing:2px;font-size:20px;margin:0 0 16px;">${title}</h2>
-      <p style="font-size:17px;color:#f4ebd9;margin:0 0 14px;">Hola <strong>${greetingName}</strong>,</p>
+      <p style="font-size:17px;color:#f4ebd9;margin:0 0 14px;">¡Bienvenid@, <strong>${greetingName}</strong>!</p>
       <div style="font-size:16px;line-height:1.6;color:#dfd2b8;margin-bottom:26px;">
         ${bodyHtml}
       </div>

@@ -2237,11 +2237,56 @@ footer {
 /* Responsive */
 @media (max-width: 1180px) {
     .three-columns-layout {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
     }
 
-    .side-column {
-        position: static;
+    .three-columns-layout.hidden {
+        display: none !important;
+    }
+
+    .left-column,
+    .center-column,
+    .right-column,
+    .latest-videos {
+        display: contents;
+    }
+
+    /* En vista móvil: 1º Visor de YouTube, 2º Mapa Interactivo, 3º Biblioteca de Documentales, 4º Lo demás */
+    #main-youtube-card {
+        order: 1;
+        width: 100%;
+    }
+
+    .map-card {
+        order: 2;
+        width: 100%;
+    }
+
+    .library-card {
+        order: 3;
+        width: 100%;
+    }
+
+    .social-links {
+        order: 4;
+        width: 100%;
+    }
+
+    .latest-videos > .video-card:not(#main-youtube-card) {
+        order: 5;
+        width: 100%;
+    }
+
+    .left-column > * {
+        order: 6;
+        width: 100%;
+    }
+
+    .right-column > * {
+        order: 7;
+        width: 100%;
     }
 }
 

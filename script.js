@@ -157,7 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
             map_docs_count: '25 Documentales',
             btn_bg_audio_on: 'Audio: ON',
             btn_bg_audio_off: 'Audio: OFF',
-            btn_become_member: 'Convertirse en Miembro'
+            btn_become_member: 'Convertirse en Miembro',
+            followers_total_label: 'Seguidores Totales'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today. Every story leaves a footprint. Here we follow their traces.”',
@@ -268,7 +269,8 @@ document.addEventListener('DOMContentLoaded', () => {
             map_docs_count: '25 Documentaries',
             btn_bg_audio_on: 'BG Audio: ON',
             btn_bg_audio_off: 'BG Audio: OFF',
-            btn_become_member: 'Become a Member'
+            btn_become_member: 'Become a Member',
+            followers_total_label: 'Total Followers'
         }
     };
 
@@ -2581,6 +2583,71 @@ document.addEventListener('DOMContentLoaded', () => {
         renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
     }
 
+    // ==========================================
+    // CONTADOR EN TIEMPO REAL DE SEGUIDORES TOTALES (YOUTUBE + TIKTOK + FACEBOOK)
+    // ==========================================
+    let currentDisplayedFollowersTotal = 33915;
+
+    function formatCompactFollowers(n) {
+        if (!Number.isFinite(n) || n <= 0) return '0';
+        if (n >= 1000000) return `${(n / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+        if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+        return n.toLocaleString('en-US');
+    }
+
+    function animateTotalFollowers(targetTotal) {
+        const el = document.getElementById('total-followers-number');
+        if (!el || !Number.isFinite(targetTotal)) return;
+        const startVal = currentDisplayedFollowersTotal || targetTotal;
+        if (startVal === targetTotal) {
+            el.textContent = targetTotal.toLocaleString('en-US');
+            return;
+        }
+        const duration = 900;
+        const startTime = performance.now();
+        function step(now) {
+            const progress = Math.min(1, (now - startTime) / duration);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const val = Math.round(startVal + (targetTotal - startVal) * eased);
+            el.textContent = val.toLocaleString('en-US');
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                currentDisplayedFollowersTotal = targetTotal;
+                el.textContent = targetTotal.toLocaleString('en-US');
+            }
+        }
+        requestAnimationFrame(step);
+    }
+
+    async function loadSocialFollowerStats() {
+        try {
+            const res = await fetch(`${API_BASE}/api/social-stats`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const yt = Number(data.youtube) || 1060;
+            const tk = Number(data.tiktok) || 10400;
+            const fb = Number(data.facebook) || 22455;
+            const total = Number(data.total) || (yt + tk + fb);
+
+            animateTotalFollowers(total);
+
+            const ytMini = document.getElementById('yt-followers-mini');
+            const tkMini = document.getElementById('tk-followers-mini');
+            const fbMini = document.getElementById('fb-followers-mini');
+            if (ytMini) ytMini.innerHTML = `<i class="fa-brands fa-youtube"></i> ${formatCompactFollowers(yt)}`;
+            if (tkMini) tkMini.innerHTML = `<i class="fa-brands fa-tiktok"></i> ${formatCompactFollowers(tk)}`;
+            if (fbMini) fbMini.innerHTML = `<i class="fa-brands fa-facebook"></i> ${formatCompactFollowers(fb)}`;
+
+            const counterBox = document.getElementById('logo-followers-counter');
+            if (counterBox) {
+                counterBox.title = `YouTube: ${yt.toLocaleString('en-US')} | TikTok: ${tk.toLocaleString('en-US')} | Facebook: ${fb.toLocaleString('en-US')}`;
+            }
+        } catch (err) {
+            // Mantiene el último valor conocido si hay error temporal de red
+        }
+    }
+
     const langBtnEs = document.getElementById('lang-btn-es');
     const langBtnEn = document.getElementById('lang-btn-en');
     if (langBtnEs) langBtnEs.addEventListener('click', () => applyLanguage('es'));
@@ -2589,6 +2656,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateDocSelect();
     applyLanguage(currentLang);
     updatePollAdminControls();
+    loadSocialFollowerStats();
     loadPoll();
     loadReleaseCountdown();
     loadTrivia();
@@ -2598,6 +2666,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPoll();
         loadComments(true);
     }, 6000);
+
+    setInterval(() => {
+        loadSocialFollowerStats();
+    }, 30000);
 
     if (authToken && currentUser) {
         enterChatView();

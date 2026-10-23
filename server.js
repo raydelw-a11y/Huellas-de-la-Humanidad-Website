@@ -72,6 +72,13 @@ let db = {
     answeredBy: {} // { [voterKey]: selectedIndex }
   },
   scores: {}, // { [displayName]: points }
+  socialStats: {
+    youtube: 1060,
+    tiktok: 10400,
+    facebook: 22455,
+    total: 33915,
+    updatedAt: new Date().toISOString()
+  },
   comments: [
     {
       id: 'welcome-comment-1',
@@ -1005,6 +1012,20 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
+  if (pathname === '/api/social-stats' && req.method === 'GET') {
+    const stats = db.socialStats || { youtube: 1060, tiktok: 10400, facebook: 22455, total: 33915 };
+    const yt = Number(stats.youtube) || 1060;
+    const tk = Number(stats.tiktok) || 10400;
+    const fb = Number(stats.facebook) || 22455;
+    return sendJson(res, 200, {
+      youtube: yt,
+      tiktok: tk,
+      facebook: fb,
+      total: yt + tk + fb,
+      updatedAt: stats.updatedAt || new Date().toISOString()
+    });
+  }
+
   // --- STATIC FILES ---
   let filePath = pathname === '/' ? '/index.html' : pathname;
   const safePath = path.normalize(filePath).replace(/^(\.\.[\/\\])+/, '');
@@ -1020,10 +1041,89 @@ const server = http.createServer(async (req, res) => {
   res.end('No encontrado');
 });
 
+function fetchHtmlWithUA(url, ua) {
+  return new Promise((resolve) => {
+    https.get(url, {
+      headers: {
+        'User-Agent': ua || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => {
+        data += chunk;
+        if (data.length > 2.5e6) res.destroy();
+      });
+      res.on('end', () => resolve(data));
+      res.on('error', () => resolve(''));
+    }).on('error', () => resolve(''));
+  });
+}
+
+function parseAbbreviatedCount(rawStr) {
+  if (!rawStr) return 0;
+  const clean = String(rawStr).replace(/\u00a0/g, ' ').trim();
+  const m = clean.match(/([0-9]+(?:[.,][0-9]+)?)\s*([KMBkmb])?/);
+  if (!m) return 0;
+  let numStr = m[1];
+  const suffix = (m[2] || '').toUpperCase();
+  if (suffix) {
+    numStr = numStr.replace(',', '.');
+    const val = parseFloat(numStr);
+    if (isNaN(val)) return 0;
+    if (suffix === 'K') return Math.round(val * 1000);
+    if (suffix === 'M') return Math.round(val * 1000000);
+    if (suffix === 'B') return Math.round(val * 1000000000);
+  }
+  const digitsOnly = parseInt(numStr.replace(/[.,]/g, ''), 10);
+  return isNaN(digitsOnly) ? 0 : digitsOnly;
+}
+
+async function refreshSocialFollowerCounts() {
+  try {
+    if (!db.socialStats) {
+      db.socialStats = { youtube: 1060, tiktok: 10400, facebook: 22455, total: 33915, updatedAt: new Date().toISOString() };
+    }
+    const [ytHtml, tkHtml, fbHtml] = await Promise.all([
+      fetchHtmlWithUA('https://www.youtube.com/@huellas_de_la_humanidad'),
+      fetchHtmlWithUA('https://www.tiktok.com/@huellas_de_la_humanidad'),
+      fetchHtmlWithUA('https://www.facebook.com/huellasdelahumanidaddocumentales', 'facebookexternalhit/1.1')
+    ]);
+
+    // 1. YouTube
+    const ytMatch = ytHtml.match(/"subscriberCountText":\{"accessibility":\{"accessibilityData":\{"label":"([^"]+)"\}\},"simpleText":"([^"]+)"\}/) ||
+                    ytHtml.match(/([0-9.,]+\s*[KMBkmb]?)\s*(?:subscribers|suscriptores)/i);
+    if (ytMatch) {
+      const parsedYt = parseAbbreviatedCount(ytMatch[2] || ytMatch[1]);
+      if (parsedYt >= 100) db.socialStats.youtube = parsedYt;
+    }
+
+    // 2. TikTok
+    const tkMatch = tkHtml.match(/"followerCount":(\d+)/);
+    if (tkMatch) {
+      const parsedTk = parseInt(tkMatch[1], 10);
+      if (parsedTk >= 100) db.socialStats.tiktok = parsedTk;
+    }
+
+    // 3. Facebook
+    const fbMatch = fbHtml.match(/([0-9][0-9.,]*)\s*(?:followers|seguidores)/i);
+    if (fbMatch) {
+      const parsedFb = parseInt(fbMatch[1].replace(/[.,]/g, ''), 10);
+      if (parsedFb >= 100) db.socialStats.facebook = parsedFb;
+    }
+
+    db.socialStats.total = (Number(db.socialStats.youtube) || 0) + (Number(db.socialStats.tiktok) || 0) + (Number(db.socialStats.facebook) || 0);
+    db.socialStats.updatedAt = new Date().toISOString();
+  } catch (e) {}
+}
+
 loadDatabase().then(() => {
+  refreshSocialFollowerCounts();
   server.listen(PORT, () => {
     console.log(`Servidor Huellas de la Humanidad activo en puerto ${PORT}`);
   });
+  // Actualizar contadores de seguidores de YouTube, TikTok y Facebook cada 2 minutos
+  setInterval(refreshSocialFollowerCounts, 2 * 60 * 1000);
   // Vigilar automáticamente nuevos videos en el canal de YouTube cada 10 minutos
   setInterval(checkYoutubeAndNotify, 10 * 60 * 1000);
 });

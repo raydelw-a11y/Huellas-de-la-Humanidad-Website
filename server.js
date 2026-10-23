@@ -691,10 +691,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/release' && req.method === 'GET') {
     const session = getAuthSession(req);
     return sendJson(res, 200, {
-      nextRelease: db.nextRelease || {
-        title: 'Próximo Documental Especial en Producción',
-        targetDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
-      },
+      nextRelease: db.nextRelease || null,
       isAdmin: Boolean(session && session.role === 'admin')
     });
   }
@@ -704,7 +701,12 @@ const server = http.createServer(async (req, res) => {
     if (!session || session.role !== 'admin') {
       return sendJson(res, 403, { error: 'Solo el Administrador puede configurar el próximo estreno.' });
     }
-    const { title, targetDate } = await parseBody(req);
+    const { title, targetDate, reset } = await parseBody(req);
+    if (reset) {
+      db.nextRelease = null;
+      saveDatabase();
+      return sendJson(res, 200, { ok: true, nextRelease: null });
+    }
     const cleanTitle = String(title || '').trim();
     const parsedDate = new Date(targetDate);
     if (!cleanTitle || isNaN(parsedDate.getTime())) {

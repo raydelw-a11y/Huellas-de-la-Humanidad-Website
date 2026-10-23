@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_suggest_topic: 'Proponer Tema',
             btn_reset_poll: 'Reiniciar Ronda (5 temas)',
             countdown_title: 'Próximo Estreno',
+            release_default_sub: 'Próximo Documental Especial en Producción',
+            countdown_tbd: 'Por decidir',
             cd_days: 'Días',
             cd_hours: 'Horas',
             cd_mins: 'Min',
@@ -121,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_wall_comment: '¿Qué teoría, pregunta o reflexión sobre nuestros documentales quieres compartir hoy?',
             btn_post_wall: 'Publicar en el Muro',
             nav_home: 'Inicio y Documentales',
-            btn_open_wall_full: 'Entrar al Muro de Debate a Pantalla Completa',
+            btn_open_wall_full: 'Entrar al Muro de Debate',
             btn_back_home: 'Volver a Inicio y Documentales',
             opt_general_topic: '📌 Tema general del canal',
             fb_like: 'Me gusta',
@@ -180,6 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_suggest_topic: 'Suggest Topic',
             btn_reset_poll: 'Reset Round (5 topics)',
             countdown_title: 'Next Premiere',
+            release_default_sub: 'Next Special Documentary in Production',
+            countdown_tbd: 'To Be Decided',
             cd_days: 'Days',
             cd_hours: 'Hours',
             cd_mins: 'Min',
@@ -222,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_wall_comment: 'What historical theory, question, or thought about our documentaries do you want to share today?',
             btn_post_wall: 'Post to Wall',
             nav_home: 'Home & Documentaries',
-            btn_open_wall_full: 'Open Full-Screen Debate Wall',
+            btn_open_wall_full: 'Enter Debate Wall',
             btn_back_home: 'Back to Home & Documentaries',
             opt_general_topic: '📌 General channel topic',
             fb_like: 'Like',
@@ -992,23 +996,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 2. PRÓXIMO ESTRENO EN PRODUCCIÓN (COUNTDOWN)
+    // 2. PRÓXIMO ESTRENO EN PRODUCCIÓN (COUNTDOWN / POR DECIDIR)
     // ==========================================
-    let releaseTargetTimestamp = Date.now() + 5 * 86400000;
+    let releaseTargetTimestamp = null;
+
+    function updateCountdownDisplayMode() {
+        const tbdBox = document.getElementById('countdown-tbd-box');
+        const gridBox = document.getElementById('countdown-grid');
+        const hasValidFutureDate = Boolean(releaseTargetTimestamp && releaseTargetTimestamp > Date.now());
+        if (tbdBox) tbdBox.classList.toggle('hidden', hasValidFutureDate);
+        if (gridBox) gridBox.classList.toggle('hidden', !hasValidFutureDate);
+    }
+
     async function loadReleaseCountdown() {
         try {
             const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
             const res = await fetch(`${API_BASE}/api/release`, { headers });
             if (!res.ok) return;
             const data = await res.json();
-            if (data.nextRelease) {
-                document.getElementById('release-title-display').textContent = `«${data.nextRelease.title}»`;
-                releaseTargetTimestamp = new Date(data.nextRelease.targetDate).getTime();
+            const titleEl = document.getElementById('release-title-display');
+            if (data.nextRelease && data.nextRelease.targetDate) {
+                const ts = new Date(data.nextRelease.targetDate).getTime();
+                if (!isNaN(ts) && ts > Date.now()) {
+                    if (titleEl) titleEl.textContent = `«${data.nextRelease.title}»`;
+                    releaseTargetTimestamp = ts;
+                    updateCountdownDisplayMode();
+                    tickCountdown();
+                    return;
+                }
             }
+            releaseTargetTimestamp = null;
+            if (titleEl) titleEl.textContent = t('release_default_sub');
+            updateCountdownDisplayMode();
         } catch (e) {}
     }
 
     function tickCountdown() {
+        if (!releaseTargetTimestamp || releaseTargetTimestamp <= Date.now()) {
+            updateCountdownDisplayMode();
+            return;
+        }
         const diff = Math.max(0, releaseTargetTimestamp - Date.now());
         const d = Math.floor(diff / 86400000);
         const h = Math.floor((diff % 86400000) / 3600000);
@@ -1020,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cd-secs').textContent = String(s).padStart(2, '0');
     }
     setInterval(tickCountdown, 1000);
-    tickCountdown();
+    updateCountdownDisplayMode();
 
     const adminReleaseForm = document.getElementById('admin-release-form');
     if (adminReleaseForm) {
@@ -1037,6 +1064,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ title, targetDate: new Date(targetDate).toISOString() })
+                });
+                if (res.ok) {
+                    loadReleaseCountdown();
+                }
+            } catch (err) {}
+        });
+    }
+
+    const adminReleaseResetBtn = document.getElementById('admin-release-reset-btn');
+    if (adminReleaseResetBtn) {
+        adminReleaseResetBtn.addEventListener('click', async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/release`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ reset: true })
                 });
                 if (res.ok) {
                     loadReleaseCountdown();
@@ -1502,6 +1548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let currentMapRegion = 'world';
+    let currentViewBox = [...MAP_VIEWBOXES.world];
     let selectedMapDoc = null;
     let mapCalloutPinned = false;
     let mapHoverHideTimer = null;
@@ -1531,6 +1578,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function hideMapFloatingCallout() {
+        if (mapHoverHideTimer) {
+            clearTimeout(mapHoverHideTimer);
+            mapHoverHideTimer = null;
+        }
         const polyline = document.getElementById('map-leader-polyline');
         const originDot = document.getElementById('map-leader-origin-dot');
         const endDot = document.getElementById('map-leader-end-dot');
@@ -1541,6 +1592,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (callout) callout.classList.add('hidden');
         document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
         selectedMapDoc = null;
+    }
+
+    // Mantener abierta la tarjeta flotante cuando el puntero entra en ella para dar clic en "Ver Documental"
+    const mapFloatingCalloutEl = document.getElementById('map-floating-callout');
+    if (mapFloatingCalloutEl) {
+        mapFloatingCalloutEl.addEventListener('mouseenter', () => {
+            if (mapHoverHideTimer) {
+                clearTimeout(mapHoverHideTimer);
+                mapHoverHideTimer = null;
+            }
+        });
+        mapFloatingCalloutEl.addEventListener('mouseleave', () => {
+            if (mapCalloutPinned) return;
+            mapHoverHideTimer = setTimeout(() => {
+                hideMapFloatingCallout();
+            }, 350);
+        });
     }
 
     function showMapFloatingCallout(doc, leftPct, topPct) {
@@ -1568,9 +1636,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const dirX = leftPct < 52 ? 1 : -1;
         const dirY = topPct < 45 ? 1 : -1;
 
-        const elbowX = px + dirX * 34;
-        const elbowY = py + dirY * 28;
-        const endX = elbowX + dirX * 26;
+        const elbowX = px + dirX * 26;
+        const elbowY = py + dirY * 22;
+        const endX = elbowX + dirX * 18;
         const endY = elbowY;
 
         polyline.setAttribute('points', `${px.toFixed(1)},${py.toFixed(1)} ${elbowX.toFixed(1)},${elbowY.toFixed(1)} ${endX.toFixed(1)},${endY.toFixed(1)}`);
@@ -1597,7 +1665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardW = Math.min(245, w - 20);
         const cardH = callout.offsetHeight || 105;
 
-        let cardLeft = dirX === 1 ? endX + 4 : endX - cardW - 4;
+        let cardLeft = dirX === 1 ? endX + 2 : endX - cardW - 2;
         let cardTop = endY - cardH / 2;
 
         cardLeft = Math.max(8, Math.min(w - cardW - 8, cardLeft));
@@ -1607,7 +1675,7 @@ document.addEventListener('DOMContentLoaded', () => {
         callout.style.top = `${cardTop}px`;
     }
 
-    function renderInteractiveMap() {
+    function renderInteractiveMap(preserveCallout = false) {
         const svg = document.getElementById('real-earth-svg');
         const pinsLayer = document.getElementById('map-pins-layer');
         const badge = document.getElementById('map-count-badge');
@@ -1615,38 +1683,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (badge) badge.textContent = t('map_docs_count');
 
-        const vb = MAP_VIEWBOXES[currentMapRegion] || MAP_VIEWBOXES.world;
-        svg.setAttribute('viewBox', vb.join(' '));
+        const vb = currentViewBox;
+        svg.setAttribute('viewBox', vb.map(n => n.toFixed(2)).join(' '));
 
         pinsLayer.innerHTML = '';
-        hideMapFloatingCallout();
+        if (!preserveCallout) {
+            hideMapFloatingCallout();
+        }
+
+        let activeCoords = null;
 
         DOCUMENTARIES.forEach((doc) => {
             const { leftPct, topPct } = projectLonLatToViewBoxPct(doc.lon, doc.lat, vb);
-            if (leftPct < 1 || leftPct > 99 || topPct < 1 || topPct > 99) return;
+            if (leftPct < 0.5 || leftPct > 99.5 || topPct < 0.5 || topPct > 99.5) return;
 
+            const isSelected = Boolean(selectedMapDoc && selectedMapDoc.id === doc.id);
             const pin = document.createElement('button');
             pin.type = 'button';
-            pin.className = 'map-pin-btn';
+            pin.className = `map-pin-btn ${isSelected ? 'active' : ''}`;
             pin.style.left = `${leftPct}%`;
             pin.style.top = `${topPct}%`;
             pin.setAttribute('aria-label', `${docEra(doc)} — ${docTitle(doc)}`);
 
             // Al pasar el puntero encima aparece la línea y el texto
             pin.addEventListener('mouseenter', () => {
-                if (mapHoverHideTimer) clearTimeout(mapHoverHideTimer);
+                if (mapHoverHideTimer) {
+                    clearTimeout(mapHoverHideTimer);
+                    mapHoverHideTimer = null;
+                }
                 selectedMapDoc = doc;
                 document.querySelectorAll('.map-pin-btn').forEach(b => b.classList.remove('active'));
                 pin.classList.add('active');
                 showMapFloatingCallout(doc, leftPct, topPct);
             });
 
-            // Al retirar el puntero del punto (si no se fijó con tap/click) desaparece la línea y el texto
+            // Al retirar el puntero da tiempo suficiente (750ms) para mover el cursor hacia el botón "Ver Documental"
             pin.addEventListener('mouseleave', () => {
                 if (mapCalloutPinned) return;
                 mapHoverHideTimer = setTimeout(() => {
                     hideMapFloatingCallout();
-                }, 80);
+                }, 750);
             });
 
             // Si se hace tap con el dedo o click, queda visible hasta tocar/clicar en otro lugar de la pantalla
@@ -1671,6 +1747,134 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             pinsLayer.appendChild(pin);
+            if (isSelected) {
+                activeCoords = { doc, leftPct, topPct };
+            }
+        });
+
+        if (preserveCallout && activeCoords) {
+            showMapFloatingCallout(activeCoords.doc, activeCoords.leftPct, activeCoords.topPct);
+        } else if (preserveCallout && selectedMapDoc) {
+            hideMapFloatingCallout();
+        }
+    }
+
+    // Zoom en el mapa interactivo con la rueda del ratón (scroll) + arrastrar + pellizco con 2 dedos (pinch-to-zoom)
+    const worldMapStage = document.getElementById('world-map-stage');
+    if (worldMapStage) {
+        function clampViewBox(x, y, w, h) {
+            const clampedW = Math.max(85, Math.min(1000, w));
+            const clampedH = clampedW * 0.48;
+            const clampedX = Math.max(0, Math.min(1000 - clampedW, x));
+            const clampedY = Math.max(0, Math.min(480 - clampedH, y));
+            return [clampedX, clampedY, clampedW, clampedH];
+        }
+
+        // 1. Zoom con scroll del mouse
+        worldMapStage.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = worldMapStage.getBoundingClientRect();
+            const relX = Math.max(0, Math.min(1, (e.clientX - rect.left) / (rect.width || 1)));
+            const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / (rect.height || 1)));
+
+            const [vbX, vbY, vbW, vbH] = currentViewBox;
+            const zoomFactor = e.deltaY < 0 ? 0.85 : 1.18;
+            const newW = Math.max(85, Math.min(1000, vbW * zoomFactor));
+            const newH = newW * 0.48;
+            const newX = vbX + (vbW - newW) * relX;
+            const newY = vbY + (vbH - newH) * relY;
+
+            currentViewBox = clampViewBox(newX, newY, newW, newH);
+            renderInteractiveMap(Boolean(selectedMapDoc));
+        }, { passive: false });
+
+        // 2. Arrastrar mapa con el ratón cuando tiene zoom
+        let isDraggingMap = false;
+        let dragStartClient = { x: 0, y: 0 };
+        let dragStartVb = null;
+
+        worldMapStage.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.map-pin-btn') || e.target.closest('#map-floating-callout')) return;
+            isDraggingMap = true;
+            dragStartClient = { x: e.clientX, y: e.clientY };
+            dragStartVb = [...currentViewBox];
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingMap || !dragStartVb) return;
+            const rect = worldMapStage.getBoundingClientRect();
+            const dxPct = (e.clientX - dragStartClient.x) / (rect.width || 1);
+            const dyPct = (e.clientY - dragStartClient.y) / (rect.height || 1);
+            const newX = dragStartVb[0] - dxPct * dragStartVb[2];
+            const newY = dragStartVb[1] - dyPct * dragStartVb[3];
+            currentViewBox = clampViewBox(newX, newY, dragStartVb[2], dragStartVb[3]);
+            renderInteractiveMap(Boolean(selectedMapDoc));
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingMap = false;
+            dragStartVb = null;
+        });
+
+        // 3. Zoom con 2 dedos (pinch-to-zoom) y desplazamiento táctil en móvil/tablet
+        let pinchStartDist = 0;
+        let pinchStartVb = null;
+        let pinchStartMid = { x: 0.5, y: 0.5 };
+        let touchPanStart = null;
+
+        worldMapStage.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const t0 = e.touches[0];
+                const t1 = e.touches[1];
+                pinchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+                pinchStartVb = [...currentViewBox];
+                const rect = worldMapStage.getBoundingClientRect();
+                pinchStartMid = {
+                    x: (((t0.clientX + t1.clientX) / 2) - rect.left) / (rect.width || 1),
+                    y: (((t0.clientY + t1.clientY) / 2) - rect.top) / (rect.height || 1)
+                };
+                touchPanStart = null;
+            } else if (e.touches.length === 1 && currentViewBox[2] < 995) {
+                if (!e.target.closest('.map-pin-btn') && !e.target.closest('#map-floating-callout')) {
+                    touchPanStart = {
+                        x: e.touches[0].clientX,
+                        y: e.touches[0].clientY,
+                        vb: [...currentViewBox]
+                    };
+                }
+            }
+        }, { passive: false });
+
+        worldMapStage.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && pinchStartDist > 0 && pinchStartVb) {
+                e.preventDefault();
+                const t0 = e.touches[0];
+                const t1 = e.touches[1];
+                const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+                const scale = pinchStartDist / Math.max(10, dist);
+                const newW = Math.max(85, Math.min(1000, pinchStartVb[2] * scale));
+                const newH = newW * 0.48;
+                const newX = pinchStartVb[0] + (pinchStartVb[2] - newW) * pinchStartMid.x;
+                const newY = pinchStartVb[1] + (pinchStartVb[3] - newH) * pinchStartMid.y;
+                currentViewBox = clampViewBox(newX, newY, newW, newH);
+                renderInteractiveMap(Boolean(selectedMapDoc));
+            } else if (e.touches.length === 1 && touchPanStart) {
+                e.preventDefault();
+                const rect = worldMapStage.getBoundingClientRect();
+                const dxPct = (e.touches[0].clientX - touchPanStart.x) / (rect.width || 1);
+                const dyPct = (e.touches[0].clientY - touchPanStart.y) / (rect.height || 1);
+                const newX = touchPanStart.vb[0] - dxPct * touchPanStart.vb[2];
+                const newY = touchPanStart.vb[1] - dyPct * touchPanStart.vb[3];
+                currentViewBox = clampViewBox(newX, newY, touchPanStart.vb[2], touchPanStart.vb[3]);
+                renderInteractiveMap(Boolean(selectedMapDoc));
+            }
+        }, { passive: false });
+
+        worldMapStage.addEventListener('touchend', () => {
+            pinchStartDist = 0;
+            pinchStartVb = null;
+            touchPanStart = null;
         });
     }
 
@@ -1692,6 +1896,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.map-region-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentMapRegion = btn.getAttribute('data-region') || 'world';
+            currentViewBox = [...(MAP_VIEWBOXES[currentMapRegion] || MAP_VIEWBOXES.world)];
             mapCalloutPinned = false;
             renderInteractiveMap();
         });
@@ -1699,9 +1904,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('resize', () => {
         if (selectedMapDoc) {
-            const vb = MAP_VIEWBOXES[currentMapRegion] || MAP_VIEWBOXES.world;
-            const { leftPct, topPct } = projectLonLatToViewBoxPct(selectedMapDoc.lon, selectedMapDoc.lat, vb);
-            if (leftPct >= 1 && leftPct <= 99 && topPct >= 1 && topPct <= 99) {
+            const { leftPct, topPct } = projectLonLatToViewBoxPct(selectedMapDoc.lon, selectedMapDoc.lat, currentViewBox);
+            if (leftPct >= 0.5 && leftPct <= 99.5 && topPct >= 0.5 && topPct <= 99.5) {
                 showMapFloatingCallout(selectedMapDoc, leftPct, topPct);
             }
         }

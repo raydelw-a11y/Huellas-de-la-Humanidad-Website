@@ -75,9 +75,9 @@ let db = {
   socialStats: {
     youtube: 1060,
     tiktok: 10600,
-    facebook: 22790,
+    facebook: 22792,
     instagram: 1128,
-    total: 35578,
+    total: 35580,
     updatedAt: new Date().toISOString()
   },
   comments: [
@@ -165,6 +165,9 @@ async function loadDatabase() {
         if (parsed.scores) db.scores = parsed.scores;
         if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
         if (parsed.videoComments && typeof parsed.videoComments === 'object') db.videoComments = parsed.videoComments;
+        if (parsed.socialStats && typeof parsed.socialStats === 'object') {
+          db.socialStats = { ...db.socialStats, ...parsed.socialStats };
+        }
       }
     }
   } catch (e) {
@@ -193,6 +196,9 @@ async function loadDatabase() {
           if (parsed.scores) db.scores = parsed.scores;
           if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
           if (parsed.videoComments && typeof parsed.videoComments === 'object') db.videoComments = parsed.videoComments;
+          if (parsed.socialStats && typeof parsed.socialStats === 'object') {
+            db.socialStats = { ...db.socialStats, ...parsed.socialStats };
+          }
           console.log('Database loaded from GitHub cloud backup.');
         }
       }
@@ -1089,13 +1095,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/social-stats' && req.method === 'GET') {
-    if (Date.now() - lastSocialRefreshTime > 45000) {
-      refreshSocialFollowerCounts();
+    if (Date.now() - lastSocialRefreshTime > 15000) {
+      await refreshSocialFollowerCounts();
     }
-    const stats = db.socialStats || { youtube: 1060, tiktok: 10600, facebook: 22790, instagram: 1128, total: 35578 };
+    const stats = db.socialStats || { youtube: 1060, tiktok: 10600, facebook: 22792, instagram: 1128, total: 35580 };
     const yt = Math.max(1060, Number(stats.youtube) || 1060);
     const tk = Math.max(10600, Number(stats.tiktok) || 10600);
-    const fb = Math.max(22790, Number(stats.facebook) || 22790);
+    const fb = Math.max(22792, Number(stats.facebook) || 22792);
     const ig = Math.max(1128, Number(stats.instagram) || 1128);
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return sendJson(res, 200, {
@@ -1127,9 +1133,10 @@ let lastSocialRefreshTime = 0;
 
 function fetchHtmlWithUA(url, ua) {
   return new Promise((resolve) => {
-    https.get(url, {
+    const req = https.get(url, {
       headers: {
         'User-Agent': ua || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9,es;q=0.8',
         'Cache-Control': 'no-cache'
       }
@@ -1145,7 +1152,12 @@ function fetchHtmlWithUA(url, ua) {
       });
       res.on('end', () => resolve(data));
       res.on('error', () => resolve(''));
-    }).on('error', () => resolve(''));
+    });
+    req.setTimeout(8000, () => {
+      req.destroy();
+      resolve('');
+    });
+    req.on('error', () => resolve(''));
   });
 }
 
@@ -1176,17 +1188,23 @@ function parseAbbreviatedCount(rawStr) {
   return isNaN(digitsOnly) ? 0 : digitsOnly;
 }
 
+const FB_PLUGIN_URL = 'https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fhuellasdelahumanidaddocumentales&tabs&width=340&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false';
+
 async function refreshSocialFollowerCounts() {
   lastSocialRefreshTime = Date.now();
   try {
     if (!db.socialStats) {
-      db.socialStats = { youtube: 1060, tiktok: 10600, facebook: 22790, instagram: 1128, total: 35578, updatedAt: new Date().toISOString() };
+      db.socialStats = { youtube: 1060, tiktok: 10600, facebook: 22792, instagram: 1128, total: 35580, updatedAt: new Date().toISOString() };
     }
-    const [ytHtml, tkHtml, fbHtml, igHtml] = await Promise.all([
+    const prevTotal = db.socialStats.total || 0;
+
+    const [ytHtml, tkHtml, fbPluginHtml, fbPageHtml, igHtml, igFallbackHtml] = await Promise.all([
       fetchHtmlWithUA('https://www.youtube.com/@huellas_de_la_humanidad'),
       fetchHtmlWithUA('https://www.tiktok.com/@huellas_de_la_humanidad'),
+      fetchHtmlWithUA(FB_PLUGIN_URL),
       fetchHtmlWithUA('https://www.facebook.com/huellasdelahumanidaddocumentales', 'facebookexternalhit/1.1'),
-      fetchHtmlWithUA('https://www.instagram.com/huellasdelahumanidadvideos/', 'facebookexternalhit/1.1')
+      fetchHtmlWithUA('https://www.instagram.com/huellasdelahumanidadvideos/', 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'),
+      fetchHtmlWithUA('https://www.instagram.com/huellasdelahumanidadvideos/', 'TelegramBot (like TwitterBot)')
     ]);
 
     // 1. YouTube
@@ -1205,8 +1223,8 @@ async function refreshSocialFollowerCounts() {
       if (parsedTk >= 100) db.socialStats.tiktok = parsedTk;
     }
 
-    // 3. Facebook (soporta formato con &#xa0; / espacios / comas / puntos)
-    const fbClean = decodeHtmlEntities(fbHtml);
+    // 3. Facebook (usa el plugin oficial embebido que nunca redirige a login en servidores cloud + respaldo og:description)
+    const fbClean = decodeHtmlEntities(fbPluginHtml) + '\n' + decodeHtmlEntities(fbPageHtml);
     const fbMatch = fbClean.match(/([0-9][0-9.,\s]*\s*[KMBkmb]?)\s*(?:followers|seguidores)/i);
     if (fbMatch) {
       const parsedFb = parseAbbreviatedCount(fbMatch[1]);
@@ -1214,7 +1232,7 @@ async function refreshSocialFollowerCounts() {
     }
 
     // 4. Instagram (@huellasdelahumanidadvideos)
-    const igClean = decodeHtmlEntities(igHtml);
+    const igClean = decodeHtmlEntities(igHtml) + '\n' + decodeHtmlEntities(igFallbackHtml);
     const igMatch = igClean.match(/([0-9][0-9.,\s]*\s*[KMBkmb]?)\s*(?:Followers|followers|seguidores)/i);
     if (igMatch) {
       const parsedIg = parseAbbreviatedCount(igMatch[1]);
@@ -1223,10 +1241,14 @@ async function refreshSocialFollowerCounts() {
 
     db.socialStats.youtube = Math.max(1060, Number(db.socialStats.youtube) || 1060);
     db.socialStats.tiktok = Math.max(10600, Number(db.socialStats.tiktok) || 10600);
-    db.socialStats.facebook = Math.max(22790, Number(db.socialStats.facebook) || 22790);
+    db.socialStats.facebook = Math.max(22792, Number(db.socialStats.facebook) || 22792);
     db.socialStats.instagram = Math.max(1128, Number(db.socialStats.instagram) || 1128);
     db.socialStats.total = db.socialStats.youtube + db.socialStats.tiktok + db.socialStats.facebook + db.socialStats.instagram;
     db.socialStats.updatedAt = new Date().toISOString();
+
+    if (db.socialStats.total !== prevTotal) {
+      saveDatabase();
+    }
   } catch (e) {}
 }
 
@@ -1235,8 +1257,8 @@ loadDatabase().then(() => {
   server.listen(PORT, () => {
     console.log(`Servidor Huellas de la Humanidad activo en puerto ${PORT}`);
   });
-  // Actualizar contadores de seguidores de YouTube, TikTok, Facebook e Instagram cada 60 segundos
-  setInterval(refreshSocialFollowerCounts, 60 * 1000);
+  // Actualizar contadores de seguidores de YouTube, TikTok, Facebook e Instagram cada 20 segundos en vivo
+  setInterval(refreshSocialFollowerCounts, 20 * 1000);
   // Vigilar automáticamente nuevos videos en el canal de YouTube cada 10 minutos
   setInterval(checkYoutubeAndNotify, 10 * 60 * 1000);
 });

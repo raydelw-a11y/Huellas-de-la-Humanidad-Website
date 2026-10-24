@@ -2932,7 +2932,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // CONTADOR EN TIEMPO REAL DE SEGUIDORES TOTALES (YOUTUBE + TIKTOK + FACEBOOK + INSTAGRAM)
     // ==========================================
-    let currentDisplayedFollowersTotal = 35578;
+    let currentDisplayedFollowersTotal = 35580;
 
     function formatCompactFollowers(n) {
         if (!Number.isFinite(n) || n <= 0) return '0';
@@ -2973,9 +2973,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             const yt = Math.max(1060, Number(data.youtube) || 1060);
             const tk = Math.max(10600, Number(data.tiktok) || 10600);
-            const fb = Math.max(22790, Number(data.facebook) || 22790);
+            const fb = Math.max(22792, Number(data.facebook) || 22792);
             const ig = Math.max(1128, Number(data.instagram) || 1128);
-            const total = Math.max(35578, Number(data.total) || 0, yt + tk + fb + ig);
+            const total = Math.max(35580, Number(data.total) || 0, yt + tk + fb + ig);
 
             animateTotalFollowers(total);
         } catch (err) {
@@ -3006,7 +3006,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(() => {
         loadSocialFollowerStats();
-    }, 20000);
+    }, 10000);
 
     if (authToken && currentUser) {
         enterChatView();

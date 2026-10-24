@@ -395,6 +395,28 @@ body {
     gap: 6px;
 }
 
+.status-dot.gold-live {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--gold-light) 0%, var(--primary-color) 65%, var(--gold-dark) 100%);
+    box-shadow: 0 0 8px var(--primary-color), 0 0 14px rgba(212, 175, 55, 0.65);
+    display: inline-block;
+    flex-shrink: 0;
+    animation: goldLivePulse 2s infinite ease-in-out;
+}
+
+@keyframes goldLivePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 7px var(--primary-color), 0 0 12px rgba(212, 175, 55, 0.55);
+    }
+    50% {
+        transform: scale(1.18);
+        box-shadow: 0 0 11px var(--gold-light), 0 0 18px rgba(245, 223, 152, 0.85);
+    }
+}
+
 .total-followers-number {
     font-family: 'Cinzel', Georgia, serif;
     font-size: 1.02rem;

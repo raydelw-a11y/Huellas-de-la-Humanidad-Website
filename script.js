@@ -2930,9 +2930,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // CONTADOR EN TIEMPO REAL DE SEGUIDORES TOTALES (YOUTUBE + TIKTOK + FACEBOOK)
+    // CONTADOR EN TIEMPO REAL DE SEGUIDORES TOTALES (YOUTUBE + TIKTOK + FACEBOOK + INSTAGRAM)
     // ==========================================
-    let currentDisplayedFollowersTotal = 33915;
+    let currentDisplayedFollowersTotal = 35578;
 
     function formatCompactFollowers(n) {
         if (!Number.isFinite(n) || n <= 0) return '0';
@@ -2968,13 +2968,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSocialFollowerStats() {
         try {
-            const res = await fetch(`${API_BASE}/api/social-stats`);
+            const res = await fetch(`${API_BASE}/api/social-stats?t=${Date.now()}`, { cache: 'no-store' });
             if (!res.ok) return;
             const data = await res.json();
-            const yt = Number(data.youtube) || 1060;
-            const tk = Number(data.tiktok) || 10400;
-            const fb = Number(data.facebook) || 22455;
-            const total = Number(data.total) || (yt + tk + fb);
+            const yt = Math.max(1060, Number(data.youtube) || 1060);
+            const tk = Math.max(10600, Number(data.tiktok) || 10600);
+            const fb = Math.max(22790, Number(data.facebook) || 22790);
+            const ig = Math.max(1128, Number(data.instagram) || 1128);
+            const total = Math.max(35578, Number(data.total) || 0, yt + tk + fb + ig);
 
             animateTotalFollowers(total);
         } catch (err) {
@@ -3005,7 +3006,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(() => {
         loadSocialFollowerStats();
-    }, 30000);
+    }, 20000);
 
     if (authToken && currentUser) {
         enterChatView();

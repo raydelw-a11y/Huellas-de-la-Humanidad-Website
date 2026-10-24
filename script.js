@@ -548,18 +548,63 @@ document.addEventListener('DOMContentLoaded', () => {
         if (clean.includes('@')) return true;
         if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) return true;
         if (/\.(com|net|org|es|edu|gov|io|co|us|mx|ar|cl|pe|ve|cu|info|biz|me|live|outlook|hotmail|gmail|yahoo|icloud)$/i.test(clean)) return true;
+        if (/(gmail|hotmail|outlook|yahoo|icloud|protonmail|live)\.(com|es|net|org)/i.test(clean)) return true;
         if (cleanMail && clean === cleanMail) return true;
         return false;
     }
 
     const regUsernameInput = document.getElementById('reg-username');
+    const regEmailInput = document.getElementById('reg-email');
+    const regUsernameError = document.getElementById('reg-username-error');
+    const loginUsernameInput = document.getElementById('login-username');
+    const loginUsernameError = document.getElementById('login-username-error');
+
+    function validateRegisterUsernameField() {
+        if (!regUsernameInput) return true;
+        const val = regUsernameInput.value;
+        const mailVal = regEmailInput ? regEmailInput.value : '';
+        const invalid = isEmailLikeUsername(val, mailVal);
+        regUsernameInput.classList.toggle('input-error', invalid);
+        if (regUsernameError) regUsernameError.classList.toggle('hidden', !invalid);
+        if (invalid) {
+            showFeedback(t('err_email_as_user'));
+        } else {
+            clearFeedback();
+        }
+        return !invalid;
+    }
+
+    function validateLoginUsernameField() {
+        if (!loginUsernameInput) return true;
+        const val = loginUsernameInput.value;
+        const invalid = isEmailLikeUsername(val);
+        loginUsernameInput.classList.toggle('input-error', invalid);
+        if (loginUsernameError) loginUsernameError.classList.toggle('hidden', !invalid);
+        if (invalid) {
+            showFeedback(t('err_login_no_email'));
+        } else {
+            clearFeedback();
+        }
+        return !invalid;
+    }
+
     if (regUsernameInput) {
-        regUsernameInput.addEventListener('input', () => {
-            if (regUsernameInput.value.includes('@')) {
-                showFeedback(t('err_email_as_user'));
-            } else {
-                clearFeedback();
-            }
+        ['input', 'change', 'blur'].forEach(evt => {
+            regUsernameInput.addEventListener(evt, validateRegisterUsernameField);
+        });
+    }
+    if (regEmailInput) {
+        ['input', 'change'].forEach(evt => {
+            regEmailInput.addEventListener(evt, () => {
+                if (regUsernameInput && regUsernameInput.value.trim()) {
+                    validateRegisterUsernameField();
+                }
+            });
+        });
+    }
+    if (loginUsernameInput) {
+        ['input', 'change', 'blur'].forEach(evt => {
+            loginUsernameInput.addEventListener(evt, validateLoginUsernameField);
         });
     }
 
@@ -571,7 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = regPasswordInput.value;
         const email = document.getElementById('reg-email').value.trim();
 
-        if (isEmailLikeUsername(username, email)) {
+        if (!validateRegisterUsernameField() || isEmailLikeUsername(username, email)) {
             return showFeedback(t('err_email_as_user'));
         }
 
@@ -604,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = document.getElementById('login-username').value.trim();
         const password = document.getElementById('login-password').value;
 
-        if (username.includes('@')) {
+        if (!validateLoginUsernameField() || isEmailLikeUsername(username)) {
             return showFeedback(t('err_login_no_email'));
         }
 

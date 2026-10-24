@@ -457,6 +457,39 @@ body {
 .followers-platforms-mini i.fa-tiktok { color: #00f2fe; }
 .followers-platforms-mini i.fa-facebook { color: #4da3ff; }
 
+.admin-active-visitors-box {
+    background: rgba(10, 8, 6, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.42);
+    border-radius: 8px;
+    padding: 0.22rem 0.58rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(212, 175, 55, 0.06);
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+}
+
+.status-dot.gold-live.small-dot {
+    width: 6px;
+    height: 6px;
+}
+
+.active-visitors-label {
+    color: var(--primary-color);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.active-visitors-count {
+    color: var(--gold-light);
+    font-weight: 800;
+    font-size: 0.72rem;
+    line-height: 1;
+}
+
 .header-content {
     display: flex;
     flex-direction: column;

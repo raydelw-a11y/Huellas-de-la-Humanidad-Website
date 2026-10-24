@@ -617,6 +617,7 @@ const server = http.createServer(async (req, res) => {
 
   // --- ENCUESTA / TEMA DEL PRÓXIMO VIDEO (5 TEMAS + VOTACIÓN) ---
   if (pathname === '/api/poll' && req.method === 'GET') {
+    recordActiveVisitor(req, parsedUrl);
     const voterId = String(parsedUrl.searchParams.get('voterId') || '').trim();
     const session = getAuthSession(req);
     const effectiveVoter = session ? `user:${session.username}` : (voterId ? `anon:${voterId}` : '');
@@ -638,6 +639,7 @@ const server = http.createServer(async (req, res) => {
       totalVotes,
       isAdmin: Boolean(session && session.role === 'admin'),
       currentUsername: session ? (session.role === 'admin' ? session.username : (session.displayName || session.username)) : null,
+      activeVisitors: getActiveVisitorCount(),
       topics
     });
   }
@@ -1094,7 +1096,16 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
+  if (pathname === '/api/presence/leave' && (req.method === 'POST' || req.method === 'GET')) {
+    const vid = String(parsedUrl.searchParams.get('vid') || parsedUrl.searchParams.get('voterId') || '').trim();
+    if (vid) {
+      activeVisitors.delete(vid);
+    }
+    return sendJson(res, 200, { ok: true, activeVisitors: getActiveVisitorCount() });
+  }
+
   if (pathname === '/api/social-stats' && req.method === 'GET') {
+    recordActiveVisitor(req, parsedUrl);
     if (Date.now() - lastSocialRefreshTime > 15000) {
       await refreshSocialFollowerCounts();
     }
@@ -1110,6 +1121,7 @@ const server = http.createServer(async (req, res) => {
       facebook: fb,
       instagram: ig,
       total: yt + tk + fb + ig,
+      activeVisitors: getActiveVisitorCount(),
       updatedAt: stats.updatedAt || new Date().toISOString()
     });
   }
@@ -1128,6 +1140,32 @@ const server = http.createServer(async (req, res) => {
   res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
   res.end('No encontrado');
 });
+
+const activeVisitors = new Map(); // visitorKey -> timestampMs
+
+function recordActiveVisitor(req, parsedUrl) {
+  const vid = String(parsedUrl.searchParams.get('vid') || parsedUrl.searchParams.get('voterId') || '').trim();
+  if (vid) {
+    activeVisitors.set(vid, Date.now());
+    return;
+  }
+  const ua = String(req.headers['user-agent'] || '');
+  if (/bot|crawl|spider|uptime|render|curl/i.test(ua)) return;
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (ip) {
+    activeVisitors.set(`ip:${ip}`, Date.now());
+  }
+}
+
+function getActiveVisitorCount() {
+  const now = Date.now();
+  for (const [key, lastSeen] of activeVisitors.entries()) {
+    if (now - lastSeen > 22000) {
+      activeVisitors.delete(key);
+    }
+  }
+  return Math.max(1, activeVisitors.size);
+}
 
 let lastSocialRefreshTime = 0;
 

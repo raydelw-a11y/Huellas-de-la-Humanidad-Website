@@ -161,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_off: 'Audio: OFF',
             btn_become_member: 'Convertirse en Miembro',
             followers_total_label: 'Seguidores',
+            admin_active_visitors: 'Activos:',
             video_comments_title: 'Comentarios de este Video',
             video_comments_guest_msg: 'Para comentar este video debes crear una cuenta o iniciar sesión.',
             ph_video_comment: 'Escribe tu comentario sobre este documental...',
@@ -284,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_off: 'BG Audio: OFF',
             btn_become_member: 'Become a Member',
             followers_total_label: 'Followers',
+            admin_active_visitors: 'Active:',
             video_comments_title: 'Comments on This Video',
             video_comments_guest_msg: 'To comment on this video, please create an account or sign in.',
             ph_video_comment: 'Write your comment about this documentary...',
@@ -1038,6 +1040,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (adminTriviaForm) {
             adminTriviaForm.classList.toggle('hidden', !isAdmin);
         }
+        const adminActiveVisitorsBox = document.getElementById('admin-active-visitors-box');
+        if (adminActiveVisitorsBox) {
+            adminActiveVisitorsBox.classList.toggle('hidden', !isAdmin);
+        }
+    }
+
+    function updateActiveVisitorsDisplay(count) {
+        const countEl = document.getElementById('active-visitors-count');
+        if (countEl && Number.isFinite(Number(count))) {
+            countEl.textContent = Math.max(1, Math.round(Number(count))).toLocaleString('en-US');
+        }
     }
 
     async function loadPoll() {
@@ -1046,6 +1059,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE}/api/poll?voterId=${encodeURIComponent(voterId)}`, { headers });
             if (!res.ok) return;
             const data = await res.json();
+            if (data && data.activeVisitors !== undefined) {
+                updateActiveVisitorsDisplay(data.activeVisitors);
+            }
             renderPoll(data);
         } catch (e) {}
     }
@@ -2968,9 +2984,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSocialFollowerStats() {
         try {
-            const res = await fetch(`${API_BASE}/api/social-stats?t=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`${API_BASE}/api/social-stats?vid=${encodeURIComponent(voterId)}&t=${Date.now()}`, { cache: 'no-store' });
             if (!res.ok) return;
             const data = await res.json();
+            if (data && data.activeVisitors !== undefined) {
+                updateActiveVisitorsDisplay(data.activeVisitors);
+            }
             const yt = Math.max(1060, Number(data.youtube) || 1060);
             const tk = Math.max(10600, Number(data.tiktok) || 10600);
             const fb = Math.max(22792, Number(data.facebook) || 22792);
@@ -2982,6 +3001,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mantiene el último valor conocido si hay error temporal de red
         }
     }
+
+    window.addEventListener('pagehide', () => {
+        try {
+            if (navigator.sendBeacon && voterId) {
+                navigator.sendBeacon(`${API_BASE}/api/presence/leave?vid=${encodeURIComponent(voterId)}`);
+            }
+        } catch (e) {}
+    });
 
     const langBtnEs = document.getElementById('lang-btn-es');
     const langBtnEn = document.getElementById('lang-btn-en');

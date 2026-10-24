@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const I18N = {
         es: {
             header_bio: '«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy.\nCada historia deja una huella. Aquí seguimos sus rastros.»',
+            who_we_are_title: '¿Quiénes somos?',
+            who_we_are_text: 'Somos una productora de documentales independiente. Perseguimos la verdad. Contamos lo que ocurrió y cómo ocurrió, reconstruyendo el pasado para vivir la historia desde dentro.',
             btn_login: 'Iniciar Sesión',
             btn_register: 'Crear Cuenta',
             btn_settings: 'Opciones de la Cuenta',
@@ -162,6 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
+            who_we_are_title: 'Who Are We?',
+            who_we_are_text: 'We are an independent documentary production company. We pursue the truth. We tell what happened and how it happened, reconstructing the past to experience history from within.',
             btn_login: 'Sign In',
             btn_register: 'Create Account',
             btn_settings: 'Account Settings',

@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=10232115">
+    <link rel="stylesheet" href="style.css?v=10232158">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -316,6 +316,40 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                         <div class="youtube-wrapper">
                             <iframe id="youtube-latest-player" width="560" height="315" src="https://www.youtube.com/embed/rJdAGfxEYkw" title="Huellas de la Humanidad - YouTube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                         </div>
+
+                        <!-- Sección de Comentarios Propia del Video Activo -->
+                        <div class="video-comments-section" id="video-comments-section">
+                            <div class="video-comments-header">
+                                <h4><i class="fa-regular fa-comments"></i> <span data-i18n="video_comments_title">Comentarios de este Video</span></h4>
+                                <span id="video-comments-count-badge" class="poll-stage-badge">0</span>
+                            </div>
+
+                            <!-- Aviso cuando NO ha iniciado sesión -->
+                            <div id="video-comments-guest-prompt" class="video-comments-guest-prompt">
+                                <p data-i18n="video_comments_guest_msg">Para comentar este video debes crear una cuenta o iniciar sesión.</p>
+                                <div class="video-guest-actions">
+                                    <button type="button" id="video-trigger-register" class="gold-submit-btn">
+                                        <i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_register">Crear Cuenta</span>
+                                    </button>
+                                    <button type="button" id="video-trigger-login" class="top-menu-btn">
+                                        <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_login">Iniciar Sesión</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Formulario para comentar el video activo (solo con cuenta iniciada) -->
+                            <form id="video-comment-form" class="video-comment-form hidden">
+                                <div class="video-comment-input-row">
+                                    <div class="fb-avatar small" id="video-comment-avatar">U</div>
+                                    <input type="text" id="video-comment-input" data-i18n-placeholder="ph_video_comment" placeholder="Escribe tu comentario sobre este documental..." maxlength="1000" required>
+                                    <button type="submit" class="gold-submit-btn video-comment-submit-btn">
+                                        <i class="fa-solid fa-paper-plane"></i> <span data-i18n="fb_comment">Comentar</span>
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div id="video-comments-list" class="video-comments-list"></div>
+                        </div>
                     </div>
 
                     <!-- 5. Mapa Interactivo Real de la Tierra con las 25 Huellas -->
@@ -505,25 +539,49 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                     </button>
                 </div>
 
-                <!-- Creador de Publicación estilo Facebook -->
+                <!-- Creador de Publicación estilo Facebook (Conversaciones Libres, Requiere Cuenta) -->
                 <div class="fb-composer-card glass-panel">
-                    <form id="community-comment-form" class="fb-composer-form">
+                    <div id="wall-guest-prompt" class="video-comments-guest-prompt">
+                        <p data-i18n="wall_guest_msg">Para publicar o comentar en el Muro de Debate debes crear una cuenta o iniciar sesión.</p>
+                        <div class="video-guest-actions">
+                            <button type="button" id="wall-trigger-register" class="gold-submit-btn">
+                                <i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_register">Crear Cuenta</span>
+                            </button>
+                            <button type="button" id="wall-trigger-login" class="top-menu-btn">
+                                <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_login">Iniciar Sesión</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <form id="community-comment-form" class="fb-composer-form hidden">
                         <div class="fb-composer-header">
                             <div class="fb-avatar" id="composer-avatar">H</div>
                             <div class="fb-composer-meta">
                                 <span id="composer-author-label" class="fb-composer-author">Seguidor</span>
-                                <select id="community-doc-tag" class="fb-doc-select">
-                                    <option value="" data-i18n="opt_general_topic">📌 Tema general del canal</option>
-                                </select>
                             </div>
                         </div>
-                        <textarea id="community-comment-input" rows="3" data-i18n-placeholder="ph_wall_comment" placeholder="¿Qué teoría, pregunta o comentario sobre nuestros documentales quieres compartir hoy?" maxlength="1500" required></textarea>
+                        <textarea id="community-comment-input" rows="3" data-i18n-placeholder="ph_wall_comment" placeholder="¿Qué conversación, reflexión o pregunta quieres compartir hoy con la comunidad?" maxlength="1500" required></textarea>
                         <div class="fb-composer-footer">
                             <button type="submit" class="gold-submit-btn">
                                 <i class="fa-solid fa-feather"></i> <span data-i18n="btn_post_wall">Publicar en el Muro</span>
                             </button>
                         </div>
                     </form>
+                </div>
+
+                <!-- Barra de Ordenamiento (Sorting System) del Muro de Debate -->
+                <div class="fb-wall-sort-bar glass-panel">
+                    <span class="wall-sort-label">
+                        <i class="fa-solid fa-arrow-down-wide-short"></i> <span data-i18n="wall_sort_by">Ordenar por:</span>
+                    </span>
+                    <div class="wall-sort-buttons" role="group" aria-label="Ordenar publicaciones">
+                        <button type="button" id="sort-wall-date" class="wall-sort-btn active" data-sort="date">
+                            <i class="fa-regular fa-clock"></i> <span data-i18n="wall_sort_date">Fecha de creación</span>
+                        </button>
+                        <button type="button" id="sort-wall-popular" class="wall-sort-btn" data-sort="popular">
+                            <i class="fa-solid fa-fire"></i> <span data-i18n="wall_sort_popular">Popularidad (Likes + Comentarios)</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Feed de Publicaciones con Scroll tipo Facebook -->
@@ -536,9 +594,9 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 09:15 PM - 10/23/2026</div>
+    <div class="build-timestamp">Actualizado: 09:58 PM - 10/23/2026</div>
 
-    <script src="world-map-data.js?v=10232115"></script>
-    <script src="script.js?v=10232115"></script>
+    <script src="world-map-data.js?v=10232158"></script>
+    <script src="script.js?v=10232158"></script>
 </body>
 </html>

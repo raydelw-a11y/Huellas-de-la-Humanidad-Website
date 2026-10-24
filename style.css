@@ -2206,6 +2206,251 @@ footer {
     justify-content: flex-end;
 }
 
+/* Barra de Ordenamiento del Muro de Debate */
+.fb-wall-sort-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1.35rem;
+}
+
+.wall-sort-label {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wall-sort-buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.wall-sort-btn {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.45rem 0.9rem;
+    border-radius: 22px;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    background: rgba(12, 10, 8, 0.72);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.22s ease;
+}
+
+.wall-sort-btn:hover {
+    color: var(--gold-light);
+    border-color: var(--primary-color);
+}
+
+.wall-sort-btn.active {
+    background: linear-gradient(135deg, #d4af37, #99741c);
+    color: #0c0a08;
+    border-color: #f5df98;
+    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.35);
+}
+
+/* Sección de Comentarios Propia del Video Activo en YouTube */
+.video-comments-section {
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.28);
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.video-comments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.video-comments-header h4 {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.95rem;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.video-comments-guest-prompt {
+    background: rgba(10, 8, 6, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 0.95rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    text-align: center;
+}
+
+.video-comments-guest-prompt p {
+    margin: 0;
+    font-size: 1.08rem;
+    color: var(--text-light);
+}
+
+.video-guest-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.video-guest-actions .gold-submit-btn {
+    margin-top: 0;
+    padding: 0.52rem 1rem;
+    font-size: 0.78rem;
+}
+
+.video-guest-actions .top-menu-btn {
+    flex: 0 1 auto;
+    font-size: 0.78rem;
+    padding: 0.52rem 1rem;
+    gap: 6px;
+}
+
+.video-comment-form {
+    width: 100%;
+}
+
+.video-comment-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+}
+
+.video-comment-input-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.62rem 0.95rem;
+    border-radius: 22px;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    background: rgba(8, 6, 4, 0.8);
+    color: var(--text-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.08rem;
+    outline: none;
+}
+
+.video-comment-input-row input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.25);
+}
+
+.video-comment-submit-btn {
+    margin-top: 0 !important;
+    padding: 0.55rem 0.95rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 22px !important;
+    white-space: nowrap;
+}
+
+.video-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 290px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.video-comments-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.video-comments-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #d4af37, #8b6816);
+    border-radius: 6px;
+}
+
+.video-comment-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    background: rgba(12, 10, 8, 0.72);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 12px;
+    padding: 0.65rem 0.85rem;
+}
+
+.video-comment-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.video-comment-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.78rem;
+    color: var(--gold-light);
+    font-weight: 700;
+}
+
+.video-comment-time {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.video-comment-text {
+    font-size: 1.08rem;
+    color: var(--text-light);
+    line-height: 1.38;
+    word-break: break-word;
+}
+
+.fb-reply-guest-btn {
+    width: 100%;
+    padding: 0.55rem 0.9rem;
+    border-radius: 20px;
+    border: 1px dashed rgba(212, 175, 55, 0.45);
+    background: rgba(12, 10, 8, 0.65);
+    color: var(--gold-light);
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.fb-reply-guest-btn:hover {
+    background: rgba(212, 175, 55, 0.16);
+    border-color: var(--primary-color);
+}
+
 /* Feed de Publicaciones tipo Facebook */
 .fb-feed-list {
     display: flex;

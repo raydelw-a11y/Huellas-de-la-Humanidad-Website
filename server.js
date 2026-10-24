@@ -84,10 +84,11 @@ let db = {
       id: 'welcome-comment-1',
       author: 'Huellas de la Humanidad',
       role: 'admin',
-      text: '¡Bienvenid@s al Muro de Debate de la Comunidad! Comparte aquí tus teorías, impresiones o momentos favoritos de nuestros documentales.',
+      text: '¡Bienvenid@s al Muro de Debate de la Comunidad! Comparte aquí tus teorías, impresiones o conversaciones libres sobre la historia.',
       createdAt: new Date().toISOString()
     }
-  ]
+  ],
+  videoComments: {} // { [videoId]: [ { id, author, role, text, createdAt } ] }
 };
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'huellas-secret-key-2026-ancient-history';
@@ -162,6 +163,7 @@ async function loadDatabase() {
         if (parsed.trivia) db.trivia = parsed.trivia;
         if (parsed.scores) db.scores = parsed.scores;
         if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
+        if (parsed.videoComments && typeof parsed.videoComments === 'object') db.videoComments = parsed.videoComments;
       }
     }
   } catch (e) {
@@ -189,6 +191,7 @@ async function loadDatabase() {
           if (parsed.trivia) db.trivia = parsed.trivia;
           if (parsed.scores) db.scores = parsed.scores;
           if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
+          if (parsed.videoComments && typeof parsed.videoComments === 'object') db.videoComments = parsed.videoComments;
           console.log('Database loaded from GitHub cloud backup.');
         }
       }
@@ -844,7 +847,7 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
-  // --- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD (ESTILO FACEBOOK: POSTS, LIKES Y RESPUESTAS ANIDADAS) ---
+  // --- MURO DE COMENTARIOS / DEBATE DE LA COMUNIDAD (CONVERSACIONES LIBRES, REQUIERE CUENTA) ---
   if (pathname === '/api/comments' && req.method === 'GET') {
     const session = getAuthSession(req);
     const voterId = parsedUrl.searchParams.get('voterId') || '';
@@ -856,22 +859,20 @@ const server = http.createServer(async (req, res) => {
         id: 'welcome-debate-post',
         author: 'Huellas de la Humanidad',
         role: 'admin',
-        docTag: 'El Louvre en el año 1200',
-        text: '¡Bienvenid@s al Muro de Debate de Huellas de la Humanidad! ¿Qué época histórica o documental del canal te ha impactado más hasta ahora? Comparte tu teoría, dale «Me gusta» o responde a los comentarios de otros seguidores.',
+        text: '¡Bienvenid@s al Muro de Debate de Huellas de la Humanidad! ¿Qué época histórica o suceso del pasado te gustaría debatir con la comunidad? Comparte tu reflexión, dale «Me gusta» o responde a otros miembros.',
         likes: [],
         replies: [],
         createdAt: new Date().toISOString()
       });
     }
 
-    const formattedPosts = db.comments.slice(-60).reverse().map(post => {
+    const formattedPosts = db.comments.slice(-80).reverse().map(post => {
       const likesArr = Array.isArray(post.likes) ? post.likes : [];
       const repliesArr = Array.isArray(post.replies) ? post.replies : [];
       return {
         id: post.id,
         author: post.author || 'Seguidor',
-        role: post.role || 'guest',
-        docTag: post.docTag || '',
+        role: post.role || 'user',
         text: post.text || '',
         createdAt: post.createdAt,
         likesCount: likesArr.length,
@@ -883,7 +884,7 @@ const server = http.createServer(async (req, res) => {
             parentId: r.parentId || null,
             replyToAuthor: r.replyToAuthor || '',
             author: r.author || 'Seguidor',
-            role: r.role || 'guest',
+            role: r.role || 'user',
             text: r.text || '',
             createdAt: r.createdAt,
             likesCount: rLikes.length,
@@ -900,22 +901,24 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/comments/add' && req.method === 'POST') {
-    const { text, docTag } = await parseBody(req);
     const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Debes crear una cuenta o iniciar sesión para publicar en el Muro de Debate.' });
+    }
+    const { text } = await parseBody(req);
     const cleanText = String(text || '').trim();
     if (!cleanText || cleanText.length < 2) {
       return sendJson(res, 400, { error: 'Escribe una publicación antes de enviarla.' });
     }
-    const author = session
-      ? (session.role === 'admin' ? 'Huellas de la Humanidad' : (session.displayName || session.username))
-      : 'Seguidor';
+    const author = session.role === 'admin'
+      ? 'Huellas de la Humanidad'
+      : (session.displayName || session.username);
 
     if (!Array.isArray(db.comments)) db.comments = [];
     db.comments.push({
       id: crypto.randomUUID(),
       author,
-      role: session ? session.role : 'guest',
-      docTag: String(docTag || '').trim().slice(0, 120),
+      role: session.role,
       text: cleanText.slice(0, 1500),
       likes: [],
       replies: [],
@@ -929,9 +932,12 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/comments/like' && req.method === 'POST') {
-    const { postId, replyId, voterId } = await parseBody(req);
     const session = getAuthSession(req);
-    const voterKey = session ? `user:${session.username}` : `v:${String(voterId || 'anon').slice(0, 80)}`;
+    if (!session) {
+      return sendJson(res, 401, { error: 'Debes crear una cuenta o iniciar sesión para usar el Muro de Debate.' });
+    }
+    const { postId, replyId } = await parseBody(req);
+    const voterKey = `user:${session.username}`;
 
     if (!Array.isArray(db.comments)) db.comments = [];
     const post = db.comments.find(p => p.id === postId);
@@ -959,8 +965,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/comments/reply' && req.method === 'POST') {
-    const { postId, parentId, replyToAuthor, text } = await parseBody(req);
     const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Debes crear una cuenta o iniciar sesión para comentar en el Muro de Debate.' });
+    }
+    const { postId, parentId, replyToAuthor, text } = await parseBody(req);
     const cleanText = String(text || '').trim();
     if (!cleanText) {
       return sendJson(res, 400, { error: 'Escribe tu comentario.' });
@@ -972,9 +981,9 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 404, { error: 'Publicación no encontrada.' });
     }
 
-    const author = session
-      ? (session.role === 'admin' ? 'Huellas de la Humanidad' : (session.displayName || session.username))
-      : 'Seguidor';
+    const author = session.role === 'admin'
+      ? 'Huellas de la Humanidad'
+      : (session.displayName || session.username);
 
     if (!Array.isArray(post.replies)) post.replies = [];
     post.replies.push({
@@ -982,7 +991,7 @@ const server = http.createServer(async (req, res) => {
       parentId: parentId || null,
       replyToAuthor: String(replyToAuthor || '').trim().slice(0, 60),
       author,
-      role: session ? session.role : 'guest',
+      role: session.role,
       text: cleanText.slice(0, 1000),
       likes: [],
       createdAt: new Date().toISOString()
@@ -990,6 +999,72 @@ const server = http.createServer(async (req, res) => {
 
     saveDatabase();
     return sendJson(res, 201, { ok: true });
+  }
+
+  // --- COMENTARIOS PROPIOS DE CADA VIDEO DE YOUTUBE (REQUIERE CUENTA PARA COMENTAR) ---
+  if (pathname === '/api/video-comments' && req.method === 'GET') {
+    const session = getAuthSession(req);
+    const videoId = String(parsedUrl.searchParams.get('videoId') || '').trim();
+    if (!db.videoComments || typeof db.videoComments !== 'object') db.videoComments = {};
+    const list = Array.isArray(db.videoComments[videoId]) ? db.videoComments[videoId] : [];
+    const formatted = list.slice(-100).reverse().map(c => ({
+      id: c.id,
+      author: c.author || 'Usuario',
+      role: c.role || 'user',
+      text: c.text || '',
+      createdAt: c.createdAt
+    }));
+    return sendJson(res, 200, {
+      videoId,
+      comments: formatted,
+      isAdmin: Boolean(session && session.role === 'admin')
+    });
+  }
+
+  if (pathname === '/api/video-comments/add' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Debes crear una cuenta o iniciar sesión para comentar los videos.' });
+    }
+    const { videoId, text } = await parseBody(req);
+    const cleanVid = String(videoId || '').trim().slice(0, 32);
+    const cleanText = String(text || '').trim();
+    if (!cleanVid || !cleanText) {
+      return sendJson(res, 400, { error: 'Escribe un comentario antes de publicarlo.' });
+    }
+    const author = session.role === 'admin'
+      ? 'Huellas de la Humanidad'
+      : (session.displayName || session.username);
+
+    if (!db.videoComments || typeof db.videoComments !== 'object') db.videoComments = {};
+    if (!Array.isArray(db.videoComments[cleanVid])) db.videoComments[cleanVid] = [];
+
+    db.videoComments[cleanVid].push({
+      id: crypto.randomUUID(),
+      author,
+      role: session.role,
+      text: cleanText.slice(0, 1200),
+      createdAt: new Date().toISOString()
+    });
+    if (db.videoComments[cleanVid].length > 150) {
+      db.videoComments[cleanVid] = db.videoComments[cleanVid].slice(-150);
+    }
+    saveDatabase();
+    return sendJson(res, 201, { ok: true });
+  }
+
+  if (pathname === '/api/video-comments/delete' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Solo el Administrador puede eliminar comentarios.' });
+    }
+    const { videoId, commentId } = await parseBody(req);
+    const cleanVid = String(videoId || '').trim();
+    if (db.videoComments && Array.isArray(db.videoComments[cleanVid])) {
+      db.videoComments[cleanVid] = db.videoComments[cleanVid].filter(c => c.id !== commentId);
+      saveDatabase();
+    }
+    return sendJson(res, 200, { ok: true });
   }
 
   if (pathname === '/api/comments/delete' && req.method === 'POST') {

@@ -160,7 +160,16 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_on: 'Audio: ON',
             btn_bg_audio_off: 'Audio: OFF',
             btn_become_member: 'Convertirse en Miembro',
-            followers_total_label: 'Seguidores'
+            followers_total_label: 'Seguidores',
+            video_comments_title: 'Comentarios de este Video',
+            video_comments_guest_msg: 'Para comentar este video debes crear una cuenta o iniciar sesión.',
+            ph_video_comment: 'Escribe tu comentario sobre este documental...',
+            video_comments_empty: 'Aún no hay comentarios en este video. ¡Sé el primero en comentar!',
+            wall_guest_msg: 'Para publicar o comentar en el Muro de Debate debes crear una cuenta o iniciar sesión.',
+            wall_reply_guest_btn: 'Crea una cuenta o inicia sesión para comentar o reaccionar',
+            wall_sort_by: 'Ordenar por:',
+            wall_sort_date: 'Fecha de creación',
+            wall_sort_popular: 'Popularidad (Likes + Comentarios)'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
@@ -274,7 +283,16 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_on: 'BG Audio: ON',
             btn_bg_audio_off: 'BG Audio: OFF',
             btn_become_member: 'Become a Member',
-            followers_total_label: 'Followers'
+            followers_total_label: 'Followers',
+            video_comments_title: 'Comments on This Video',
+            video_comments_guest_msg: 'To comment on this video, please create an account or sign in.',
+            ph_video_comment: 'Write your comment about this documentary...',
+            video_comments_empty: 'No comments on this video yet. Be the first to comment!',
+            wall_guest_msg: 'To post or comment on the Debate Wall, please create an account or sign in.',
+            wall_reply_guest_btn: 'Create an account or sign in to comment or react',
+            wall_sort_by: 'Sort by:',
+            wall_sort_date: 'Creation Date',
+            wall_sort_popular: 'Popularity (Likes + Comments)'
         }
     };
 
@@ -362,8 +380,11 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(updateBgVideoVerticalScroll, 150);
     }
 
+    let currentActiveVideoId = 'rJdAGfxEYkw';
+
     function playDocumentaryInMainPlayer(videoId, title) {
         if (!ytIframe) return;
+        currentActiveVideoId = videoId;
         // Silenciar el video de fondo al reproducir un documental para que no se crucen los audios
         if (bgScrollVideo && !bgScrollVideo.muted) {
             bgScrollVideo.muted = true;
@@ -374,6 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mainYtHeading) {
             mainYtHeading.innerHTML = `<i class="fa-brands fa-youtube"></i> ${t('watching_prefix')} ${title}`;
         }
+        loadVideoComments(videoId);
         const card = document.getElementById('main-youtube-card');
         if (card) {
             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -719,10 +741,12 @@ document.addEventListener('DOMContentLoaded', () => {
         adminChatView.classList.add('hidden');
         chatGuestPrompt.classList.remove('hidden');
         updatePollAdminControls(false);
+        updateComposerIdentity();
         loadPoll();
         loadReleaseCountdown();
         loadTrivia();
         loadComments();
+        loadVideoComments(currentActiveVideoId);
     }
 
     btnTopLogout.addEventListener('click', logout);
@@ -927,10 +951,12 @@ document.addEventListener('DOMContentLoaded', () => {
             pollTimer = setInterval(loadUserMessages, 3500);
         }
         updatePollAdminControls();
+        updateComposerIdentity();
         loadPoll();
         loadReleaseCountdown();
         loadTrivia();
         loadComments();
+        loadVideoComments(currentActiveVideoId);
 
         // Sincronizar datos privados de la cuenta (correo solo visible para el propio usuario)
         fetch(`${API_BASE}/api/account/me`, {
@@ -2210,42 +2236,206 @@ document.addEventListener('DOMContentLoaded', () => {
     if (backToHomeBtn) backToHomeBtn.addEventListener('click', () => switchMainView('home'));
 
     // ==========================================
-    // MURO DE DEBATE TIPO FACEBOOK (PUBLICACIONES, LIKES Y COMENTARIOS ANIDADOS CON @REFERENCIA)
+    // MURO DE DEBATE TIPO FACEBOOK (CONVERSACIONES LIBRES, REQUIERE CUENTA, SORTING POR FECHA / POPULARIDAD)
     // ==========================================
     const communityForm = document.getElementById('community-comment-form');
     const communityInput = document.getElementById('community-comment-input');
-    const communityDocSelect = document.getElementById('community-doc-tag');
     const communityList = document.getElementById('community-comments-list');
-    let lastCommentsData = { comments: [], isAdmin: false };
-    let activeReplyTargets = {}; // postId -> { parentId, replyToAuthor }
+    const wallGuestPrompt = document.getElementById('wall-guest-prompt');
+    const wallTriggerRegister = document.getElementById('wall-trigger-register');
+    const wallTriggerLogin = document.getElementById('wall-trigger-login');
+    const sortWallDateBtn = document.getElementById('sort-wall-date');
+    const sortWallPopularBtn = document.getElementById('sort-wall-popular');
 
-    function populateDocSelect() {
-        if (!communityDocSelect) return;
-        const currentVal = communityDocSelect.value;
-        communityDocSelect.innerHTML = `<option value="">${t('opt_general_topic')}</option>`;
-        DOCUMENTARIES.forEach(doc => {
-            const opt = document.createElement('option');
-            opt.value = docTitle(doc);
-            opt.textContent = `🎬 ${docTitle(doc)}`;
-            communityDocSelect.appendChild(opt);
-        });
-        communityDocSelect.value = currentVal;
+    const videoGuestPrompt = document.getElementById('video-comments-guest-prompt');
+    const videoCommentForm = document.getElementById('video-comment-form');
+    const videoCommentInput = document.getElementById('video-comment-input');
+    const videoCommentAvatar = document.getElementById('video-comment-avatar');
+    const videoCommentsList = document.getElementById('video-comments-list');
+    const videoCommentsCountBadge = document.getElementById('video-comments-count-badge');
+    const videoTriggerRegister = document.getElementById('video-trigger-register');
+    const videoTriggerLogin = document.getElementById('video-trigger-login');
+
+    let lastCommentsData = { comments: [], isAdmin: false };
+    let lastVideoCommentsData = { comments: [], isAdmin: false };
+    let activeReplyTargets = {}; // postId -> { parentId, replyToAuthor }
+    let currentWallSort = 'date'; // 'date' | 'popular'
+
+    function promptAccountCreation(mode = 'register') {
+        openSubmenu(mode);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    if (wallTriggerRegister) wallTriggerRegister.addEventListener('click', () => promptAccountCreation('register'));
+    if (wallTriggerLogin) wallTriggerLogin.addEventListener('click', () => promptAccountCreation('login'));
+    if (videoTriggerRegister) videoTriggerRegister.addEventListener('click', () => promptAccountCreation('register'));
+    if (videoTriggerLogin) videoTriggerLogin.addEventListener('click', () => promptAccountCreation('login'));
 
     function updateComposerIdentity() {
+        const isLogged = Boolean(authToken && currentUser);
+
+        if (wallGuestPrompt) wallGuestPrompt.classList.toggle('hidden', isLogged);
+        if (communityForm) communityForm.classList.toggle('hidden', !isLogged);
+        if (videoGuestPrompt) videoGuestPrompt.classList.toggle('hidden', isLogged);
+        if (videoCommentForm) videoCommentForm.classList.toggle('hidden', !isLogged);
+
         const avatarEl = document.getElementById('composer-avatar');
         const labelEl = document.getElementById('composer-author-label');
-        if (!avatarEl || !labelEl) return;
-        if (authToken && currentUser) {
+        if (isLogged) {
             const name = currentUser.role === 'admin' ? 'Huellas de la Humanidad (Admin)' : (currentUser.displayName || currentUser.username);
-            labelEl.textContent = name;
-            avatarEl.textContent = name.charAt(0).toUpperCase();
+            if (labelEl) labelEl.textContent = name;
+            if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+            if (videoCommentAvatar) videoCommentAvatar.textContent = name.charAt(0).toUpperCase();
         } else {
             const guestName = t('poll_follower');
-            labelEl.textContent = guestName;
-            avatarEl.textContent = guestName.charAt(0).toUpperCase();
+            if (labelEl) labelEl.textContent = guestName;
+            if (avatarEl) avatarEl.textContent = guestName.charAt(0).toUpperCase();
+            if (videoCommentAvatar) videoCommentAvatar.textContent = 'U';
         }
     }
+
+    // --- SECCIÓN DE COMENTARIOS PROPIA DEL VIDEO ACTIVO EN YOUTUBE ---
+    let lastVideoCommentsSig = '';
+
+    async function loadVideoComments(videoId = currentActiveVideoId, isBackgroundPoll = false) {
+        if (!videoId) return;
+        try {
+            const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            const res = await fetch(`${API_BASE}/api/video-comments?videoId=${encodeURIComponent(videoId)}`, { headers });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.videoId && data.videoId !== currentActiveVideoId) return;
+            const list = data.comments || [];
+            const sig = `${videoId}|${JSON.stringify(list)}|${Boolean(data.isAdmin)}|${currentLang}|${Boolean(authToken && currentUser)}`;
+            if (isBackgroundPoll && sig === lastVideoCommentsSig) return;
+            lastVideoCommentsSig = sig;
+            renderVideoComments(list, Boolean(data.isAdmin));
+        } catch (err) {}
+    }
+
+    function renderVideoComments(comments, isAdmin) {
+        lastVideoCommentsData = { comments, isAdmin };
+        updateComposerIdentity();
+        if (videoCommentsCountBadge) {
+            videoCommentsCountBadge.textContent = comments.length;
+        }
+        if (!videoCommentsList) return;
+        videoCommentsList.innerHTML = '';
+
+        if (comments.length === 0) {
+            videoCommentsList.innerHTML = `<p class="empty-conv-text" style="margin:0.35rem 0;">${t('video_comments_empty')}</p>`;
+            return;
+        }
+
+        comments.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'video-comment-item';
+
+            const displayAuthor = (!c.author || c.author === 'Seguidor') ? t('poll_follower') : c.author;
+            const av = document.createElement('div');
+            av.className = 'fb-avatar small';
+            av.textContent = displayAuthor.charAt(0).toUpperCase();
+
+            const body = document.createElement('div');
+            body.className = 'video-comment-body';
+
+            const meta = document.createElement('div');
+            meta.className = 'video-comment-meta';
+
+            const authorSpan = document.createElement('span');
+            authorSpan.textContent = displayAuthor;
+            if (c.role === 'admin') {
+                const badge = document.createElement('span');
+                badge.className = 'admin-badge';
+                badge.style.marginLeft = '6px';
+                badge.innerHTML = '<i class="fa-solid fa-crown"></i> ADMIN';
+                authorSpan.appendChild(badge);
+            }
+
+            const rightMeta = document.createElement('div');
+            rightMeta.style.display = 'inline-flex';
+            rightMeta.style.alignItems = 'center';
+            rightMeta.style.gap = '8px';
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'video-comment-time';
+            timeSpan.textContent = formatTime(c.createdAt);
+            rightMeta.appendChild(timeSpan);
+
+            if (isAdmin) {
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'delete-topic-btn';
+                delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                delBtn.addEventListener('click', () => deleteVideoComment(c.id));
+                rightMeta.appendChild(delBtn);
+            }
+
+            meta.appendChild(authorSpan);
+            meta.appendChild(rightMeta);
+
+            const txt = document.createElement('div');
+            txt.className = 'video-comment-text';
+            txt.textContent = c.text;
+
+            body.appendChild(meta);
+            body.appendChild(txt);
+            item.appendChild(av);
+            item.appendChild(body);
+            videoCommentsList.appendChild(item);
+        });
+    }
+
+    if (videoCommentForm) {
+        videoCommentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!authToken || !currentUser) {
+                return promptAccountCreation('register');
+            }
+            const text = videoCommentInput.value.trim();
+            if (!text) return;
+            videoCommentInput.value = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/video-comments/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ videoId: currentActiveVideoId, text })
+                });
+                if (res.ok) {
+                    loadVideoComments(currentActiveVideoId);
+                }
+            } catch (err) {}
+        });
+    }
+
+    async function deleteVideoComment(commentId) {
+        if (!authToken) return;
+        try {
+            await fetch(`${API_BASE}/api/video-comments/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({ videoId: currentActiveVideoId, commentId })
+            });
+            loadVideoComments(currentActiveVideoId);
+        } catch (err) {}
+    }
+
+    // --- SORTING SYSTEM EN EL MURO DE DEBATE (FECHA DE CREACIÓN vs POPULARIDAD: LIKES + COMENTARIOS) ---
+    function setWallSortMode(sortMode) {
+        currentWallSort = sortMode === 'popular' ? 'popular' : 'date';
+        if (sortWallDateBtn) sortWallDateBtn.classList.toggle('active', currentWallSort === 'date');
+        if (sortWallPopularBtn) sortWallPopularBtn.classList.toggle('active', currentWallSort === 'popular');
+        renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
+    }
+
+    if (sortWallDateBtn) sortWallDateBtn.addEventListener('click', () => setWallSortMode('date'));
+    if (sortWallPopularBtn) sortWallPopularBtn.addEventListener('click', () => setWallSortMode('popular'));
 
     let lastPostsSignature = '';
 
@@ -2259,7 +2449,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const badge = document.getElementById('nav-debate-badge');
             if (badge) badge.textContent = posts.length;
 
-            const sig = JSON.stringify(posts) + '|' + Boolean(data.isAdmin) + '|' + currentLang;
+            const sig = JSON.stringify(posts) + '|' + Boolean(data.isAdmin) + '|' + currentLang + '|' + Boolean(authToken && currentUser);
             if (isBackgroundPoll) {
                 const activeEl = document.activeElement;
                 if (activeEl && activeEl.id && activeEl.id.startsWith('reply-input-')) {
@@ -2285,14 +2475,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        posts.forEach(post => {
+        const isLogged = Boolean(authToken && currentUser);
+        const sortedPosts = [...posts].sort((a, b) => {
+            if (currentWallSort === 'popular') {
+                const popA = (Number(a.likesCount) || 0) + (Array.isArray(a.replies) ? a.replies.length : 0);
+                const popB = (Number(b.likesCount) || 0) + (Array.isArray(b.replies) ? b.replies.length : 0);
+                if (popB !== popA) return popB - popA;
+            }
+            return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        });
+
+        sortedPosts.forEach(post => {
             const card = document.createElement('article');
             card.className = 'fb-post-card';
 
             const displayAuthor = (!post.author || post.author === 'Seguidor') ? t('poll_follower') : post.author;
             const initial = displayAuthor.charAt(0).toUpperCase();
 
-            // 1. Cabecera de la publicación
+            // 1. Cabecera de la publicación (conversación libre sin tema de documental)
             const header = document.createElement('div');
             header.className = 'fb-post-header';
 
@@ -2320,13 +2520,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             metaDiv.appendChild(nameLine);
             metaDiv.appendChild(timeLine);
-
-            if (post.docTag) {
-                const docPill = document.createElement('div');
-                docPill.className = 'fb-doc-pill';
-                docPill.innerHTML = `<i class="fa-solid fa-film"></i> ${post.docTag}`;
-                metaDiv.appendChild(docPill);
-            }
 
             authorWrap.appendChild(avatar);
             authorWrap.appendChild(metaDiv);
@@ -2367,7 +2560,10 @@ document.addEventListener('DOMContentLoaded', () => {
             likeBtn.type = 'button';
             likeBtn.className = `fb-action-btn ${post.likedByMe ? 'liked' : ''}`;
             likeBtn.innerHTML = `<i class="fa-solid fa-thumbs-up"></i> ${t('fb_like')} (${post.likesCount || 0})`;
-            likeBtn.addEventListener('click', () => toggleLike(post.id, null));
+            likeBtn.addEventListener('click', () => {
+                if (!isLogged) return promptAccountCreation('register');
+                toggleLike(post.id, null);
+            });
 
             const commentFocusBtn = document.createElement('button');
             commentFocusBtn.type = 'button';
@@ -2430,13 +2626,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 rLikeBtn.type = 'button';
                 rLikeBtn.className = `fb-subaction-link ${r.likedByMe ? 'liked' : ''}`;
                 rLikeBtn.innerHTML = `<i class="fa-solid fa-thumbs-up"></i> ${t('fb_like')} (${r.likesCount || 0})`;
-                rLikeBtn.addEventListener('click', () => toggleLike(post.id, r.id));
+                rLikeBtn.addEventListener('click', () => {
+                    if (!isLogged) return promptAccountCreation('register');
+                    toggleLike(post.id, r.id);
+                });
 
                 const rReplyBtn = document.createElement('button');
                 rReplyBtn.type = 'button';
                 rReplyBtn.className = 'fb-subaction-link';
                 rReplyBtn.innerHTML = `<i class="fa-solid fa-reply"></i> ${t('fb_reply')}`;
                 rReplyBtn.addEventListener('click', () => {
+                    if (!isLogged) return promptAccountCreation('register');
                     activeReplyTargets[post.id] = {
                         parentId: r.id,
                         replyToAuthor: rAuthor
@@ -2467,60 +2667,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 thread.appendChild(row);
             });
 
-            // 6. Formulario para comentar la publicación o responder a un comentario específico (@Persona)
-            const replyTarget = activeReplyTargets[post.id] || null;
-            const replyForm = document.createElement('form');
-            replyForm.className = 'fb-inline-reply-form';
+            // 6. Formulario para comentar la publicación (solo con cuenta iniciada) o aviso para crear cuenta
+            if (isLogged) {
+                const replyTarget = activeReplyTargets[post.id] || null;
+                const replyForm = document.createElement('form');
+                replyForm.className = 'fb-inline-reply-form';
 
-            if (replyTarget) {
-                const pill = document.createElement('div');
-                pill.className = 'fb-replying-to-pill';
-                pill.innerHTML = `
-                    <span><i class="fa-solid fa-reply"></i> ${t('fb_replying_to')} <strong>@${replyTarget.replyToAuthor}</strong></span>
-                `;
-                const cancelBtn = document.createElement('button');
-                cancelBtn.type = 'button';
-                cancelBtn.className = 'fb-subaction-link';
-                cancelBtn.textContent = t('fb_cancel');
-                cancelBtn.addEventListener('click', () => {
+                if (replyTarget) {
+                    const pill = document.createElement('div');
+                    pill.className = 'fb-replying-to-pill';
+                    pill.innerHTML = `
+                        <span><i class="fa-solid fa-reply"></i> ${t('fb_replying_to')} <strong>@${replyTarget.replyToAuthor}</strong></span>
+                    `;
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.type = 'button';
+                    cancelBtn.className = 'fb-subaction-link';
+                    cancelBtn.textContent = t('fb_cancel');
+                    cancelBtn.addEventListener('click', () => {
+                        delete activeReplyTargets[post.id];
+                        renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
+                    });
+                    pill.appendChild(cancelBtn);
+                    replyForm.appendChild(pill);
+                }
+
+                const replyInput = document.createElement('input');
+                replyInput.type = 'text';
+                replyInput.id = `reply-input-${post.id}`;
+                replyInput.maxLength = 900;
+                replyInput.required = true;
+                replyInput.placeholder = replyTarget
+                    ? `${t('fb_write_reply')} @${replyTarget.replyToAuthor}...`
+                    : t('fb_write_comment');
+
+                const replySubmit = document.createElement('button');
+                replySubmit.type = 'submit';
+                replySubmit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ${replyTarget ? t('fb_reply') : t('fb_comment')}`;
+
+                commentFocusBtn.addEventListener('click', () => {
                     delete activeReplyTargets[post.id];
-                    renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
+                    replyInput.focus();
                 });
-                pill.appendChild(cancelBtn);
-                replyForm.appendChild(pill);
+
+                replyForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const text = replyInput.value.trim();
+                    if (!text) return;
+                    replyInput.value = '';
+                    const target = activeReplyTargets[post.id] || null;
+                    delete activeReplyTargets[post.id];
+                    await submitReply(post.id, target ? target.parentId : null, target ? target.replyToAuthor : '', text);
+                });
+
+                replyForm.appendChild(replyInput);
+                replyForm.appendChild(replySubmit);
+                thread.appendChild(replyForm);
+            } else {
+                const guestReplyBtn = document.createElement('button');
+                guestReplyBtn.type = 'button';
+                guestReplyBtn.className = 'fb-reply-guest-btn';
+                guestReplyBtn.innerHTML = `<i class="fa-solid fa-user-lock"></i> ${t('wall_reply_guest_btn')}`;
+                guestReplyBtn.addEventListener('click', () => promptAccountCreation('register'));
+                commentFocusBtn.addEventListener('click', () => promptAccountCreation('register'));
+                thread.appendChild(guestReplyBtn);
             }
-
-            const replyInput = document.createElement('input');
-            replyInput.type = 'text';
-            replyInput.id = `reply-input-${post.id}`;
-            replyInput.maxLength = 900;
-            replyInput.required = true;
-            replyInput.placeholder = replyTarget
-                ? `${t('fb_write_reply')} @${replyTarget.replyToAuthor}...`
-                : t('fb_write_comment');
-
-            const replySubmit = document.createElement('button');
-            replySubmit.type = 'submit';
-            replySubmit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ${replyTarget ? t('fb_reply') : t('fb_comment')}`;
-
-            commentFocusBtn.addEventListener('click', () => {
-                delete activeReplyTargets[post.id];
-                replyInput.focus();
-            });
-
-            replyForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const text = replyInput.value.trim();
-                if (!text) return;
-                replyInput.value = '';
-                const target = activeReplyTargets[post.id] || null;
-                delete activeReplyTargets[post.id];
-                await submitReply(post.id, target ? target.parentId : null, target ? target.replyToAuthor : '', text);
-            });
-
-            replyForm.appendChild(replyInput);
-            replyForm.appendChild(replySubmit);
-            thread.appendChild(replyForm);
 
             card.appendChild(thread);
             communityList.appendChild(card);
@@ -2528,10 +2738,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function toggleLike(postId, replyId = null) {
+        if (!authToken || !currentUser) {
+            return promptAccountCreation('register');
+        }
         try {
             const headers = {
                 'Content-Type': 'application/json',
-                ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                'Authorization': `Bearer ${authToken}`
             };
             await fetch(`${API_BASE}/api/comments/like`, {
                 method: 'POST',
@@ -2543,10 +2756,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function submitReply(postId, parentId, replyToAuthor, text) {
+        if (!authToken || !currentUser) {
+            return promptAccountCreation('register');
+        }
         try {
             const headers = {
                 'Content-Type': 'application/json',
-                ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                'Authorization': `Bearer ${authToken}`
             };
             const res = await fetch(`${API_BASE}/api/comments/reply`, {
                 method: 'POST',
@@ -2562,20 +2778,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (communityForm) {
         communityForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!authToken || !currentUser) {
+                return promptAccountCreation('register');
+            }
             const text = communityInput.value.trim();
-            const docTag = communityDocSelect ? communityDocSelect.value : '';
             if (!text) return;
             communityInput.value = '';
-            if (communityDocSelect) communityDocSelect.value = '';
             try {
                 const headers = {
                     'Content-Type': 'application/json',
-                    ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                    'Authorization': `Bearer ${authToken}`
                 };
                 const res = await fetch(`${API_BASE}/api/comments/add`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({ text, docTag })
+                    body: JSON.stringify({ text })
                 });
                 if (res.ok) {
                     loadComments();
@@ -2622,7 +2839,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (key) el.setAttribute('placeholder', t(key));
         });
 
-        populateDocSelect();
         renderEphemeris();
         if (lastPollData) renderPoll(lastPollData);
         if (lastTriviaData) renderTrivia(lastTriviaData);
@@ -2630,6 +2846,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderLibraryCategoryFilters();
         renderDocumentaryLibrary(currentFilterCat);
         renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
+        renderVideoComments(lastVideoCommentsData.comments, lastVideoCommentsData.isAdmin);
     }
 
     // ==========================================
@@ -2690,18 +2907,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (langBtnEs) langBtnEs.addEventListener('click', () => applyLanguage('es'));
     if (langBtnEn) langBtnEn.addEventListener('click', () => applyLanguage('en'));
 
-    populateDocSelect();
     applyLanguage(currentLang);
+    updateComposerIdentity();
     updatePollAdminControls();
     loadSocialFollowerStats();
     loadPoll();
     loadReleaseCountdown();
     loadTrivia();
     loadComments();
+    loadVideoComments(currentActiveVideoId);
 
     setInterval(() => {
         loadPoll();
         loadComments(true);
+        loadVideoComments(currentActiveVideoId, true);
     }, 6000);
 
     setInterval(() => {

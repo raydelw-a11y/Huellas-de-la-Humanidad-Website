@@ -2260,6 +2260,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastVideoCommentsData = { comments: [], isAdmin: false };
     let activeReplyTargets = {}; // postId -> { parentId, replyToAuthor }
     let currentWallSort = 'date'; // 'date' | 'popular'
+    let currentWallSortDir = 'desc'; // 'desc' | 'asc'
 
     function promptAccountCreation(mode = 'register') {
         openSubmenu(mode);
@@ -2427,10 +2428,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SORTING SYSTEM EN EL MURO DE DEBATE (FECHA DE CREACIÓN vs POPULARIDAD: LIKES + COMENTARIOS) ---
-    function setWallSortMode(sortMode) {
-        currentWallSort = sortMode === 'popular' ? 'popular' : 'date';
+    function getPostPopularityScore(post) {
+        const postLikes = Number(post.likesCount) || 0;
+        const replies = Array.isArray(post.replies) ? post.replies : [];
+        return postLikes + replies.length;
+    }
+
+    function getPostLastActivityTime(post) {
+        const replies = Array.isArray(post.replies) ? post.replies : [];
+        let latest = new Date(post.createdAt || 0).getTime();
+        replies.forEach(r => {
+            const rt = new Date(r.createdAt || 0).getTime();
+            if (rt > latest) latest = rt;
+        });
+        return latest;
+    }
+
+    function updateWallSortUI() {
         if (sortWallDateBtn) sortWallDateBtn.classList.toggle('active', currentWallSort === 'date');
         if (sortWallPopularBtn) sortWallPopularBtn.classList.toggle('active', currentWallSort === 'popular');
+        const dateIcon = document.getElementById('sort-date-dir-icon');
+        const popIcon = document.getElementById('sort-pop-dir-icon');
+        if (dateIcon) {
+            dateIcon.className = (currentWallSort === 'date' && currentWallSortDir === 'asc')
+                ? 'fa-solid fa-arrow-up'
+                : 'fa-solid fa-arrow-down';
+        }
+        if (popIcon) {
+            popIcon.className = (currentWallSort === 'popular' && currentWallSortDir === 'asc')
+                ? 'fa-solid fa-arrow-up'
+                : 'fa-solid fa-arrow-down';
+        }
+    }
+
+    function setWallSortMode(sortMode) {
+        const targetMode = sortMode === 'popular' ? 'popular' : 'date';
+        if (currentWallSort === targetMode) {
+            currentWallSortDir = currentWallSortDir === 'desc' ? 'asc' : 'desc';
+        } else {
+            currentWallSort = targetMode;
+            currentWallSortDir = 'desc';
+        }
+        updateWallSortUI();
         renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
     }
 
@@ -2476,13 +2515,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const isLogged = Boolean(authToken && currentUser);
+        const dirFactor = currentWallSortDir === 'asc' ? -1 : 1;
         const sortedPosts = [...posts].sort((a, b) => {
             if (currentWallSort === 'popular') {
-                const popA = (Number(a.likesCount) || 0) + (Array.isArray(a.replies) ? a.replies.length : 0);
-                const popB = (Number(b.likesCount) || 0) + (Array.isArray(b.replies) ? b.replies.length : 0);
-                if (popB !== popA) return popB - popA;
+                const popA = getPostPopularityScore(a);
+                const popB = getPostPopularityScore(b);
+                if (popB !== popA) return (popB - popA) * dirFactor;
+                const actDiff = getPostLastActivityTime(b) - getPostLastActivityTime(a);
+                if (actDiff !== 0) return actDiff * dirFactor;
             }
-            return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            const dateDiff = new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            return dateDiff * dirFactor;
         });
 
         sortedPosts.forEach(post => {
@@ -2542,12 +2585,14 @@ document.addEventListener('DOMContentLoaded', () => {
             body.textContent = post.text;
             card.appendChild(body);
 
-            // 3. Barra de estadísticas (Likes y total de comentarios)
+            // 3. Barra de estadísticas (Likes, total de comentarios y puntaje de popularidad)
             const replies = Array.isArray(post.replies) ? post.replies : [];
+            const popScore = getPostPopularityScore(post);
             const stats = document.createElement('div');
             stats.className = 'fb-post-stats';
             stats.innerHTML = `
                 <span><i class="fa-solid fa-thumbs-up" style="color:var(--primary-color);"></i> ${post.likesCount || 0} ${t('fb_like')}</span>
+                <span class="fb-popularity-badge"><i class="fa-solid fa-fire"></i> ${popScore}</span>
                 <span>${replies.length} ${replies.length === 1 ? t('fb_comment_singular') : t('fb_comments_count')}</span>
             `;
             card.appendChild(stats);
@@ -2740,6 +2785,21 @@ document.addEventListener('DOMContentLoaded', () => {
     async function toggleLike(postId, replyId = null) {
         if (!authToken || !currentUser) {
             return promptAccountCreation('register');
+        }
+        // Actualización optimista inmediata para que el conteo y el orden por popularidad respondan al instante
+        const targetPost = (lastCommentsData.comments || []).find(p => p.id === postId);
+        if (targetPost) {
+            if (replyId) {
+                const targetReply = (targetPost.replies || []).find(r => r.id === replyId);
+                if (targetReply) {
+                    targetReply.likedByMe = !targetReply.likedByMe;
+                    targetReply.likesCount = Math.max(0, (Number(targetReply.likesCount) || 0) + (targetReply.likedByMe ? 1 : -1));
+                }
+            } else {
+                targetPost.likedByMe = !targetPost.likedByMe;
+                targetPost.likesCount = Math.max(0, (Number(targetPost.likesCount) || 0) + (targetPost.likedByMe ? 1 : -1));
+            }
+            renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
         }
         try {
             const headers = {

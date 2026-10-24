@@ -2096,6 +2096,8 @@ footer {
     display: flex;
     align-items: center;
     gap: 0.85rem;
+    width: 100%;
+    min-width: 0;
 }
 
 .fb-avatar {
@@ -2125,7 +2127,9 @@ footer {
     display: flex;
     flex-direction: column;
     gap: 0.28rem;
-    flex: 1;
+    flex: 1 1 0%;
+    min-width: 0;
+    width: 100%;
 }
 
 .fb-composer-author {
@@ -2141,9 +2145,15 @@ footer {
     color: var(--text-light);
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-size: 0.98rem;
-    padding: 0.28rem 0.65rem;
+    padding: 0.35rem 0.65rem;
     border-radius: 8px;
-    max-width: 380px;
+    width: 100%;
+    max-width: min(420px, 100%);
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     outline: none;
 }
 

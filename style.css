@@ -147,22 +147,31 @@ body {
 }
 
 .top-account-bar {
+    --menu-font: 0.88cqw;
+    --menu-pad-x: 0.48cqw;
+    --menu-gap: 0.38cqw;
     display: flex;
     align-items: stretch;
     justify-content: space-between;
     border-top: 1px solid rgba(212, 175, 55, 0.22);
     padding-top: 1rem;
     flex-wrap: nowrap;
-    gap: 0.45cqw;
+    gap: var(--menu-gap);
     white-space: nowrap;
     width: 100%;
     box-sizing: border-box;
 }
 
+.top-account-bar:has(#logged-top-buttons:not(.hidden)) {
+    --menu-font: 0.77cqw;
+    --menu-pad-x: 0.42cqw;
+    --menu-gap: 0.34cqw;
+}
+
 .top-account-buttons {
     display: flex;
     align-items: stretch;
-    gap: 0.45cqw;
+    gap: var(--menu-gap);
     flex-wrap: nowrap;
     flex: 1 1 auto;
     min-width: 0;
@@ -170,10 +179,10 @@ body {
 
 .top-menu-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.65cqw;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    padding: 0.5rem 0.55cqw;
+    font-size: var(--menu-font);
+    font-weight: 700;
+    letter-spacing: 0.015em;
+    padding: 0.54rem var(--menu-pad-x);
     border-radius: 10px;
     border: 1px solid rgba(212, 175, 55, 0.4);
     background: rgba(212, 175, 55, 0.1);
@@ -211,7 +220,7 @@ body {
 }
 
 .submenu-arrow {
-    font-size: 0.58cqw;
+    font-size: calc(var(--menu-font) * 0.85);
     opacity: 0.85;
 }
 
@@ -221,9 +230,10 @@ body {
     justify-content: center;
     gap: 0.32cqw;
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.65cqw;
+    font-size: var(--menu-font);
+    font-weight: 700;
     color: var(--gold-light);
-    padding: 0.48rem 0.55cqw;
+    padding: 0.5rem var(--menu-pad-x);
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid rgba(212, 175, 55, 0.22);
     border-radius: 10px;
@@ -235,9 +245,10 @@ body {
 }
 
 .top-account-bar .logout-btn {
-    font-size: 0.65cqw;
-    padding: 0.5rem 0.55cqw;
-    letter-spacing: 0.02em;
+    font-size: var(--menu-font);
+    font-weight: 700;
+    padding: 0.54rem var(--menu-pad-x);
+    letter-spacing: 0.015em;
     gap: 0.32cqw;
     white-space: nowrap;
     flex: 1 1 auto;
@@ -1584,10 +1595,10 @@ footer {
 
 .lang-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.65cqw;
+    font-size: var(--menu-font, 0.85rem);
     font-weight: 700;
-    letter-spacing: 0.02em;
-    padding: 0.42rem 0.52cqw;
+    letter-spacing: 0.015em;
+    padding: 0.46rem var(--menu-pad-x, 0.7rem);
     border-radius: 24px;
     border: none;
     background: transparent;
@@ -1959,10 +1970,10 @@ footer {
 
 .view-tab-btn {
     font-family: 'Cinzel', Georgia, serif;
-    font-size: 0.65cqw;
+    font-size: var(--menu-font, 0.85rem);
     font-weight: 700;
-    letter-spacing: 0.02em;
-    padding: 0.42rem 0.55cqw;
+    letter-spacing: 0.015em;
+    padding: 0.46rem var(--menu-pad-x, 0.7rem);
     border-radius: 24px;
     border: none;
     background: transparent;
@@ -1990,7 +2001,7 @@ footer {
 .debate-count-pill {
     background: rgba(12, 10, 8, 0.85);
     color: var(--gold-light);
-    font-size: 0.58cqw;
+    font-size: calc(var(--menu-font, 0.8rem) * 0.88);
     padding: 1px 0.38cqw;
     border-radius: 12px;
     border: 1px solid rgba(212, 175, 55, 0.45);
@@ -2407,6 +2418,55 @@ footer {
 }
 
 /* Responsive */
+@media (max-width: 960px) {
+    .top-account-bar,
+    .top-account-bar:has(#logged-top-buttons:not(.hidden)) {
+        --menu-font: 0.86rem;
+        --menu-pad-x: 0.85rem;
+        --menu-gap: 0.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .main-view-tabs,
+    .lang-switcher,
+    .top-account-buttons {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .top-account-buttons {
+        flex-wrap: wrap;
+    }
+
+    .top-menu-btn,
+    .view-tab-btn,
+    .lang-btn,
+    .top-account-bar .logout-btn {
+        font-size: 0.84rem;
+        padding: 0.62rem 0.75rem;
+        gap: 6px;
+        flex: 1 1 calc(50% - 0.5rem);
+    }
+
+    .top-user-greeting {
+        font-size: 0.84rem;
+        padding: 0.58rem 0.75rem;
+        gap: 6px;
+        max-width: 100%;
+        flex: 1 1 100%;
+    }
+
+    .debate-count-pill {
+        font-size: 0.75rem;
+        padding: 1px 7px;
+    }
+
+    .submenu-arrow {
+        font-size: 0.74rem;
+    }
+}
+
 @media (max-width: 1180px) {
     .three-columns-layout {
         display: flex;

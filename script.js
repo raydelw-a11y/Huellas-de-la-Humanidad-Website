@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         es: {
             header_bio: '«Si quieres seguir cruzando el umbral del tiempo para vivir la historia desde dentro, suscríbete hoy.\nCada historia deja una huella. Aquí seguimos sus rastros.»',
             who_we_are_title: '¿Quiénes somos?',
-            who_we_are_text: 'Somos una productora de documentales independiente. Perseguimos la verdad. Contamos lo que ocurrió y cómo ocurrió, reconstruyendo el pasado para vivir la historia desde dentro.',
+            who_we_are_text: 'Somos una productora de documentales independiente. Perseguimos la verdad histórica sin ataduras ni relatos superficiales. No nos limitamos a observar el pasado desde afuera: contamos lo que ocurrió, por qué ocurrió y cómo se sintió vivir dentro de cada época, devolviéndole el pulso humano a las marcas que el tiempo dejó a nuestro paso.',
             btn_login: 'Iniciar Sesión',
             btn_register: 'Crear Cuenta',
             btn_settings: 'Opciones de la Cuenta',
@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
             who_we_are_title: 'Who Are We?',
-            who_we_are_text: 'We are an independent documentary production company. We pursue the truth. We tell what happened and how it happened, reconstructing the past to experience history from within.',
+            who_we_are_text: 'We are an independent documentary production company. We pursue historical truth without constraints or superficial narratives. We do not merely observe the past from the outside: we tell what happened, why it happened, and what it felt like to live within each era, restoring the human pulse to the marks that time left in our wake.',
             btn_login: 'Sign In',
             btn_register: 'Create Account',
             btn_settings: 'Account Settings',

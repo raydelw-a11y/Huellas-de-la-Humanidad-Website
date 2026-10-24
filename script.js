@@ -760,6 +760,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function formatDateTime(isoStr) {
+        try {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            const datePart = d.toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            });
+            const timePart = d.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            return `${datePart} · ${timePart}`;
+        } catch (e) {
+            return '';
+        }
+    }
+
     function renderMessages(container, messages) {
         container.innerHTML = '';
         if (!messages || messages.length === 0) {
@@ -2360,7 +2380,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const timeSpan = document.createElement('span');
             timeSpan.className = 'video-comment-time';
-            timeSpan.textContent = formatTime(c.createdAt);
+            timeSpan.textContent = formatDateTime(c.createdAt);
             rightMeta.appendChild(timeSpan);
 
             if (isAdmin) {
@@ -2559,7 +2579,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const timeLine = document.createElement('div');
             timeLine.className = 'fb-post-time';
-            timeLine.textContent = formatTime(post.createdAt);
+            timeLine.innerHTML = `<i class="fa-regular fa-calendar"></i> ${formatDateTime(post.createdAt)}`;
 
             metaDiv.appendChild(nameLine);
             metaDiv.appendChild(timeLine);
@@ -2645,7 +2665,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rTimeSpan = document.createElement('span');
                 rTimeSpan.style.fontWeight = '400';
                 rTimeSpan.style.color = 'var(--text-muted)';
-                rTimeSpan.textContent = formatTime(r.createdAt);
+                rTimeSpan.textContent = formatDateTime(r.createdAt);
                 rHeader.appendChild(rNameSpan);
                 rHeader.appendChild(rTimeSpan);
 

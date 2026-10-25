@@ -1483,6 +1483,24 @@ footer {
     font-size: 1.22rem;
 }
 
+.release-thumbnail-box {
+    width: 100%;
+    margin-bottom: 0.85rem;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid rgba(212, 175, 55, 0.55);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), 0 0 18px rgba(212, 175, 55, 0.16);
+    background: #080604;
+    aspect-ratio: 16 / 9;
+}
+
+.release-thumbnail-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 .release-title-display {
     text-align: center;
     font-size: 1.25rem;
@@ -1490,6 +1508,7 @@ footer {
     color: var(--gold-light);
     margin-bottom: 1rem;
     font-style: italic;
+    line-height: 1.38;
 }
 
 .countdown-tbd-box {
@@ -1568,6 +1587,79 @@ footer {
     color: var(--text-light);
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-size: 1.05rem;
+}
+
+.upload-thumb-btn {
+    width: 100%;
+    padding: 0.68rem 0.85rem;
+    border-radius: 10px;
+    border: 1px dashed rgba(212, 175, 55, 0.65);
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--gold-light);
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.22s ease;
+}
+
+.upload-thumb-btn:hover {
+    background: rgba(212, 175, 55, 0.24);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.admin-release-preview-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    aspect-ratio: 16 / 9;
+    background: #080604;
+}
+
+.admin-release-preview-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.clear-thumb-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 107, 122, 0.7);
+    background: rgba(12, 10, 8, 0.88);
+    color: #ff9da6;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.clear-thumb-btn:hover {
+    background: rgba(220, 53, 69, 0.85);
+    color: #fff;
+}
+
+.admin-optional-label {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-top: 0.15rem;
 }
 
 /* Un Día Como Hoy en la Historia */

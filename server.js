@@ -300,7 +300,7 @@ function parseBody(req) {
     let body = '';
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 1e5) req.destroy();
+      if (body.length > 6e6) req.destroy();
     });
     req.on('end', () => {
       try {
@@ -747,21 +747,38 @@ const server = http.createServer(async (req, res) => {
     if (!session || session.role !== 'admin') {
       return sendJson(res, 403, { error: 'Solo el Administrador puede configurar el próximo estreno.' });
     }
-    const { title, targetDate, reset } = await parseBody(req);
+    const { title, targetDate, thumbnailData, reset } = await parseBody(req);
     if (reset) {
       db.nextRelease = null;
       saveDatabase();
       return sendJson(res, 200, { ok: true, nextRelease: null });
     }
-    const cleanTitle = String(title || '').trim();
-    const parsedDate = new Date(targetDate);
-    if (!cleanTitle || isNaN(parsedDate.getTime())) {
-      return sendJson(res, 400, { error: 'Ingresa un título y una fecha válida.' });
+    const cleanTitle = String(title || '').trim().slice(0, 180);
+    let cleanThumb = (db.nextRelease && db.nextRelease.thumbnailData) || '';
+    if (thumbnailData === '') {
+      cleanThumb = '';
+    } else if (typeof thumbnailData === 'string' && thumbnailData.startsWith('data:image/')) {
+      cleanThumb = thumbnailData;
     }
+
+    let isoDate = null;
+    if (targetDate) {
+      const parsedDate = new Date(targetDate);
+      if (!isNaN(parsedDate.getTime())) {
+        isoDate = parsedDate.toISOString();
+      }
+    }
+
+    if (!cleanTitle && !cleanThumb && !isoDate) {
+      return sendJson(res, 400, { error: 'Sube una miniatura o escribe el título del próximo video.' });
+    }
+
     db.nextRelease = {
-      title: cleanTitle.slice(0, 140),
-      targetDate: parsedDate.toISOString(),
-      confirmedByAdmin: true
+      title: cleanTitle,
+      thumbnailData: cleanThumb,
+      targetDate: isoDate,
+      confirmedByAdmin: true,
+      updatedAt: new Date().toISOString()
     };
     saveDatabase();
     return sendJson(res, 200, { ok: true, nextRelease: db.nextRelease });

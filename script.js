@@ -170,7 +170,13 @@ document.addEventListener('DOMContentLoaded', () => {
             wall_reply_guest_btn: 'Crea una cuenta o inicia sesión para comentar o reaccionar',
             wall_sort_by: 'Ordenar por:',
             wall_sort_date: 'Fecha de creación',
-            wall_sort_popular: 'Popularidad (Likes + Comentarios)'
+            wall_sort_popular: 'Popularidad (Likes + Comentarios)',
+            admin_release_heading: 'Configurar Próximo Estreno (Admin)',
+            admin_btn_upload_thumb: 'Subir Miniatura / Foto de la Galería',
+            ph_admin_release_title: 'Escribe el título del próximo video...',
+            label_admin_release_date: 'Fecha de estreno (Opcional · Cuenta regresiva):',
+            btn_save_release: 'Publicar Próximo Estreno',
+            btn_reset_release: 'Dejar en «Por decidir»'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
@@ -294,7 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
             wall_reply_guest_btn: 'Create an account or sign in to comment or react',
             wall_sort_by: 'Sort by:',
             wall_sort_date: 'Creation Date',
-            wall_sort_popular: 'Popularity (Likes + Comments)'
+            wall_sort_popular: 'Popularity (Likes + Comments)',
+            admin_release_heading: 'Configure Next Premiere (Admin)',
+            admin_btn_upload_thumb: 'Upload Thumbnail / Photo from Gallery',
+            ph_admin_release_title: 'Write the title of the next video...',
+            label_admin_release_date: 'Premiere Date (Optional · Countdown):',
+            btn_save_release: 'Publish Next Premiere',
+            btn_reset_release: 'Reset to “To Be Decided”'
         }
     };
 
@@ -1262,16 +1274,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 2. PRÓXIMO ESTRENO EN PRODUCCIÓN (COUNTDOWN / POR DECIDIR)
+    // 2. PRÓXIMO ESTRENO EN PRODUCCIÓN (MINIATURA + TÍTULO + COUNTDOWN / POR DECIDIR)
     // ==========================================
     let releaseTargetTimestamp = null;
+    let hasConfiguredReleaseContent = false;
+    let pendingReleaseThumbData = undefined; // undefined = sin cambios, '' = borrar, 'data:image/...' = nueva imagen
 
     function updateCountdownDisplayMode() {
         const tbdBox = document.getElementById('countdown-tbd-box');
         const gridBox = document.getElementById('countdown-grid');
         const hasValidFutureDate = Boolean(releaseTargetTimestamp && releaseTargetTimestamp > Date.now());
-        if (tbdBox) tbdBox.classList.toggle('hidden', hasValidFutureDate);
+        if (tbdBox) tbdBox.classList.toggle('hidden', hasValidFutureDate || hasConfiguredReleaseContent);
         if (gridBox) gridBox.classList.toggle('hidden', !hasValidFutureDate);
+    }
+
+    function showAdminReleaseFeedback(msg, type = 'success') {
+        const fb = document.getElementById('admin-release-feedback');
+        if (!fb) return;
+        fb.textContent = msg;
+        fb.className = `auth-feedback ${type}`;
+        setTimeout(() => {
+            fb.className = 'auth-feedback hidden';
+        }, 4000);
+    }
+
+    function compressImageFileToDataUrl(file, maxWidth = 960, quality = 0.85) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const rawDataUrl = ev.target.result;
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxWidth) {
+                            h = Math.round((h * maxWidth) / w);
+                            w = maxWidth;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    } catch (e) {
+                        resolve(rawDataUrl);
+                    }
+                };
+                img.onerror = () => resolve(rawDataUrl);
+                img.src = rawDataUrl;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const adminReleaseThumbInput = document.getElementById('admin-release-thumb-input');
+    const adminReleaseUploadBtn = document.getElementById('admin-release-upload-btn');
+    const adminReleasePreviewWrap = document.getElementById('admin-release-preview-wrap');
+    const adminReleasePreviewImg = document.getElementById('admin-release-preview-img');
+    const adminReleaseClearThumb = document.getElementById('admin-release-clear-thumb');
+
+    if (adminReleaseUploadBtn && adminReleaseThumbInput) {
+        adminReleaseUploadBtn.addEventListener('click', () => {
+            adminReleaseThumbInput.click();
+        });
+
+        adminReleaseThumbInput.addEventListener('change', async () => {
+            const file = adminReleaseThumbInput.files && adminReleaseThumbInput.files[0];
+            if (!file) return;
+            try {
+                const dataUrl = await compressImageFileToDataUrl(file, 960, 0.85);
+                pendingReleaseThumbData = dataUrl;
+                if (adminReleasePreviewImg) adminReleasePreviewImg.src = dataUrl;
+                if (adminReleasePreviewWrap) adminReleasePreviewWrap.classList.remove('hidden');
+            } catch (e) {
+                showAdminReleaseFeedback('No se pudo cargar la imagen seleccionada.', 'error');
+            }
+        });
+    }
+
+    if (adminReleaseClearThumb) {
+        adminReleaseClearThumb.addEventListener('click', () => {
+            pendingReleaseThumbData = '';
+            if (adminReleaseThumbInput) adminReleaseThumbInput.value = '';
+            if (adminReleasePreviewImg) adminReleasePreviewImg.src = '';
+            if (adminReleasePreviewWrap) adminReleasePreviewWrap.classList.add('hidden');
+        });
     }
 
     async function loadReleaseCountdown() {
@@ -1280,25 +1370,81 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`${API_BASE}/api/release`, { headers });
             if (!res.ok) return;
             const data = await res.json();
+            if (data && data.isAdmin) {
+                updatePollAdminControls(true);
+            }
             const titleEl = document.getElementById('release-title-display');
+            const thumbBox = document.getElementById('release-thumbnail-box');
+            const thumbImg = document.getElementById('release-thumbnail-img');
             const rel = data.nextRelease;
             const isDefaultPlaceholder = !rel ||
                 !rel.confirmedByAdmin ||
                 rel.title === 'Próximo Documental Especial en Producción' ||
                 rel.title === 'Próximo Gran Documental Histórico';
 
-            if (!isDefaultPlaceholder && rel.targetDate) {
-                const ts = new Date(rel.targetDate).getTime();
-                if (!isNaN(ts) && ts > Date.now()) {
-                    if (titleEl) titleEl.textContent = `«${rel.title}»`;
-                    releaseTargetTimestamp = ts;
-                    updateCountdownDisplayMode();
-                    tickCountdown();
-                    return;
+            if (!isDefaultPlaceholder && rel) {
+                const cleanTitle = String(rel.title || '').trim();
+                const cleanThumb = String(rel.thumbnailData || '').trim();
+                hasConfiguredReleaseContent = Boolean(cleanTitle || cleanThumb);
+
+                if (thumbBox && thumbImg) {
+                    if (cleanThumb) {
+                        thumbImg.src = cleanThumb;
+                        thumbBox.classList.remove('hidden');
+                    } else {
+                        thumbImg.src = '';
+                        thumbBox.classList.add('hidden');
+                    }
                 }
+
+                if (titleEl) {
+                    if (cleanTitle) {
+                        titleEl.textContent = `«${cleanTitle}»`;
+                        titleEl.classList.remove('hidden');
+                    } else if (cleanThumb) {
+                        titleEl.textContent = '';
+                        titleEl.classList.add('hidden');
+                    } else {
+                        titleEl.textContent = t('release_default_sub');
+                        titleEl.classList.remove('hidden');
+                    }
+                }
+
+                // Sincronizar vista previa del formulario admin si el administrador no está editando en este instante
+                const adminTitleInput = document.getElementById('admin-release-title');
+                if (adminTitleInput && document.activeElement !== adminTitleInput && !adminTitleInput.value) {
+                    adminTitleInput.value = cleanTitle;
+                }
+                if (pendingReleaseThumbData === undefined && cleanThumb && adminReleasePreviewWrap && adminReleasePreviewImg) {
+                    adminReleasePreviewImg.src = cleanThumb;
+                    adminReleasePreviewWrap.classList.remove('hidden');
+                }
+
+                if (rel.targetDate) {
+                    const ts = new Date(rel.targetDate).getTime();
+                    if (!isNaN(ts) && ts > Date.now()) {
+                        releaseTargetTimestamp = ts;
+                        updateCountdownDisplayMode();
+                        tickCountdown();
+                        return;
+                    }
+                }
+
+                releaseTargetTimestamp = null;
+                updateCountdownDisplayMode();
+                return;
             }
+
+            hasConfiguredReleaseContent = false;
             releaseTargetTimestamp = null;
-            if (titleEl) titleEl.textContent = t('release_default_sub');
+            if (thumbBox && thumbImg) {
+                thumbImg.src = '';
+                thumbBox.classList.add('hidden');
+            }
+            if (titleEl) {
+                titleEl.textContent = t('release_default_sub');
+                titleEl.classList.remove('hidden');
+            }
             updateCountdownDisplayMode();
         } catch (e) {}
     }
@@ -1327,7 +1473,26 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const title = document.getElementById('admin-release-title').value.trim();
             const targetDate = document.getElementById('admin-release-date').value;
-            if (!title || !targetDate) return;
+            const hasExistingPreview = adminReleasePreviewWrap && !adminReleasePreviewWrap.classList.contains('hidden');
+
+            if (!title && !pendingReleaseThumbData && !hasExistingPreview && !targetDate) {
+                showAdminReleaseFeedback(
+                    currentLang === 'en'
+                        ? 'Please upload a thumbnail or enter the video title.'
+                        : 'Sube una miniatura de la galería o escribe el título del próximo video.',
+                    'error'
+                );
+                return;
+            }
+
+            const payload = {
+                title,
+                targetDate: targetDate ? new Date(targetDate).toISOString() : null
+            };
+            if (pendingReleaseThumbData !== undefined) {
+                payload.thumbnailData = pendingReleaseThumbData;
+            }
+
             try {
                 const res = await fetch(`${API_BASE}/api/release`, {
                     method: 'POST',
@@ -1335,12 +1500,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    body: JSON.stringify({ title, targetDate: new Date(targetDate).toISOString() })
+                    body: JSON.stringify(payload)
                 });
+                const data = await res.json();
                 if (res.ok) {
+                    pendingReleaseThumbData = undefined;
+                    showAdminReleaseFeedback(
+                        currentLang === 'en'
+                            ? 'Next premiere updated successfully!'
+                            : '¡Próximo estreno publicado con éxito!',
+                        'success'
+                    );
                     loadReleaseCountdown();
+                } else {
+                    showAdminReleaseFeedback(data.error || 'No se pudo actualizar el próximo estreno.', 'error');
                 }
-            } catch (err) {}
+            } catch (err) {
+                showAdminReleaseFeedback('Error de conexión con el servidor.', 'error');
+            }
         });
     }
 
@@ -1357,6 +1534,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ reset: true })
                 });
                 if (res.ok) {
+                    pendingReleaseThumbData = undefined;
+                    const titleInput = document.getElementById('admin-release-title');
+                    const dateInput = document.getElementById('admin-release-date');
+                    if (titleInput) titleInput.value = '';
+                    if (dateInput) dateInput.value = '';
+                    if (adminReleaseThumbInput) adminReleaseThumbInput.value = '';
+                    if (adminReleasePreviewImg) adminReleasePreviewImg.src = '';
+                    if (adminReleasePreviewWrap) adminReleasePreviewWrap.classList.add('hidden');
+                    showAdminReleaseFeedback(
+                        currentLang === 'en'
+                            ? 'Reset to “To Be Decided”.'
+                            : 'Se restableció a «Por decidir».',
+                        'success'
+                    );
                     loadReleaseCountdown();
                 }
             } catch (err) {}
@@ -3032,6 +3223,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setInterval(() => {
         loadPoll();
+        loadReleaseCountdown();
         loadComments(true);
         loadVideoComments(currentActiveVideoId, true);
     }, 6000);

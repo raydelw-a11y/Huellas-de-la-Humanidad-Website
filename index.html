@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=10232309">
+    <link rel="stylesheet" href="style.css?v=10250725">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -243,6 +243,11 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                 <!-- 2. Próximo Estreno en Producción (Cuenta Regresiva / Por Decidir) -->
                 <section class="countdown-section glass-panel">
                     <h2><i class="fa-solid fa-hourglass-half"></i> <span data-i18n="countdown_title">Próximo Estreno</span></h2>
+
+                    <div id="release-thumbnail-box" class="release-thumbnail-box hidden">
+                        <img id="release-thumbnail-img" src="" alt="Miniatura del próximo estreno">
+                    </div>
+
                     <p id="release-title-display" class="release-title-display" data-i18n="release_default_sub">Próximo Documental Especial en Producción</p>
 
                     <div id="countdown-tbd-box" class="countdown-tbd-box">
@@ -256,13 +261,35 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                         <div class="cd-box"><span id="cd-secs">00</span><small data-i18n="cd_secs">Seg</small></div>
                     </div>
 
-                    <!-- Editor exclusivo para raydeladmin -->
+                    <!-- Editor exclusivo para cuentas Admin -->
                     <form id="admin-release-form" class="admin-inline-form hidden">
-                        <h4><i class="fa-solid fa-crown"></i> Configurar Próximo Estreno (Admin)</h4>
-                        <input type="text" id="admin-release-title" placeholder="Título del documental en producción..." required>
-                        <input type="datetime-local" id="admin-release-date" required>
-                        <button type="submit" class="gold-submit-btn">Actualizar Cuenta Regresiva</button>
-                        <button type="button" id="admin-release-reset-btn" class="logout-btn">Dejar en «Por decidir»</button>
+                        <h4><i class="fa-solid fa-crown"></i> <span data-i18n="admin_release_heading">Configurar Próximo Estreno (Admin)</span></h4>
+
+                        <input type="file" id="admin-release-thumb-input" accept="image/*" class="hidden">
+                        <button type="button" id="admin-release-upload-btn" class="upload-thumb-btn">
+                            <i class="fa-solid fa-images"></i> <span data-i18n="admin_btn_upload_thumb">Subir Miniatura / Foto de la Galería</span>
+                        </button>
+
+                        <div id="admin-release-preview-wrap" class="admin-release-preview-wrap hidden">
+                            <img id="admin-release-preview-img" src="" alt="Vista previa de miniatura">
+                            <button type="button" id="admin-release-clear-thumb" class="clear-thumb-btn" title="Quitar miniatura">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <input type="text" id="admin-release-title" data-i18n-placeholder="ph_admin_release_title" placeholder="Escribe el título del próximo video...">
+
+                        <label class="admin-optional-label" for="admin-release-date" data-i18n="label_admin_release_date">Fecha de estreno (Opcional · Cuenta regresiva):</label>
+                        <input type="datetime-local" id="admin-release-date">
+
+                        <div id="admin-release-feedback" class="auth-feedback hidden"></div>
+
+                        <button type="submit" class="gold-submit-btn">
+                            <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_release">Publicar Próximo Estreno</span>
+                        </button>
+                        <button type="button" id="admin-release-reset-btn" class="logout-btn">
+                            <i class="fa-solid fa-rotate-left"></i> <span data-i18n="btn_reset_release">Dejar en «Por decidir»</span>
+                        </button>
                     </form>
                 </section>
 
@@ -599,9 +626,9 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 11:09 PM - 10/23/2026</div>
+    <div class="build-timestamp">Actualizado: 07:25 AM - 10/25/2026</div>
 
-    <script src="world-map-data.js?v=10232309"></script>
-    <script src="script.js?v=10232309"></script>
+    <script src="world-map-data.js?v=10250725"></script>
+    <script src="script.js?v=10250725"></script>
 </body>
 </html>

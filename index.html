@@ -14,14 +14,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=10250738">
+    <link rel="stylesheet" href="style.css?v=10250928">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <!-- Video de Fondo Vertical 9:16 con recorrido vertical al hacer scroll y audio -->
     <div class="bg-video-stage" aria-hidden="true">
-        <video id="bg-scroll-video" class="bg-scroll-video" src="bg-video.mp4" poster="bg-poster.jpg" autoplay loop playsinline preload="auto"></video>
+        <video id="bg-scroll-video" class="bg-scroll-video" poster="bg-poster.jpg" autoplay loop playsinline preload="auto">
+            <source src="https://cdn.jsdelivr.net/gh/raydelw-a11y/Huellas-de-la-Humanidad-Website@main/bg-video.mp4" type="video/mp4">
+            <source src="bg-video.mp4" type="video/mp4">
+        </video>
         <div class="bg-video-vignette"></div>
     </div>
     <div class="background-animation"></div>
@@ -623,9 +626,9 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 07:38 AM - 10/25/2026</div>
+    <div class="build-timestamp">Actualizado: 09:28 AM - 10/25/2026</div>
 
-    <script src="world-map-data.js?v=10250738"></script>
-    <script src="script.js?v=10250738"></script>
+    <script src="world-map-data.js?v=10250928"></script>
+    <script src="script.js?v=10250928"></script>
 </body>
 </html>

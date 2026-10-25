@@ -1569,37 +1569,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 3. UN DÍA COMO HOY EN LA HISTORIA (BILINGÜE)
+    // 3. UN DÍA COMO HOY EN LA HISTORIA (ACTUALIZACIÓN DIARIA AUTOMÁTICA EN TIEMPO REAL)
     // ==========================================
-    function renderEphemeris() {
+    const ephemerisCache = {};
+
+    function formatEphemerisYear(yearNum, lang) {
+        const y = Number(yearNum);
+        if (!Number.isFinite(y)) return String(yearNum || '');
+        if (y < 0) {
+            return lang === 'en' ? `Year ${Math.abs(y)} BC` : `Año ${Math.abs(y)} a.C.`;
+        }
+        return lang === 'en' ? `Year ${y}` : `Año ${y}`;
+    }
+
+    function cleanEphemerisText(rawText) {
+        const s = String(rawText || '').replace(/\s+/g, ' ').trim();
+        if (!s) return '';
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function drawEphemerisItems(items) {
+        const container = document.getElementById('ephemeris-list');
+        if (!container) return;
+        container.innerHTML = '';
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'ephemeris-item';
+            const yearDiv = document.createElement('div');
+            yearDiv.className = 'ephemeris-year';
+            yearDiv.textContent = item.year;
+            const textDiv = document.createElement('div');
+            textDiv.className = 'ephemeris-text';
+            textDiv.textContent = item.text;
+            div.appendChild(yearDiv);
+            div.appendChild(textDiv);
+            container.appendChild(div);
+        });
+    }
+
+    async function renderEphemeris() {
         const now = new Date();
         const monthsEs = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         const day = now.getDate();
-        document.getElementById('ephemeris-date-badge').textContent = currentLang === 'en'
-            ? `${monthsEn[now.getMonth()]} ${day} in History`
-            : `${day} de ${monthsEs[now.getMonth()]} en la Historia`;
+        const monthIdx = now.getMonth();
+        const mm = String(monthIdx + 1).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        const lang = currentLang === 'en' ? 'en' : 'es';
 
-        const milestones = currentLang === 'en'
+        const badgeEl = document.getElementById('ephemeris-date-badge');
+        if (badgeEl) {
+            badgeEl.textContent = lang === 'en'
+                ? `${monthsEn[monthIdx]} ${day} in History`
+                : `${day} de ${monthsEs[monthIdx]} en la Historia`;
+        }
+
+        const fallbackMilestones = lang === 'en'
             ? [
-                { year: 'Year 79 AD', text: 'Mount Vesuvius buries the Roman city of Pompeii under burning ash and pumice, freezing daily life of the Empire in time.' },
-                { year: 'Year 1200', text: 'King Philip II Augustus orders the construction of the medieval fortress of the Louvre on the banks of the Seine to defend Paris.' },
-                { year: 'Year 1912', text: 'At the Harland & Wolff shipyards in Belfast, final sea trials are completed on the RMS Titanic before its fateful maiden voyage.' }
+                { year: 'Year 1147', text: 'Portuguese forces under King Afonso I capture the city of Lisbon after a four-month siege during the Reconquista.' },
+                { year: 'Year 1415', text: 'King Henry V of England defeats the French army at the historic Battle of Agincourt during the Hundred Years’ War.' },
+                { year: 'Year 1854', text: 'The Battle of Balaclava takes place during the Crimean War, immortalized by the fateful Charge of the Light Brigade.' }
             ]
             : [
-                { year: 'Año 79 d.C.', text: 'El Monte Vesubio sepulta la ciudad romana de Pompeya bajo un manto ardiente de ceniza y piedra pómez, congelando en el tiempo la vida cotidiana del Imperio.' },
-                { year: 'Año 1200', text: 'El rey Felipe II Augusto ordena levantar la imponente fortaleza medieval del Louvre a orillas del Sena para proteger las murallas de París.' },
-                { year: 'Año 1912', text: 'En los astilleros de Harland & Wolff culminan las pruebas del RMS Titanic, el coloso transatlántico cuyo viaje inaugural marcaría la historia marítima.' }
+                { year: 'Año 1147', text: 'Las tropas portuguesas comandadas por Alfonso I capturan la ciudad de Lisboa tras un histórico asedio de cuatro meses.' },
+                { year: 'Año 1415', text: 'El ejército inglés del rey Enrique V vence a las fuerzas francesas en la célebre batalla de Azincourt durante la Guerra de los Cien Años.' },
+                { year: 'Año 1854', text: 'Se libra la batalla de Balaclava durante la Guerra de Crimea, marcada en la historia por la célebre Carga de la Brigada Ligera.' }
             ];
 
-        const container = document.getElementById('ephemeris-list');
-        container.innerHTML = '';
-        milestones.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'ephemeris-item';
-            div.innerHTML = `<div class="ephemeris-year">${item.year}</div><div class="ephemeris-text">${item.text}</div>`;
-            container.appendChild(div);
-        });
+        const cacheKey = `${lang}-${mm}-${dd}`;
+        if (ephemerisCache[cacheKey]) {
+            drawEphemerisItems(ephemerisCache[cacheKey]);
+            return;
+        }
+
+        drawEphemerisItems(fallbackMilestones);
+
+        try {
+            const res = await fetch(`https://api.wikimedia.org/feed/v1/wikipedia/${lang}/onthisday/events/${mm}/${dd}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const rawEvents = Array.isArray(data.events) ? data.events : [];
+            const valid = rawEvents
+                .filter(e => e && Number.isFinite(Number(e.year)) && typeof e.text === 'string' && e.text.trim().length >= 45 && e.text.trim().length <= 260)
+                .sort((a, b) => Number(a.year) - Number(b.year));
+
+            if (valid.length >= 3) {
+                const ancientOrEarly = valid.find(e => Number(e.year) <= 1650) || valid[0];
+                const modern = valid.find(e => Number(e.year) > Number(ancientOrEarly.year) && Number(e.year) >= 1700 && Number(e.year) <= 1918)
+                    || valid[Math.floor(valid.length / 2)];
+                const twentieth = valid.find(e => Number(e.year) > Number(modern.year) && Number(e.year) >= 1919 && Number(e.year) <= 1995)
+                    || valid[valid.length - 1];
+
+                const picked = [ancientOrEarly, modern, twentieth]
+                    .filter((item, idx, arr) => item && arr.indexOf(item) === idx)
+                    .map(e => ({
+                        year: formatEphemerisYear(e.year, lang),
+                        text: cleanEphemerisText(e.text)
+                    }));
+
+                if (picked.length === 3) {
+                    ephemerisCache[cacheKey] = picked;
+                    if ((currentLang === 'en' ? 'en' : 'es') === lang) {
+                        drawEphemerisItems(picked);
+                    }
+                }
+            }
+        } catch (err) {
+            // Mantiene el respaldo histórico si falla la red
+        }
     }
     renderEphemeris();
 

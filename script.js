@@ -1469,13 +1469,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const adminReleaseForm = document.getElementById('admin-release-form');
     if (adminReleaseForm) {
+        adminReleaseForm.setAttribute('novalidate', 'novalidate');
+        const legacyDateInput = document.getElementById('admin-release-date');
+        if (legacyDateInput) {
+            legacyDateInput.removeAttribute('required');
+            legacyDateInput.remove();
+        }
+        const legacyDateLabel = adminReleaseForm.querySelector('label[for="admin-release-date"]');
+        if (legacyDateLabel) {
+            legacyDateLabel.remove();
+        }
+        const titleInputEl = document.getElementById('admin-release-title');
+        if (titleInputEl) {
+            titleInputEl.removeAttribute('required');
+        }
+
         adminReleaseForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const title = document.getElementById('admin-release-title').value.trim();
-            const targetDate = document.getElementById('admin-release-date').value;
+            const title = (document.getElementById('admin-release-title')?.value || '').trim();
             const hasExistingPreview = adminReleasePreviewWrap && !adminReleasePreviewWrap.classList.contains('hidden');
 
-            if (!title && !pendingReleaseThumbData && !hasExistingPreview && !targetDate) {
+            if (!title && !pendingReleaseThumbData && !hasExistingPreview) {
                 showAdminReleaseFeedback(
                     currentLang === 'en'
                         ? 'Please upload a thumbnail or enter the video title.'
@@ -1487,7 +1501,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const payload = {
                 title,
-                targetDate: targetDate ? new Date(targetDate).toISOString() : null
+                targetDate: null
             };
             if (pendingReleaseThumbData !== undefined) {
                 payload.thumbnailData = pendingReleaseThumbData;

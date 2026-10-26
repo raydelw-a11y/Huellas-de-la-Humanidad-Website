@@ -398,12 +398,22 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 409, { error: 'Ese nombre de usuario ya está registrado. Elige otro o inicia sesión.' });
     }
 
+    const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
+    const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+
     db.users[cleanUser] = {
       username: cleanUser,
       displayName: String(username).trim(),
       passwordHash: hashPassword(password),
       email: cleanEmail || '',
       notifyYoutube: Boolean(cleanEmail),
+      welcomeVideoFollowup: cleanEmail ? {
+        dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        videoIdAtSignup: currentLatestVid,
+        videoTitleAtSignup: currentLatestTitle,
+        sent: false,
+        cancelledByNewRelease: false
+      } : null,
       role: 'user',
       createdAt: new Date().toISOString()
     };
@@ -504,8 +514,21 @@ const server = http.createServer(async (req, res) => {
     }
 
     const u = db.users[session.username];
+    const hadEmailBefore = Boolean(u.email);
     u.email = cleanEmail;
     u.notifyYoutube = cleanEmail ? Boolean(notifyYoutube) : false;
+
+    if (cleanEmail && u.notifyYoutube && !hadEmailBefore && !u.welcomeVideoFollowup) {
+      const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
+      const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+      u.welcomeVideoFollowup = {
+        dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        videoIdAtSignup: currentLatestVid,
+        videoTitleAtSignup: currentLatestTitle,
+        sent: false,
+        cancelledByNewRelease: false
+      };
+    }
 
     saveDatabase();
 
@@ -1702,6 +1725,15 @@ function checkYoutubeAndNotify() {
             if (!db.youtubeNotifier.notifiedVideoIds.includes(latestId)) {
               db.youtubeNotifier.notifiedVideoIds.push(latestId);
             }
+
+            // Si se estrena un nuevo video antes de cumplirse las 24h de un nuevo seguidor, cancelar el envío diferido del video anterior
+            Object.values(db.users || {}).forEach(u => {
+              if (u && u.welcomeVideoFollowup && !u.welcomeVideoFollowup.sent) {
+                u.welcomeVideoFollowup.cancelledByNewRelease = true;
+                u.welcomeVideoFollowup.sent = true;
+              }
+            });
+
             saveDatabase();
 
             // Enviar correo de notificación a cada seguidor registrado con notificaciones activas
@@ -1731,8 +1763,54 @@ function checkYoutubeAndNotify() {
               // Pausa de 650ms entre envíos para respetar el límite de velocidad de Resend y garantizar entrega al 100%
               await new Promise(r => setTimeout(r, 650));
             }
-          } else if (dbChanged) {
-            saveDatabase();
+          } else {
+            // Revisar seguidores nuevos que cumplieron 24 horas desde su registro sin que se haya estrenado otro video antes
+            let followupUpdated = false;
+            const nowMs = Date.now();
+            for (const u of Object.values(db.users || {})) {
+              if (!u || !u.welcomeVideoFollowup || u.welcomeVideoFollowup.sent || u.welcomeVideoFollowup.cancelledByNewRelease) {
+                continue;
+              }
+              if (!u.email || !u.notifyYoutube) {
+                continue;
+              }
+              if (u.welcomeVideoFollowup.videoIdAtSignup && u.welcomeVideoFollowup.videoIdAtSignup !== latestId) {
+                u.welcomeVideoFollowup.cancelledByNewRelease = true;
+                u.welcomeVideoFollowup.sent = true;
+                followupUpdated = true;
+                continue;
+              }
+              const dueMs = new Date(u.welcomeVideoFollowup.dueAt || 0).getTime();
+              if (dueMs > 0 && nowMs >= dueMs) {
+                u.welcomeVideoFollowup.sent = true;
+                u.welcomeVideoFollowup.sentAt = new Date().toISOString();
+                followupUpdated = true;
+                saveDatabase();
+
+                const targetVid = latestId;
+                const targetTitle = cleanLatestTitle || u.welcomeVideoFollowup.videoTitleAtSignup || 'Último Documental';
+                const thumbUrl = `https://i.ytimg.com/vi/${targetVid}/hqdefault.jpg`;
+                const youtubeVideoUrl = `https://www.youtube.com/watch?v=${targetVid}`;
+                const html = buildBrandEmailHtml({
+                  title: 'Último Documental Estrenado en YouTube',
+                  greetingName: u.displayName || u.username,
+                  bodyHtml: `
+                    <p style="margin:0 0 14px;">Te compartimos nuestro último documental completo estrenado en el canal de YouTube por si aún no lo has visto:</p>
+                    <h3 style="color:#f5df98;font-size:19px;margin:0 0 14px;">«${targetTitle}»</h3>
+                    <a href="${youtubeVideoUrl}" target="_blank" style="text-decoration:none;">
+                      <img src="${thumbUrl}" alt="${targetTitle}" width="460" style="width:100%;max-width:460px;height:auto;border-radius:10px;border:1px solid #d4af37;display:block;margin:0 auto;" />
+                    </a>
+                  `,
+                  ctaText: 'Ver Documental en YouTube',
+                  ctaUrl: youtubeVideoUrl
+                });
+                await sendEmailViaResend(String(u.email).trim().toLowerCase(), `Último documental: ${targetTitle} - Huellas de la Humanidad`, html);
+                await new Promise(r => setTimeout(r, 650));
+              }
+            }
+            if (dbChanged || followupUpdated) {
+              saveDatabase();
+            }
           }
         } catch (err) {
           console.error('Error in checkYoutubeAndNotify:', err.message);

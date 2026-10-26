@@ -57,10 +57,10 @@ let db = {
   },
   youtubeNotifier: {
     lastVideoId: 'PPgK7kuznm0',
-    lastHorizontalVideoId: 'rJdAGfxEYkw',
-    lastVideoTitle: '',
+    lastHorizontalVideoId: 'PPgK7kuznm0',
+    lastVideoTitle: 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe',
     lastNotifiedAt: null,
-    notifiedVideoIds: ['rJdAGfxEYkw']
+    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0']
   },
   autoDocumentaries: [],
   nextRelease: null,
@@ -1683,8 +1683,12 @@ function checkYoutubeAndNotify() {
           }
 
           if (!Array.isArray(db.youtubeNotifier.notifiedVideoIds)) {
-            const prevKnown = db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId;
-            db.youtubeNotifier.notifiedVideoIds = prevKnown && prevKnown !== latestId ? [prevKnown] : ['rJdAGfxEYkw'];
+            db.youtubeNotifier.notifiedVideoIds = ['rJdAGfxEYkw', 'PPgK7kuznm0'];
+          } else if (!db.youtubeNotifier.notifiedVideoIds.includes('PPgK7kuznm0')) {
+            db.youtubeNotifier.notifiedVideoIds.push('PPgK7kuznm0');
+          }
+          if (!db.youtubeNotifier.lastHorizontalVideoId) {
+            db.youtubeNotifier.lastHorizontalVideoId = 'PPgK7kuznm0';
           }
 
           const prevHorizontalId = db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId || '';
@@ -1709,18 +1713,19 @@ function checkYoutubeAndNotify() {
               seenEmails.add(targetEmail);
 
               const thumbUrl = `https://i.ytimg.com/vi/${latestId}/hqdefault.jpg`;
+              const youtubeVideoUrl = `https://www.youtube.com/watch?v=${latestId}`;
               const html = buildBrandEmailHtml({
                 title: 'Nuevo Documental en YouTube',
                 greetingName: sub.displayName || sub.username,
                 bodyHtml: `
                   <p style="margin:0 0 14px;">Acabamos de publicar un nuevo documental completo en nuestro canal de YouTube:</p>
                   <h3 style="color:#f5df98;font-size:19px;margin:0 0 14px;">«${cleanLatestTitle}»</h3>
-                  <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">
+                  <a href="${youtubeVideoUrl}" target="_blank" style="text-decoration:none;">
                     <img src="${thumbUrl}" alt="${cleanLatestTitle}" width="460" style="width:100%;max-width:460px;height:auto;border-radius:10px;border:1px solid #d4af37;display:block;margin:0 auto;" />
                   </a>
                 `,
-                ctaText: 'Ver Documental Ahora',
-                ctaUrl: 'https://huellasdelahumanidad.com'
+                ctaText: 'Ver Documental en YouTube',
+                ctaUrl: youtubeVideoUrl
               });
               await sendEmailViaResend(targetEmail, `Nuevo documental: ${cleanLatestTitle} - Huellas de la Humanidad`, html);
               // Pausa de 650ms entre envíos para respetar el límite de velocidad de Resend y garantizar entrega al 100%

@@ -44,6 +44,8 @@ let db = {
       username: 'raydeladmin',
       displayName: 'Huellas de la Humanidad',
       passwordHash: hashPassword(ADMIN_DEFAULT_PWD),
+      email: 'raydelw@yahoo.com',
+      notifyYoutube: true,
       role: 'admin',
       createdAt: new Date().toISOString()
     }
@@ -232,7 +234,7 @@ async function loadDatabase() {
     username: 'raydeladmin',
     displayName: 'Huellas de la Humanidad',
     passwordHash: hashPassword(ADMIN_DEFAULT_PWD),
-    email: (db.users.raydeladmin && db.users.raydeladmin.email) || '',
+    email: (db.users.raydeladmin && db.users.raydeladmin.email) || 'raydelw@yahoo.com',
     notifyYoutube: (db.users.raydeladmin && db.users.raydeladmin.notifyYoutube) !== false,
     role: 'admin',
     createdAt: (db.users.raydeladmin && db.users.raydeladmin.createdAt) || new Date().toISOString()

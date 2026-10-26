@@ -20,26 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(panel);
     });
 
-    // Auto-update latest YouTube video from channel RSS feed
+    // Referencias del reproductor principal de YouTube (sincronizado automáticamente con videos horizontales, sin Shorts)
     const CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
     const ytIframe = document.getElementById('youtube-latest-player');
     const mainYtHeading = document.getElementById('main-youtube-heading');
-    if (ytIframe) {
-        const rssUrl = encodeURIComponent(`https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`);
-        fetch(`https://api.rss2json.com/v1/api.json?rss_url=${rssUrl}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.items && data.items.length > 0) {
-                    const latestItem = data.items[0];
-                    const parts = (latestItem.guid || '').split(':');
-                    const videoId = parts[parts.length - 1];
-                    if (videoId && !ytIframe.src.includes(videoId)) {
-                        ytIframe.src = `https://www.youtube.com/embed/${videoId}`;
-                    }
-                }
-            })
-            .catch(() => {});
-    }
+    let userManuallySelectedDoc = false;
 
     // ==========================================
     // SISTEMA BILINGÜE: ESPAÑOL (POR DEFECTO) / INGLÉS
@@ -100,15 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
             watching_prefix: 'Viendo:',
             map_title: 'Mapa Interactivo de las «Huellas»',
             map_subtitle: 'Pasa el puntero o toca con el dedo cualquier punto dorado del mapa terrestre para desplegar su línea flotante con el título, ubicación e historia.',
-            region_world: '🌍 Mapa Mundial (25)',
-            region_europe: '🏛️ Europa y Mediterráneo (12)',
+            region_world: '🌍 Mapa Mundial (26)',
+            region_europe: '🏛️ Europa y Mediterráneo (13)',
             region_americas: '🌎 América y Caribe (11)',
             region_asia: '🌏 Asia e Indonesia (2)',
             btn_watch_doc: 'Ver Documental',
             btn_watch_here: 'Ver Documental Aquí',
             btn_play: 'Reproducir',
             library_title: 'Biblioteca de Documentales',
-            cat_all: 'Todos (25)',
+            cat_all: 'Todos (26)',
             cat_ancient: 'Edad Antigua y Media',
             cat_modern: 'Tragedias e Historia Moderna',
             cat_mysteries: 'Casos y Misterios Reales',
@@ -156,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             poll_vote_btn: 'Votar',
             wall_empty: 'Sé el primero en crear una publicación en el Muro de Debate.',
             lb_empty: 'Inicia sesión y acierta para inaugurar el Cuadro de Honor',
-            map_docs_count: '25 Documentales',
+            map_docs_count: '26 Documentales',
             btn_bg_audio_on: 'Audio: ON',
             btn_bg_audio_off: 'Audio: OFF',
             btn_become_member: 'Convertirse en Miembro',
@@ -230,15 +215,15 @@ document.addEventListener('DOMContentLoaded', () => {
             watching_prefix: 'Watching:',
             map_title: 'Interactive “Footprints” World Map',
             map_subtitle: 'Hover your pointer or touch any golden point on the real Earth map to display a floating leader line with the video title and location.',
-            region_world: '🌍 Full World Map (25)',
-            region_europe: '🏛️ Europe & Mediterranean (12)',
+            region_world: '🌍 Full World Map (26)',
+            region_europe: '🏛️ Europe & Mediterranean (13)',
             region_americas: '🌎 Americas & Caribbean (11)',
             region_asia: '🌏 Asia & Indonesia (2)',
             btn_watch_doc: 'Watch Documentary',
             btn_watch_here: 'Watch Documentary Here',
             btn_play: 'Play',
             library_title: 'Documentary Library',
-            cat_all: 'All (25)',
+            cat_all: 'All (26)',
             cat_ancient: 'Ancient & Middle Ages',
             cat_modern: 'Tragedies & Modern History',
             cat_mysteries: 'True Cases & Mysteries',
@@ -286,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
             poll_vote_btn: 'Vote',
             wall_empty: 'Be the first to create a post on the Debate Wall.',
             lb_empty: 'Sign in and answer correctly to inaugurate the Hall of Fame',
-            map_docs_count: '25 Documentaries',
+            map_docs_count: '26 Documentaries',
             btn_bg_audio_on: 'BG Audio: ON',
             btn_bg_audio_off: 'BG Audio: OFF',
             btn_become_member: 'Become a Member',
@@ -394,10 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(updateBgVideoVerticalScroll, 150);
     }
 
-    let currentActiveVideoId = 'rJdAGfxEYkw';
+    let currentActiveVideoId = 'PPgK7kuznm0';
 
     function playDocumentaryInMainPlayer(videoId, title) {
         if (!ytIframe) return;
+        userManuallySelectedDoc = true;
         currentActiveVideoId = videoId;
         // Silenciar el video de fondo al reproducir un documental para que no se crucen los audios
         if (bgScrollVideo && !bgScrollVideo.muted) {
@@ -1410,16 +1396,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Sincronizar vista previa del formulario admin si el administrador no está editando en este instante
-                const adminTitleInput = document.getElementById('admin-release-title');
-                if (adminTitleInput && document.activeElement !== adminTitleInput && !adminTitleInput.value) {
-                    adminTitleInput.value = cleanTitle;
-                }
-                if (pendingReleaseThumbData === undefined && cleanThumb && adminReleasePreviewWrap && adminReleasePreviewImg) {
-                    adminReleasePreviewImg.src = cleanThumb;
-                    adminReleasePreviewWrap.classList.remove('hidden');
-                }
-
                 if (rel.targetDate) {
                     const ts = new Date(rel.targetDate).getTime();
                     if (!isNaN(ts) && ts > Date.now()) {
@@ -1486,7 +1462,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         adminReleaseForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const title = (document.getElementById('admin-release-title')?.value || '').trim();
+            const titleElInput = document.getElementById('admin-release-title');
+            const title = (titleElInput?.value || '').trim();
             const hasExistingPreview = adminReleasePreviewWrap && !adminReleasePreviewWrap.classList.contains('hidden');
 
             if (!title && !pendingReleaseThumbData && !hasExistingPreview) {
@@ -1518,7 +1495,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 if (res.ok) {
+                    // Limpiar inmediatamente la imagen y el título de la sección Configurar Próximo Estreno (Admin) tras publicar
                     pendingReleaseThumbData = undefined;
+                    if (titleElInput) titleElInput.value = '';
+                    if (adminReleaseThumbInput) adminReleaseThumbInput.value = '';
+                    if (adminReleasePreviewImg) adminReleasePreviewImg.src = '';
+                    if (adminReleasePreviewWrap) adminReleasePreviewWrap.classList.add('hidden');
+
                     showAdminReleaseFeedback(
                         currentLang === 'en'
                             ? 'Next premiere updated successfully!'
@@ -1810,6 +1793,17 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     const DOCUMENTARIES = [
+        {
+            id: 'PPgK7kuznm0',
+            titleEs: 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe',
+            titleEn: 'The Brutal Siege of Antioch in 1098: Famine, Betrayal, and Faith',
+            eraEs: 'Antioquía, Siria · Año 1098',
+            eraEn: 'Antioch, Syria · Year 1098',
+            category: 'medieval',
+            region: 'europe',
+            lon: 36.16,
+            lat: 36.20
+        },
         {
             id: 'rJdAGfxEYkw',
             titleEs: 'El Louvre en el año 1200: La fortaleza olvidada de París',
@@ -2229,13 +2223,42 @@ document.addEventListener('DOMContentLoaded', () => {
         callout.style.top = `${cardTop}px`;
     }
 
+    function updateMapRegionCountsUI() {
+        const total = DOCUMENTARIES.length;
+        const eurCount = DOCUMENTARIES.filter(d => d.region === 'europe').length;
+        const ameCount = DOCUMENTARIES.filter(d => d.region === 'americas').length;
+        const asiCount = DOCUMENTARIES.filter(d => d.region === 'asia').length;
+
+        const badge = document.getElementById('map-count-badge');
+        if (badge) {
+            badge.textContent = currentLang === 'en' ? `${total} Documentaries` : `${total} Documentales`;
+        }
+
+        const btnWorld = document.querySelector('.map-region-btn[data-region="world"]');
+        const btnEurope = document.querySelector('.map-region-btn[data-region="europe"]');
+        const btnAmericas = document.querySelector('.map-region-btn[data-region="americas"]');
+        const btnAsia = document.querySelector('.map-region-btn[data-region="asia"]');
+
+        if (btnWorld) {
+            btnWorld.textContent = currentLang === 'en' ? `🌍 Full World Map (${total})` : `🌍 Mapa Mundial (${total})`;
+        }
+        if (btnEurope) {
+            btnEurope.textContent = currentLang === 'en' ? `🏛️ Europe & Mediterranean (${eurCount})` : `🏛️ Europa y Mediterráneo (${eurCount})`;
+        }
+        if (btnAmericas) {
+            btnAmericas.textContent = currentLang === 'en' ? `🌎 Americas & Caribbean (${ameCount})` : `🌎 América y Caribe (${ameCount})`;
+        }
+        if (btnAsia) {
+            btnAsia.textContent = currentLang === 'en' ? `🌏 Asia & Indonesia (${asiCount})` : `🌏 Asia e Indonesia (${asiCount})`;
+        }
+    }
+
     function renderInteractiveMap(preserveCallout = false) {
         const svg = document.getElementById('real-earth-svg');
         const pinsLayer = document.getElementById('map-pins-layer');
-        const badge = document.getElementById('map-count-badge');
         if (!svg || !pinsLayer) return;
 
-        if (badge) badge.textContent = t('map_docs_count');
+        updateMapRegionCountsUI();
 
         const vb = currentViewBox;
         svg.setAttribute('viewBox', vb.map(n => n.toFixed(2)).join(' '));
@@ -2527,6 +2550,55 @@ document.addEventListener('DOMContentLoaded', () => {
     renderInteractiveMap();
     renderLibraryCategoryFilters();
     renderDocumentaryLibrary('all');
+
+    // Sincronización automática de videos horizontales de YouTube (ignora Shorts y actualiza reproductor, mapa y biblioteca)
+    async function syncYoutubeHorizontalVideos() {
+        try {
+            const res = await fetch(`${API_BASE}/api/youtube-videos?t=${Date.now()}`, { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            let listChanged = false;
+
+            if (Array.isArray(data.autoDocumentaries)) {
+                for (let i = data.autoDocumentaries.length - 1; i >= 0; i--) {
+                    const doc = data.autoDocumentaries[i];
+                    if (doc && doc.id && !DOCUMENTARIES.some(existing => existing.id === doc.id)) {
+                        DOCUMENTARIES.unshift({
+                            id: doc.id,
+                            titleEs: doc.titleEs || 'Nuevo Documental',
+                            titleEn: doc.titleEn || doc.titleEs || 'New Documentary',
+                            eraEs: doc.eraEs || 'Archivo Histórico',
+                            eraEn: doc.eraEn || doc.eraEs || 'Historical Archive',
+                            category: doc.category || 'medieval',
+                            region: doc.region || 'europe',
+                            lon: Number.isFinite(Number(doc.lon)) ? Number(doc.lon) : 12.49,
+                            lat: Number.isFinite(Number(doc.lat)) ? Number(doc.lat) : 41.89
+                        });
+                        listChanged = true;
+                    }
+                }
+            }
+
+            if (data.latestVideoId && ytIframe && !userManuallySelectedDoc) {
+                if (!ytIframe.src.includes(data.latestVideoId)) {
+                    ytIframe.src = `https://www.youtube.com/embed/${data.latestVideoId}`;
+                    currentActiveVideoId = data.latestVideoId;
+                    loadVideoComments(currentActiveVideoId);
+                }
+            }
+
+            if (listChanged) {
+                renderInteractiveMap(Boolean(selectedMapDoc));
+                renderLibraryCategoryFilters();
+                renderDocumentaryLibrary(currentFilterCat);
+            } else {
+                updateMapRegionCountsUI();
+            }
+        } catch (err) {}
+    }
+
+    syncYoutubeHorizontalVideos();
+    setInterval(syncYoutubeHorizontalVideos, 60000);
 
     // ==========================================
     // NAVEGACIÓN ENTRE VISTA PRINCIPAL Y MURO DE DEBATE A PANTALLA COMPLETA

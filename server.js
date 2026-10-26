@@ -54,10 +54,13 @@ let db = {
     topics: [] // [ { id, title, author, createdAt, voters: [] } ]
   },
   youtubeNotifier: {
-    lastVideoId: 'rJdAGfxEYkw',
+    lastVideoId: 'PPgK7kuznm0',
+    lastHorizontalVideoId: 'rJdAGfxEYkw',
     lastVideoTitle: '',
-    lastNotifiedAt: null
+    lastNotifiedAt: null,
+    notifiedVideoIds: ['rJdAGfxEYkw']
   },
+  autoDocumentaries: [],
   nextRelease: null,
   trivia: {
     id: 'trivia-louvre-1200',
@@ -158,7 +161,10 @@ async function loadDatabase() {
           db.poll = parsed.poll;
         }
         if (parsed.youtubeNotifier) {
-          db.youtubeNotifier = parsed.youtubeNotifier;
+          db.youtubeNotifier = { ...db.youtubeNotifier, ...parsed.youtubeNotifier };
+        }
+        if (Array.isArray(parsed.autoDocumentaries)) {
+          db.autoDocumentaries = parsed.autoDocumentaries;
         }
         if ('nextRelease' in parsed) db.nextRelease = parsed.nextRelease;
         if (parsed.trivia) db.trivia = parsed.trivia;
@@ -189,7 +195,10 @@ async function loadDatabase() {
             db.poll = parsed.poll;
           }
           if (parsed.youtubeNotifier) {
-            db.youtubeNotifier = parsed.youtubeNotifier;
+            db.youtubeNotifier = { ...db.youtubeNotifier, ...parsed.youtubeNotifier };
+          }
+          if (Array.isArray(parsed.autoDocumentaries)) {
+            db.autoDocumentaries = parsed.autoDocumentaries;
           }
           if ('nextRelease' in parsed) db.nextRelease = parsed.nextRelease;
           if (parsed.trivia) db.trivia = parsed.trivia;
@@ -1121,8 +1130,27 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true, activeVisitors: getActiveVisitorCount() });
   }
 
+  if (pathname === '/api/youtube-videos' && req.method === 'GET') {
+    recordActiveVisitor(req, parsedUrl);
+    if (Date.now() - lastYoutubeCheckTime > 60 * 1000) {
+      await checkYoutubeAndNotify();
+    }
+    const autoDocs = Array.isArray(db.autoDocumentaries) ? db.autoDocumentaries : [];
+    const latestId = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
+    const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    return sendJson(res, 200, {
+      latestVideoId: latestId,
+      latestVideoTitle: latestTitle,
+      autoDocumentaries: autoDocs
+    });
+  }
+
   if (pathname === '/api/social-stats' && req.method === 'GET') {
     recordActiveVisitor(req, parsedUrl);
+    if (Date.now() - lastYoutubeCheckTime > 90 * 1000) {
+      checkYoutubeAndNotify();
+    }
     if (Date.now() - lastSocialRefreshTime > 15000) {
       await refreshSocialFollowerCounts();
     }
@@ -1309,17 +1337,185 @@ async function refreshSocialFollowerCounts() {
 
 loadDatabase().then(() => {
   refreshSocialFollowerCounts();
+  checkYoutubeAndNotify();
   server.listen(PORT, () => {
     console.log(`Servidor Huellas de la Humanidad activo en puerto ${PORT}`);
   });
   // Actualizar contadores de seguidores de YouTube, TikTok, Facebook e Instagram cada 20 segundos en vivo
   setInterval(refreshSocialFollowerCounts, 20 * 1000);
-  // Vigilar automáticamente nuevos videos en el canal de YouTube cada 10 minutos
-  setInterval(checkYoutubeAndNotify, 10 * 60 * 1000);
+  // Vigilar automáticamente nuevos videos horizontales en el canal de YouTube cada 2 minutos
+  setInterval(checkYoutubeAndNotify, 2 * 60 * 1000);
 });
 
 const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
 const EMAIL_LOGO_URL = 'https://huellasdelahumanidad.com/logo.png';
+let lastYoutubeCheckTime = 0;
+let isCheckingYoutube = false;
+
+const BASE_DOCUMENTARY_IDS = new Set([
+  'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
+  'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
+  '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
+  'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
+  'S4hg8P0gtzg', '9MtSnB7sBog', 'oRXFu8r5wHU', 'qCwGXLfWWuE', 'Q1Rjnt5_Gr4',
+  'HTqDUWWZE7s'
+]);
+
+const KNOWN_PLACES_GAZETTEER = [
+  { re: /antioqu[ií]a/i, es: 'Antioquía, Siria', en: 'Antioch, Syria', lon: 36.16, lat: 36.20, region: 'europe' },
+  { re: /jerusal[eé]n/i, es: 'Jerusalén', en: 'Jerusalem', lon: 35.21, lat: 31.77, region: 'europe' },
+  { re: /constantinopla|estambul|bizancio/i, es: 'Constantinopla', en: 'Constantinople', lon: 28.98, lat: 41.01, region: 'europe' },
+  { re: /babilonia|mesopotamia|bagdad/i, es: 'Babilonia, Mesopotamia', en: 'Babylon, Mesopotamia', lon: 44.42, lat: 32.54, region: 'europe' },
+  { re: /pompeya|vesubio/i, es: 'Pompeya, Italia', en: 'Pompeii, Italy', lon: 14.49, lat: 40.75, region: 'europe' },
+  { re: /\broma\b|coliseo|vaticano/i, es: 'Roma, Italia', en: 'Rome, Italy', lon: 12.49, lat: 41.89, region: 'europe' },
+  { re: /florencia/i, es: 'Florencia, Italia', en: 'Florence, Italy', lon: 11.25, lat: 43.77, region: 'europe' },
+  { re: /venecia/i, es: 'Venecia, Italia', en: 'Venice, Italy', lon: 12.33, lat: 45.44, region: 'europe' },
+  { re: /atenas|esparta|grecia|acrópolis|acropolis|creta/i, es: 'Atenas, Grecia', en: 'Athens, Greece', lon: 23.73, lat: 37.98, region: 'europe' },
+  { re: /giza|el cairo|pir[aá]mides|egipto|alejandr[ií]a|tebas|luxor/i, es: 'Egipto', en: 'Egypt', lon: 31.13, lat: 29.98, region: 'europe' },
+  { re: /nazaret|galilea/i, es: 'Nazaret, Galilea', en: 'Nazareth, Galilee', lon: 35.30, lat: 32.70, region: 'europe' },
+  { re: /par[ií]s|louvre|versalles|bastilla/i, es: 'París, Francia', en: 'Paris, France', lon: 2.34, lat: 48.86, region: 'europe' },
+  { re: /normand[ií]a/i, es: 'Normandía, Francia', en: 'Normandy, France', lon: -0.85, lat: 49.34, region: 'europe' },
+  { re: /londres|inglaterra| Reino Unido/i, es: 'Londres, Inglaterra', en: 'London, England', lon: -0.13, lat: 51.51, region: 'europe' },
+  { re: /belfast|irlanda/i, es: 'Belfast, Irlanda', en: 'Belfast, Ireland', lon: -5.93, lat: 54.60, region: 'europe' },
+  { re: /escocia|edimburgo/i, es: 'Edimburgo, Escocia', en: 'Edinburgh, Scotland', lon: -3.19, lat: 55.95, region: 'europe' },
+  { re: /madrid|toledo|escorial/i, es: 'Madrid, España', en: 'Madrid, Spain', lon: -3.70, lat: 40.42, region: 'europe' },
+  { re: /granada|alhambra|sevilla|c[oó]rdoba|andaluc[ií]a/i, es: 'Andalucía, España', en: 'Andalusia, Spain', lon: -3.60, lat: 37.18, region: 'europe' },
+  { re: /barcelona|catalu[ñn]a/i, es: 'Barcelona, España', en: 'Barcelona, Spain', lon: 2.17, lat: 41.39, region: 'europe' },
+  { re: /lisboa|portugal/i, es: 'Lisboa, Portugal', en: 'Lisbon, Portugal', lon: -9.14, lat: 38.72, region: 'europe' },
+  { re: /berl[ií]n|reichstag|alemania/i, es: 'Berlín, Alemania', en: 'Berlin, Germany', lon: 13.38, lat: 52.52, region: 'europe' },
+  { re: /viena|austria/i, es: 'Viena, Austria', en: 'Vienna, Austria', lon: 16.37, lat: 48.21, region: 'europe' },
+  { re: /varsovia|polonia|auschwitz|cracovia/i, es: 'Polonia', en: 'Poland', lon: 21.01, lat: 52.23, region: 'europe' },
+  { re: /mosc[uú]|stalingrado|rusia|san petersburgo/i, es: 'Moscú, Rusia', en: 'Moscow, Russia', lon: 37.62, lat: 55.75, region: 'europe' },
+  { re: /chern[oó]bil|pr[ií]piat|ucrania|kiev/i, es: 'Chernóbil, Ucrania', en: 'Chernobyl, Ukraine', lon: 30.10, lat: 51.39, region: 'europe' },
+  { re: /la habana|mariel|\bcuba\b|santiago de cuba/i, es: 'La Habana, Cuba', en: 'Havana, Cuba', lon: -82.37, lat: 23.11, region: 'americas' },
+  { re: /torres gemelas|manhattan|nueva york|world trade center/i, es: 'Nueva York, EE. UU.', en: 'New York, USA', lon: -74.01, lat: 40.71, region: 'americas' },
+  { re: /san francisco|alcatraz|california/i, es: 'San Francisco, California', en: 'San Francisco, California', lon: -122.42, lat: 37.77, region: 'americas' },
+  { re: /washington|chicago|boston|filadelfia|estados unidos/i, es: 'Estados Unidos', en: 'United States', lon: -77.04, lat: 38.90, region: 'americas' },
+  { re: /teotihuac[aá]n|tenochtitl[aá]n|m[eé]xico|chich[eé]n itz[aá]|yucat[aá]n/i, es: 'México', en: 'Mexico', lon: -99.13, lat: 19.43, region: 'americas' },
+  { re: /machu picchu|cusco|per[uú]|inca/i, es: 'Cusco, Perú', en: 'Cusco, Peru', lon: -72.54, lat: -13.16, region: 'americas' },
+  { re: /colombia|bogot[aá]|cartagena/i, es: 'Colombia', en: 'Colombia', lon: -74.07, lat: 4.71, region: 'americas' },
+  { re: /argentina|buenos aires|los andes/i, es: 'Buenos Aires, Argentina', en: 'Buenos Aires, Argentina', lon: -58.38, lat: -34.60, region: 'americas' },
+  { re: /tokio|hiroshima|nagasaki|kioto|jap[oó]n/i, es: 'Japón', en: 'Japan', lon: 139.69, lat: 35.68, region: 'asia' },
+  { re: /pek[ií]n|china|shangh[aá]i|muralla china/i, es: 'China', en: 'China', lon: 116.40, lat: 39.90, region: 'asia' },
+  { re: /krakatoa|sumatra|indonesia|java/i, es: 'Indonesia', en: 'Indonesia', lon: 105.42, lat: -6.10, region: 'asia' },
+  { re: /india|nueva delhi|taj mahal/i, es: 'India', en: 'India', lon: 77.21, lat: 28.61, region: 'asia' },
+  { re: /camboya|angkor|vietnam/i, es: 'Sudeste Asiático', en: 'Southeast Asia', lon: 103.86, lat: 13.41, region: 'asia' }
+];
+
+function decodeXmlEntities(str) {
+  return String(str || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function verifyIsHorizontalYoutubeVideo(videoId) {
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'www.youtube.com',
+      path: `/shorts/${encodeURIComponent(videoId)}`,
+      method: 'HEAD',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+      }
+    }, (res) => {
+      // YouTube devuelve 303 Redirect hacia /watch?v= para videos horizontales y 200 OK para Shorts verticales
+      resolve(res.statusCode >= 300 && res.statusCode < 400);
+    });
+    req.setTimeout(5000, () => {
+      req.destroy();
+      resolve(true);
+    });
+    req.on('error', () => resolve(true));
+    req.end();
+  });
+}
+
+function inferDocumentaryMetadata(videoId, rawTitle, description, publishedAt) {
+  if (videoId === 'PPgK7kuznm0') {
+    return {
+      id: 'PPgK7kuznm0',
+      titleEs: 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe',
+      titleEn: 'The Brutal Siege of Antioch in 1098: Famine, Betrayal, and Faith',
+      eraEs: 'Antioquía, Siria · Año 1098',
+      eraEn: 'Antioch, Syria · Year 1098',
+      category: 'medieval',
+      region: 'europe',
+      lon: 36.16,
+      lat: 36.20,
+      publishedAt: publishedAt || new Date().toISOString()
+    };
+  }
+
+  const cleanTitleEs = decodeXmlEntities(rawTitle)
+    .replace(/\s*\|\s*Documental Completo.*$/i, '')
+    .replace(/\s*\|\s*Huellas de la Humanidad.*$/i, '')
+    .trim();
+  const fullText = `${cleanTitleEs} ${decodeXmlEntities(description || '')}`;
+
+  // 1. Detectar año o época histórica
+  let yearEs = '';
+  let yearEn = '';
+  const bcMatch = fullText.match(/\b(\d{1,4})\s*a\.\s*C\./i);
+  const adMatch = fullText.match(/\b(\d{1,4})\s*d\.\s*C\./i);
+  const yearMatch = fullText.match(/(?:en el a[ñn]o|en|de|a[ñn]o)\s+(\d{3,4})\b/i) || cleanTitleEs.match(/\b(1\d{3}|20[0-2]\d)\b/);
+  const centuryMatch = fullText.match(/siglo\s+([IVX]+(?:\s*a\.\s*C\.)?)/i);
+
+  if (bcMatch) {
+    yearEs = `${bcMatch[1]} a.C.`;
+    yearEn = `${bcMatch[1]} BC`;
+  } else if (adMatch) {
+    yearEs = `${adMatch[1]} d.C.`;
+    yearEn = `${adMatch[1]} AD`;
+  } else if (yearMatch) {
+    yearEs = `Año ${yearMatch[1]}`;
+    yearEn = `Year ${yearMatch[1]}`;
+  } else if (centuryMatch) {
+    yearEs = `Siglo ${centuryMatch[1].toUpperCase()}`;
+    yearEn = `${centuryMatch[1].toUpperCase()} Century`;
+  }
+
+  // 2. Detectar lugar y coordenadas en el mapa
+  let place = KNOWN_PLACES_GAZETTEER.find(p => p.re.test(cleanTitleEs)) ||
+              KNOWN_PLACES_GAZETTEER.find(p => p.re.test(fullText));
+  if (!place) {
+    place = { es: 'Archivo Histórico', en: 'Historical Archive', lon: 12.49, lat: 41.89, region: 'europe' };
+  }
+
+  // 3. Clasificar categoría para la Biblioteca de Documentales
+  let category = 'medieval';
+  if (/torres gemelas|11 de septiembre|11-s|world trade center|manhattan/i.test(fullText)) {
+    category = 'wtc';
+  } else if (/\bcuba\b|habana|mariel|cubano/i.test(fullText)) {
+    category = 'cuba';
+  } else if (/segunda guerra mundial|1939|1940|1941|1942|1943|1944|1945|reichstag|normand[ií]a|polonia|blitzkrieg|nazi|stalingrado/i.test(fullText)) {
+    category = 'ww2';
+  } else if (/terremoto|tsunami|volc[aá]n|erupci[oó]n|titanic|naufragio|cat[aá]strofe|desastre|chern[oó]bil/i.test(fullText)) {
+    category = 'catastrofes';
+  } else if (/prisi[oó]n|alcatraz|crimen|fingi[oó]|misterio|caso real/i.test(fullText)) {
+    category = 'misterios';
+  } else if (/a\.\s*c\.|egipto|giza|pompeya|roma\b|grecia|mesopotamia|babilonia|neandertal|nazaret|antes de cristo|teotihuac[aá]n/i.test(fullText)) {
+    category = 'antigua';
+  }
+
+  const eraEs = yearEs ? `${place.es} · ${yearEs}` : place.es;
+  const eraEn = yearEn ? `${place.en} · ${yearEn}` : place.en;
+
+  return {
+    id: videoId,
+    titleEs: cleanTitleEs,
+    titleEn: cleanTitleEs,
+    eraEs,
+    eraEn,
+    category,
+    region: place.region,
+    lon: place.lon,
+    lat: place.lat,
+    publishedAt: publishedAt || new Date().toISOString()
+  };
+}
 
 function buildBrandEmailHtml({ title, greetingName, bodyHtml, ctaText, ctaUrl }) {
   return `
@@ -1396,50 +1592,151 @@ function sendEmailViaResend(toEmail, subject, htmlBody) {
 }
 
 function checkYoutubeAndNotify() {
-  https.get(`https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHANNEL_ID}`, (res) => {
-    let xml = '';
-    res.on('data', chunk => xml += chunk);
-    res.on('end', async () => {
-      const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);
-      if (!entryMatch) return;
-      const entry = entryMatch[1];
-      const idMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
-      const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
-      if (!idMatch) return;
-      const latestId = idMatch[1].trim();
-      const latestTitle = titleMatch ? titleMatch[1].trim() : 'Nuevo Documental';
+  if (isCheckingYoutube) return Promise.resolve();
+  isCheckingYoutube = true;
+  lastYoutubeCheckTime = Date.now();
 
-      if (!db.youtubeNotifier) {
-        db.youtubeNotifier = { lastVideoId: latestId, lastVideoTitle: latestTitle, lastNotifiedAt: new Date().toISOString() };
-        saveDatabase();
-        return;
-      }
+  return new Promise((resolve) => {
+    https.get(`https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHANNEL_ID}`, (res) => {
+      let xml = '';
+      res.on('data', chunk => xml += chunk);
+      res.on('end', async () => {
+        try {
+          const rawEntries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(m => m[1]);
+          if (rawEntries.length === 0) {
+            isCheckingYoutube = false;
+            return resolve();
+          }
 
-      if (db.youtubeNotifier.lastVideoId && db.youtubeNotifier.lastVideoId !== latestId) {
-        db.youtubeNotifier.lastVideoId = latestId;
-        db.youtubeNotifier.lastVideoTitle = latestTitle;
-        db.youtubeNotifier.lastNotifiedAt = new Date().toISOString();
-        saveDatabase();
+          const horizontalEntries = [];
+          for (const entryXml of rawEntries) {
+            const idMatch = entryXml.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+            const titleMatch = entryXml.match(/<title>([^<]+)<\/title>/);
+            const linkMatch = entryXml.match(/<link[^>]+rel="alternate"[^>]+href="([^"]+)"/i) ||
+                              entryXml.match(/<link[^>]+href="([^"]+)"/i);
+            const descMatch = entryXml.match(/<media:description>([\s\S]*?)<\/media:description>/);
+            const pubMatch = entryXml.match(/<published>([^<]+)<\/published>/);
 
-        const subscribers = Object.values(db.users).filter(u => u.email && u.notifyYoutube);
-        for (const sub of subscribers) {
-          const thumbUrl = `https://i.ytimg.com/vi/${latestId}/hqdefault.jpg`;
-          const html = buildBrandEmailHtml({
-            title: 'Nuevo Documental en YouTube',
-            greetingName: sub.displayName || sub.username,
-            bodyHtml: `
-              <p style="margin:0 0 14px;">Acabamos de publicar un nuevo video en nuestro canal de YouTube:</p>
-              <h3 style="color:#f5df98;font-size:19px;margin:0 0 14px;">«${latestTitle}»</h3>
-              <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">
-                <img src="${thumbUrl}" alt="${latestTitle}" width="460" style="width:100%;max-width:460px;height:auto;border-radius:10px;border:1px solid #d4af37;display:block;margin:0 auto;" />
-              </a>
-            `,
-            ctaText: 'Ver Video Ahora',
-            ctaUrl: 'https://huellasdelahumanidad.com'
-          });
-          await sendEmailViaResend(sub.email, `Nuevo video: ${latestTitle} - Huellas de la Humanidad`, html);
+            if (!idMatch) continue;
+            const vid = idMatch[1].trim();
+            const rawTitle = decodeXmlEntities(titleMatch ? titleMatch[1].trim() : 'Nuevo Documental');
+            const href = linkMatch ? linkMatch[1].trim() : '';
+            const desc = descMatch ? descMatch[1].trim() : '';
+            const pub = pubMatch ? pubMatch[1].trim() : new Date().toISOString();
+
+            // Descartar inmediatamente cualquier YouTube Short (/shorts/ en el enlace o #short en el título)
+            if (/\/shorts\//i.test(href) || /#shorts?\b/i.test(rawTitle)) {
+              continue;
+            }
+
+            horizontalEntries.push({ id: vid, rawTitle, href, desc, pub });
+          }
+
+          if (horizontalEntries.length === 0) {
+            isCheckingYoutube = false;
+            return resolve();
+          }
+
+          // Verificar adicionalmente que el más reciente sea 100% horizontal (no Short)
+          const topCandidate = horizontalEntries[0];
+          const isConfirmedHorizontal = BASE_DOCUMENTARY_IDS.has(topCandidate.id) || (await verifyIsHorizontalYoutubeVideo(topCandidate.id));
+          if (!isConfirmedHorizontal) {
+            horizontalEntries.shift();
+          }
+          if (horizontalEntries.length === 0) {
+            isCheckingYoutube = false;
+            return resolve();
+          }
+
+          if (!Array.isArray(db.autoDocumentaries)) {
+            db.autoDocumentaries = [];
+          }
+
+          let dbChanged = false;
+          // Registrar automáticamente cualquier video horizontal nuevo para el Mapa Interactivo y la Biblioteca
+          for (const item of horizontalEntries) {
+            const alreadyInAuto = db.autoDocumentaries.some(d => d && d.id === item.id);
+            if (!alreadyInAuto && (!BASE_DOCUMENTARY_IDS.has(item.id) || item.id === 'PPgK7kuznm0')) {
+              const meta = inferDocumentaryMetadata(item.id, item.rawTitle, item.desc, item.pub);
+              db.autoDocumentaries.unshift(meta);
+              dbChanged = true;
+            }
+          }
+
+          const latest = horizontalEntries[0];
+          const latestId = latest.id;
+          const cleanLatestTitle = latest.rawTitle.replace(/\s*\|\s*Documental Completo.*$/i, '').trim() || latest.rawTitle;
+
+          if (!db.youtubeNotifier || typeof db.youtubeNotifier !== 'object') {
+            db.youtubeNotifier = {
+              lastVideoId: latestId,
+              lastHorizontalVideoId: latestId,
+              lastVideoTitle: cleanLatestTitle,
+              lastNotifiedAt: new Date().toISOString(),
+              notifiedVideoIds: [latestId]
+            };
+            saveDatabase();
+            isCheckingYoutube = false;
+            return resolve();
+          }
+
+          if (!Array.isArray(db.youtubeNotifier.notifiedVideoIds)) {
+            const prevKnown = db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId;
+            db.youtubeNotifier.notifiedVideoIds = prevKnown && prevKnown !== latestId ? [prevKnown] : ['rJdAGfxEYkw'];
+          }
+
+          const prevHorizontalId = db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId || '';
+          const alreadyNotified = db.youtubeNotifier.notifiedVideoIds.includes(latestId);
+
+          if (prevHorizontalId !== latestId || !alreadyNotified) {
+            db.youtubeNotifier.lastVideoId = latestId;
+            db.youtubeNotifier.lastHorizontalVideoId = latestId;
+            db.youtubeNotifier.lastVideoTitle = cleanLatestTitle;
+            db.youtubeNotifier.lastNotifiedAt = new Date().toISOString();
+            if (!db.youtubeNotifier.notifiedVideoIds.includes(latestId)) {
+              db.youtubeNotifier.notifiedVideoIds.push(latestId);
+            }
+            saveDatabase();
+
+            // Enviar correo de notificación a cada seguidor registrado con notificaciones activas
+            const subscribers = Object.values(db.users || {}).filter(u => u && u.email && u.notifyYoutube);
+            const seenEmails = new Set();
+            for (const sub of subscribers) {
+              const targetEmail = String(sub.email || '').trim().toLowerCase();
+              if (!targetEmail || seenEmails.has(targetEmail)) continue;
+              seenEmails.add(targetEmail);
+
+              const thumbUrl = `https://i.ytimg.com/vi/${latestId}/hqdefault.jpg`;
+              const html = buildBrandEmailHtml({
+                title: 'Nuevo Documental en YouTube',
+                greetingName: sub.displayName || sub.username,
+                bodyHtml: `
+                  <p style="margin:0 0 14px;">Acabamos de publicar un nuevo documental completo en nuestro canal de YouTube:</p>
+                  <h3 style="color:#f5df98;font-size:19px;margin:0 0 14px;">«${cleanLatestTitle}»</h3>
+                  <a href="https://huellasdelahumanidad.com" target="_blank" style="text-decoration:none;">
+                    <img src="${thumbUrl}" alt="${cleanLatestTitle}" width="460" style="width:100%;max-width:460px;height:auto;border-radius:10px;border:1px solid #d4af37;display:block;margin:0 auto;" />
+                  </a>
+                `,
+                ctaText: 'Ver Documental Ahora',
+                ctaUrl: 'https://huellasdelahumanidad.com'
+              });
+              await sendEmailViaResend(targetEmail, `Nuevo documental: ${cleanLatestTitle} - Huellas de la Humanidad`, html);
+              // Pausa de 650ms entre envíos para respetar el límite de velocidad de Resend y garantizar entrega al 100%
+              await new Promise(r => setTimeout(r, 650));
+            }
+          } else if (dbChanged) {
+            saveDatabase();
+          }
+        } catch (err) {
+          console.error('Error in checkYoutubeAndNotify:', err.message);
+        } finally {
+          isCheckingYoutube = false;
+          resolve();
         }
-      }
+      });
+    }).on('error', () => {
+      isCheckingYoutube = false;
+      resolve();
     });
-  }).on('error', () => {});
+  });
 }

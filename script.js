@@ -332,8 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (bgScrollVideo) {
-        // El archivo bg-video-soft.mp4 ya tiene la pista de audio atenuada a -34 dB y además fijamos 0.5 en código
-        bgScrollVideo.volume = 0.5;
+        // El archivo bg-video-15.mp4 ya tiene la pista de audio masterizada al 15% exacto (-16.0 dB max_volume) para iOS y escritorio
+        bgScrollVideo.volume = 1.0;
         bgScrollVideo.muted = false;
 
         // Intentar reproducir con audio desde el inicio; si el navegador requiere interacción previa, arrancar en reproducción y activar audio al primer gesto
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const unlockAudioOnFirstGesture = () => {
                     if (!userManuallyMutedBg && bgScrollVideo.muted) {
-                        bgScrollVideo.volume = 0.5;
+                        bgScrollVideo.volume = 1.0;
                         bgScrollVideo.muted = false;
                         bgScrollVideo.play().catch(() => {});
                         updateBgAudioButtonUI();
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bgScrollVideo.muted = !bgScrollVideo.muted;
                 userManuallyMutedBg = bgScrollVideo.muted;
                 if (!bgScrollVideo.muted) {
-                    bgScrollVideo.volume = 0.5;
+                    bgScrollVideo.volume = 1.0;
                     bgScrollVideo.play().catch(() => {});
                 }
                 updateBgAudioButtonUI();

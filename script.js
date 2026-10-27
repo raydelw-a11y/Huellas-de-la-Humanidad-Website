@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (bgScrollVideo) {
-        bgScrollVideo.volume = 0.75;
+        bgScrollVideo.volume = 0.5;
         bgScrollVideo.muted = false;
 
         // Intentar reproducir con audio desde el inicio; si el navegador requiere interacción previa, arrancar en reproducción y activar audio al primer gesto
@@ -347,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const unlockAudioOnFirstGesture = () => {
                     if (!userManuallyMutedBg && bgScrollVideo.muted) {
+                        bgScrollVideo.volume = 0.5;
                         bgScrollVideo.muted = false;
                         bgScrollVideo.play().catch(() => {});
                         updateBgAudioButtonUI();
@@ -367,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bgScrollVideo.muted = !bgScrollVideo.muted;
                 userManuallyMutedBg = bgScrollVideo.muted;
                 if (!bgScrollVideo.muted) {
+                    bgScrollVideo.volume = 0.5;
                     bgScrollVideo.play().catch(() => {});
                 }
                 updateBgAudioButtonUI();

@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             trivia_title: 'Reto Histórico',
             leaderboard_title: 'Cuadro de Honor de Historiadores',
             socials_title: 'Nuestras Redes',
-            latest_yt_title: 'Último en YouTube',
+            latest_yt_title: 'Último Estreno',
             watching_prefix: 'Viendo:',
             map_title: 'Mapa Interactivo de las «Huellas»',
             map_subtitle: 'Pasa el puntero o toca con el dedo cualquier punto dorado del mapa terrestre para desplegar su línea flotante con el título, ubicación e historia.',
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             trivia_title: 'Historical Challenge',
             leaderboard_title: 'Historians Hall of Fame',
             socials_title: 'Our Social Networks',
-            latest_yt_title: 'Latest on YouTube',
+            latest_yt_title: 'Latest Premiere',
             watching_prefix: 'Watching:',
             map_title: 'Interactive “Footprints” World Map',
             map_subtitle: 'Hover your pointer or touch any golden point on the real Earth map to display a floating leader line with the video title and location.',
@@ -1271,9 +1271,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateCountdownDisplayMode() {
         const tbdBox = document.getElementById('countdown-tbd-box');
         const gridBox = document.getElementById('countdown-grid');
+        const countdownSection = document.querySelector('.countdown-section');
         const hasValidFutureDate = Boolean(releaseTargetTimestamp && releaseTargetTimestamp > Date.now());
-        if (tbdBox) tbdBox.classList.toggle('hidden', hasValidFutureDate || hasConfiguredReleaseContent);
+        const hasUpcoming = Boolean(hasValidFutureDate || hasConfiguredReleaseContent);
+        if (tbdBox) tbdBox.classList.toggle('hidden', hasUpcoming);
         if (gridBox) gridBox.classList.toggle('hidden', !hasValidFutureDate);
+        if (countdownSection) countdownSection.classList.toggle('has-upcoming-release', hasUpcoming);
     }
 
     function showAdminReleaseFeedback(msg, type = 'success') {

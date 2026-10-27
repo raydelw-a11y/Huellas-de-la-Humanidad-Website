@@ -2968,39 +2968,51 @@ footer {
         display: contents;
     }
 
-    /* En vista móvil: 1º Visor de YouTube, 2º Mapa Interactivo, 3º Biblioteca de Documentales, 4º Lo demás */
+    /* En vista móvil:
+       - Si hay video en Próximo Estreno: debajo de Último Estreno (order: 15)
+       - Si Próximo Estreno está en Por decidir: debajo de Biblioteca de Documentales (order: 35) */
     #main-youtube-card {
-        order: 1;
+        order: 10;
+        width: 100%;
+    }
+
+    .countdown-section.has-upcoming-release {
+        order: 15;
         width: 100%;
     }
 
     .map-card {
-        order: 2;
+        order: 20;
         width: 100%;
     }
 
     .library-card {
-        order: 3;
+        order: 30;
+        width: 100%;
+    }
+
+    .countdown-section:not(.has-upcoming-release) {
+        order: 35;
         width: 100%;
     }
 
     .social-links {
-        order: 4;
+        order: 40;
         width: 100%;
     }
 
     .latest-videos > .video-card:not(#main-youtube-card) {
-        order: 5;
+        order: 50;
         width: 100%;
     }
 
-    .left-column > * {
-        order: 6;
+    .left-column > *:not(.countdown-section) {
+        order: 60;
         width: 100%;
     }
 
     .right-column > * {
-        order: 7;
+        order: 70;
         width: 100%;
     }
 }

@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_reset_poll: 'Reiniciar Ronda (5 temas)',
             countdown_title: 'Próximo Estreno',
             release_default_sub: 'Próximo Documental Especial en Producción',
-            countdown_tbd: 'Por decidir',
+            countdown_tbd: 'Tema por decidir',
             cd_days: 'Días',
             cd_hours: 'Horas',
             cd_mins: 'Min',
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_admin_release_title: 'Escribe el título del próximo video...',
             label_admin_release_date: 'Fecha de estreno (Opcional · Cuenta regresiva):',
             btn_save_release: 'Publicar Próximo Estreno',
-            btn_reset_release: 'Dejar en «Por decidir»'
+            btn_reset_release: 'Dejar en «Tema por decidir»'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_reset_poll: 'Reset Round (5 topics)',
             countdown_title: 'Next Premiere',
             release_default_sub: 'Next Special Documentary in Production',
-            countdown_tbd: 'To Be Decided',
+            countdown_tbd: 'Topic to Be Decided',
             cd_days: 'Days',
             cd_hours: 'Hours',
             cd_mins: 'Min',
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_admin_release_title: 'Write the title of the next video...',
             label_admin_release_date: 'Premiere Date (Optional · Countdown):',
             btn_save_release: 'Publish Next Premiere',
-            btn_reset_release: 'Reset to “To Be Decided”'
+            btn_reset_release: 'Reset to “Topic to Be Decided”'
         }
     };
 
@@ -1547,8 +1547,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (adminReleasePreviewWrap) adminReleasePreviewWrap.classList.add('hidden');
                     showAdminReleaseFeedback(
                         currentLang === 'en'
-                            ? 'Reset to “To Be Decided”.'
-                            : 'Se restableció a «Por decidir».',
+                            ? 'Reset to “Topic to Be Decided”.'
+                            : 'Se restableció a «Tema por decidir».',
                         'success'
                     );
                     loadReleaseCountdown();

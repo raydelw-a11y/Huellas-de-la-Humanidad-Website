@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=10271330">
+    <link rel="stylesheet" href="style.css?v=10291708">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -114,6 +114,14 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                         <span class="status-dot online"></span>
                         <span id="top-user-display"></span>
                     </span>
+                    <button type="button" id="btn-open-notifications" class="top-menu-btn notif-bell-btn" title="Notificaciones">
+                        <span class="notif-bell-icon-wrap">
+                            <i class="fa-solid fa-bell"></i>
+                            <span id="notif-bell-badge" class="notif-bell-badge hidden">0</span>
+                        </span>
+                        <span data-i18n="btn_notifications">Notificaciones</span>
+                        <i class="fa-solid fa-chevron-down submenu-arrow"></i>
+                    </button>
                     <button type="button" id="btn-open-settings" class="top-menu-btn">
                         <i class="fa-solid fa-gear"></i> <span data-i18n="btn_settings">Opciones de la Cuenta</span> <i class="fa-solid fa-chevron-down submenu-arrow"></i>
                     </button>
@@ -208,6 +216,17 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                         <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_settings">Guardar Opciones</span>
                     </button>
                 </form>
+
+                <!-- Submenú 4: Centro de Notificaciones del Usuario (Campanita) -->
+                <div id="notifications-submenu-panel" class="notifications-submenu-panel hidden">
+                    <div class="notif-panel-header">
+                        <h3 class="submenu-title"><i class="fa-solid fa-bell"></i> <span data-i18n="notif_panel_title">Notificaciones</span></h3>
+                        <button type="button" id="btn-mark-all-notifs-read" class="mark-all-read-btn">
+                            <i class="fa-solid fa-check-double"></i> <span data-i18n="btn_mark_all_read">Marcar leídas</span>
+                        </button>
+                    </div>
+                    <div id="notifications-list" class="notifications-list"></div>
+                </div>
             </div>
         </header>
 
@@ -625,9 +644,9 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 05:11 PM - 10/28/2026</div>
+    <div class="build-timestamp">Actualizado: 05:08 PM - 10/29/2026</div>
 
-    <script src="world-map-data.js?v=10281711"></script>
-    <script src="script.js?v=10281711"></script>
+    <script src="world-map-data.js?v=10291708"></script>
+    <script src="script.js?v=10291708"></script>
 </body>
 </html>

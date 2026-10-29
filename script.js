@@ -39,6 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
             who_we_are_text: 'Somos una productora de documentales independiente. Perseguimos la verdad histórica sin ataduras ni relatos superficiales. No nos limitamos a observar el pasado desde afuera: contamos lo que ocurrió, por qué ocurrió y cómo se sintió vivir dentro de cada época, devolviéndole el pulso humano a las marcas que el tiempo dejó a nuestro paso.',
             btn_login: 'Iniciar Sesión',
             btn_register: 'Crear Cuenta',
+            btn_notifications: 'Notificaciones',
+            notif_panel_title: 'Notificaciones',
+            btn_mark_all_read: 'Marcar leídas',
+            notif_empty: 'No tienes notificaciones por ahora.',
             btn_settings: 'Opciones de la Cuenta',
             btn_logout: 'Cerrar Sesión',
             label_username: 'Usuario',
@@ -169,6 +173,10 @@ document.addEventListener('DOMContentLoaded', () => {
             who_we_are_text: 'We are an independent documentary production company. We pursue historical truth without constraints or superficial narratives. We do not merely observe the past from the outside: we tell what happened, why it happened, and what it felt like to live within each era, restoring the human pulse to the marks that time left in our wake.',
             btn_login: 'Sign In',
             btn_register: 'Create Account',
+            btn_notifications: 'Notifications',
+            notif_panel_title: 'Notifications',
+            btn_mark_all_read: 'Mark all read',
+            notif_empty: 'You have no notifications right now.',
             btn_settings: 'Account Settings',
             btn_logout: 'Log Out',
             label_username: 'Username',
@@ -418,6 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnOpenLogin = document.getElementById('btn-open-login');
     const btnOpenRegister = document.getElementById('btn-open-register');
+    const btnOpenNotifications = document.getElementById('btn-open-notifications');
+    const notifBellBadge = document.getElementById('notif-bell-badge');
     const btnOpenSettings = document.getElementById('btn-open-settings');
     const btnTopLogout = document.getElementById('btn-top-logout');
     const closeSubmenuBtn = document.getElementById('close-submenu-btn');
@@ -426,6 +436,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const accountSettingsForm = document.getElementById('account-settings-form');
+    const notificationsSubmenuPanel = document.getElementById('notifications-submenu-panel');
+    const notificationsListEl = document.getElementById('notifications-list');
+    const btnMarkAllNotifsRead = document.getElementById('btn-mark-all-notifs-read');
     const authFeedback = document.getElementById('auth-feedback');
 
     const chatGuestPrompt = document.getElementById('chat-guest-prompt');
@@ -473,14 +486,21 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.classList.toggle('hidden', mode !== 'login');
         registerForm.classList.toggle('hidden', mode !== 'register');
         accountSettingsForm.classList.toggle('hidden', mode !== 'settings');
+        if (notificationsSubmenuPanel) {
+            notificationsSubmenuPanel.classList.toggle('hidden', mode !== 'notifications');
+        }
 
         btnOpenLogin.classList.toggle('active', mode === 'login');
         btnOpenRegister.classList.toggle('active', mode === 'register');
         if (btnOpenSettings) btnOpenSettings.classList.toggle('active', mode === 'settings');
+        if (btnOpenNotifications) btnOpenNotifications.classList.toggle('active', mode === 'notifications');
 
         if (mode === 'settings' && currentUser) {
             document.getElementById('settings-email').value = currentUser.email || '';
             document.getElementById('settings-notify-yt').checked = currentUser.notifyYoutube !== false;
+        }
+        if (mode === 'notifications' && currentUser) {
+            loadUserNotifications();
         }
     }
 
@@ -490,11 +510,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnOpenLogin.classList.remove('active');
         btnOpenRegister.classList.remove('active');
         if (btnOpenSettings) btnOpenSettings.classList.remove('active');
+        if (btnOpenNotifications) btnOpenNotifications.classList.remove('active');
         clearFeedback();
     }
 
     btnOpenLogin.addEventListener('click', () => openSubmenu('login'));
     btnOpenRegister.addEventListener('click', () => openSubmenu('register'));
+    if (btnOpenNotifications) btnOpenNotifications.addEventListener('click', () => openSubmenu('notifications'));
     if (btnOpenSettings) btnOpenSettings.addEventListener('click', () => openSubmenu('settings'));
     closeSubmenuBtn.addEventListener('click', closeSubmenu);
 
@@ -730,10 +752,202 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('huellas_chat_user', JSON.stringify(user));
     }
 
+    let currentNotificationsList = [];
+
+    function updateNotificationBadgeUI(unreadCount) {
+        const count = Math.max(0, Number(unreadCount) || 0);
+        if (notifBellBadge) {
+            notifBellBadge.textContent = count > 99 ? '99+' : String(count);
+            notifBellBadge.classList.toggle('hidden', count === 0);
+        }
+        if (btnOpenNotifications) {
+            btnOpenNotifications.classList.toggle('has-unread', count > 0);
+        }
+    }
+
+    function renderNotificationsList(notifications = currentNotificationsList) {
+        currentNotificationsList = Array.isArray(notifications) ? notifications : [];
+        if (!notificationsListEl) return;
+        notificationsListEl.innerHTML = '';
+
+        if (currentNotificationsList.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'notif-empty-state';
+            empty.textContent = t('notif_empty');
+            notificationsListEl.appendChild(empty);
+            return;
+        }
+
+        currentNotificationsList.forEach(n => {
+            if (!n) return;
+            const item = document.createElement('div');
+            item.className = `notif-item ${!n.read ? 'unread' : ''}`;
+
+            // Imagen en miniatura a la izquierda para nuevos videos, o insignia de icono para Muro / Chat Admin
+            if (n.type === 'video' || n.thumbUrl) {
+                const thumbWrap = document.createElement('div');
+                thumbWrap.className = 'notif-video-thumb-wrap';
+                const img = document.createElement('img');
+                img.src = n.thumbUrl || `https://i.ytimg.com/vi/${n.videoId || 'PPgK7kuznm0'}/mqdefault.jpg`;
+                img.alt = '';
+                img.loading = 'lazy';
+                const ytBadge = document.createElement('span');
+                ytBadge.className = 'notif-yt-badge';
+                ytBadge.innerHTML = '<i class="fa-brands fa-youtube"></i>';
+                thumbWrap.appendChild(img);
+                thumbWrap.appendChild(ytBadge);
+                item.appendChild(thumbWrap);
+            } else {
+                const iconBadge = document.createElement('div');
+                iconBadge.className = `notif-icon-badge type-${n.type || 'info'}`;
+                if (n.type === 'wall_like') {
+                    iconBadge.innerHTML = '<i class="fa-solid fa-heart"></i>';
+                } else if (n.type === 'wall_reply') {
+                    iconBadge.innerHTML = '<i class="fa-solid fa-comments"></i>';
+                } else if (n.type === 'chat_message') {
+                    iconBadge.innerHTML = '<i class="fa-solid fa-envelope-open-text"></i>';
+                } else {
+                    iconBadge.innerHTML = '<i class="fa-solid fa-bell"></i>';
+                }
+                item.appendChild(iconBadge);
+            }
+
+            const content = document.createElement('div');
+            content.className = 'notif-content';
+
+            const titleRow = document.createElement('div');
+            titleRow.className = 'notif-title-row';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'notif-title';
+            titleEl.textContent = currentLang === 'en' ? (n.titleEn || n.titleEs) : (n.titleEs || n.titleEn);
+            titleRow.appendChild(titleEl);
+
+            if (!n.read) {
+                const dot = document.createElement('span');
+                dot.className = 'notif-unread-dot';
+                titleRow.appendChild(dot);
+            }
+
+            const bodyEl = document.createElement('div');
+            bodyEl.className = 'notif-body';
+            bodyEl.textContent = currentLang === 'en' ? (n.bodyEn || n.bodyEs) : (n.bodyEs || n.bodyEn);
+
+            const timeEl = document.createElement('div');
+            timeEl.className = 'notif-time';
+            timeEl.textContent = formatDateTime(n.createdAt);
+
+            content.appendChild(titleRow);
+            if (bodyEl.textContent) content.appendChild(bodyEl);
+            if (timeEl.textContent) content.appendChild(timeEl);
+
+            item.appendChild(content);
+
+            item.addEventListener('click', () => handleNotificationClick(n));
+            notificationsListEl.appendChild(item);
+        });
+    }
+
+    async function loadUserNotifications() {
+        if (!authToken || !currentUser) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/notifications`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            updateNotificationBadgeUI(data.unreadCount);
+            renderNotificationsList(data.notifications || []);
+        } catch (e) {}
+    }
+
+    async function markNotificationRead(notificationId = null, all = false) {
+        if (!authToken || !currentUser) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/notifications/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(all ? { all: true } : { notificationId })
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            updateNotificationBadgeUI(data.unreadCount);
+            renderNotificationsList(data.notifications || []);
+        } catch (e) {}
+    }
+
+    if (btnMarkAllNotifsRead) {
+        btnMarkAllNotifsRead.addEventListener('click', (e) => {
+            e.stopPropagation();
+            markNotificationRead(null, true);
+        });
+    }
+
+    function handleNotificationClick(n) {
+        if (!n) return;
+        if (!n.read) {
+            markNotificationRead(n.id, false);
+        }
+        closeSubmenu();
+
+        if (n.type === 'video' && n.videoId) {
+            switchMainView('home');
+            const cleanTitle = String((currentLang === 'en' ? n.bodyEn : n.bodyEs) || '')
+                .replace(/^[«“"]+|[»”"]+$/g, '')
+                .trim();
+            playDocumentaryInMainPlayer(n.videoId, cleanTitle || 'Documental');
+            return;
+        }
+
+        if (n.type === 'wall_like' || n.type === 'wall_reply') {
+            switchMainView('debate');
+            setTimeout(() => {
+                const postEl = n.postId ? document.getElementById(`wall-post-${n.postId}`) : null;
+                const target = postEl || document.getElementById('muro-comunidad');
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 180);
+            return;
+        }
+
+        if (n.type === 'chat_message') {
+            switchMainView('home');
+            setTimeout(() => {
+                if (currentUser && currentUser.role === 'admin') {
+                    if (n.chatUser) {
+                        selectedAdminUser = n.chatUser;
+                        const headerEl = document.getElementById('admin-active-header');
+                        if (headerEl) headerEl.textContent = `Conversación con: @${n.chatUser}`;
+                        const msgInput = document.getElementById('admin-msg-input');
+                        const sendBtn = document.getElementById('admin-send-btn');
+                        if (msgInput) msgInput.disabled = false;
+                        if (sendBtn) sendBtn.disabled = false;
+                        loadAdminSelectedMessages();
+                        loadAdminConversations();
+                    }
+                    const adminBox = document.getElementById('admin-chat-view');
+                    if (adminBox) adminBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    loadUserMessages();
+                    const userBox = document.getElementById('user-chat-view');
+                    if (userBox) userBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const userInput = document.getElementById('user-msg-input');
+                    if (userInput) setTimeout(() => userInput.focus(), 300);
+                }
+            }, 120);
+        }
+    }
+
     function logout() {
         authToken = '';
         currentUser = null;
         selectedAdminUser = null;
+        currentNotificationsList = [];
+        updateNotificationBadgeUI(0);
         localStorage.removeItem('huellas_chat_token');
         localStorage.removeItem('huellas_chat_user');
         if (pollTimer) clearInterval(pollTimer);
@@ -975,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updatePollAdminControls();
         updateComposerIdentity();
+        loadUserNotifications();
         loadPoll();
         loadReleaseCountdown();
         loadTrivia();
@@ -2932,6 +3147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedPosts.forEach(post => {
             const card = document.createElement('article');
             card.className = 'fb-post-card';
+            card.id = `wall-post-${post.id}`;
 
             const displayAuthor = (!post.author || post.author === 'Seguidor') ? t('poll_follower') : post.author;
             const initial = displayAuthor.charAt(0).toUpperCase();
@@ -3308,6 +3524,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDocumentaryLibrary(currentFilterCat);
         renderComments(lastCommentsData.comments, lastCommentsData.isAdmin);
         renderVideoComments(lastVideoCommentsData.comments, lastVideoCommentsData.isAdmin);
+        if (currentNotificationsList.length > 0) {
+            renderNotificationsList(currentNotificationsList);
+        }
     }
 
     // ==========================================
@@ -3395,6 +3614,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadReleaseCountdown();
         loadComments(true);
         loadVideoComments(currentActiveVideoId, true);
+        if (authToken && currentUser) {
+            loadUserNotifications();
+        }
     }, 6000);
 
     setInterval(() => {

@@ -94,7 +94,8 @@ let db = {
       createdAt: new Date().toISOString()
     }
   ],
-  videoComments: {} // { [videoId]: [ { id, author, role, text, createdAt } ] }
+  videoComments: {}, // { [videoId]: [ { id, author, role, text, createdAt } ] }
+  notifications: {} // { [username]: [ { id, type, titleEs, titleEn, bodyEs, bodyEn, thumbUrl, videoId, postId, chatUser, createdAt, read } ] }
 };
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'huellas-secret-key-2026-ancient-history';
@@ -173,6 +174,7 @@ async function loadDatabase() {
         if (parsed.scores) db.scores = parsed.scores;
         if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
         if (parsed.videoComments && typeof parsed.videoComments === 'object') db.videoComments = parsed.videoComments;
+        if (parsed.notifications && typeof parsed.notifications === 'object') db.notifications = parsed.notifications;
         if (parsed.socialStats && typeof parsed.socialStats === 'object') {
           db.socialStats = { ...db.socialStats, ...parsed.socialStats };
         }
@@ -207,6 +209,7 @@ async function loadDatabase() {
           if (parsed.scores) db.scores = parsed.scores;
           if (Array.isArray(parsed.comments)) db.comments = parsed.comments;
           if (parsed.videoComments && typeof parsed.videoComments === 'object') db.videoComments = parsed.videoComments;
+          if (parsed.notifications && typeof parsed.notifications === 'object') db.notifications = parsed.notifications;
           if (parsed.socialStats && typeof parsed.socialStats === 'object') {
             db.socialStats = { ...db.socialStats, ...parsed.socialStats };
           }
@@ -336,6 +339,204 @@ function getAuthSession(req) {
     displayName: u.displayName || u.username,
     role: u.role
   };
+}
+
+function resolveUsernameByAuthor(authorName, role, authorUsername) {
+  if (authorUsername && db.users && db.users[authorUsername]) {
+    return authorUsername;
+  }
+  if (role === 'admin' || authorName === 'Huellas de la Humanidad') {
+    return 'raydeladmin';
+  }
+  const clean = String(authorName || '').trim().toLowerCase();
+  if (!clean || !db.users) return null;
+  if (db.users[clean]) return clean;
+  const found = Object.values(db.users).find(
+    u => u && (
+      String(u.username || '').toLowerCase() === clean ||
+      String(u.displayName || '').toLowerCase() === clean
+    )
+  );
+  return found ? found.username : null;
+}
+
+function addUserNotification(username, notif) {
+  if (!username) return false;
+  const cleanUser = String(username).trim().toLowerCase();
+  if (!db.users || !db.users[cleanUser]) return false;
+  if (!db.notifications || typeof db.notifications !== 'object') {
+    db.notifications = {};
+  }
+  if (!Array.isArray(db.notifications[cleanUser])) {
+    db.notifications[cleanUser] = [];
+  }
+  const list = db.notifications[cleanUser];
+  const id = notif.id || crypto.randomUUID();
+  const existingIdx = list.findIndex(item => item && item.id === id);
+  if (existingIdx >= 0) {
+    return false;
+  }
+  list.unshift({
+    id,
+    type: notif.type || 'info',
+    titleEs: notif.titleEs || 'Nueva notificación',
+    titleEn: notif.titleEn || notif.titleEs || 'New notification',
+    bodyEs: notif.bodyEs || '',
+    bodyEn: notif.bodyEn || notif.bodyEs || '',
+    thumbUrl: notif.thumbUrl || '',
+    videoId: notif.videoId || '',
+    postId: notif.postId || '',
+    chatUser: notif.chatUser || '',
+    createdAt: notif.createdAt || new Date().toISOString(),
+    read: Boolean(notif.read)
+  });
+  if (list.length > 60) {
+    db.notifications[cleanUser] = list.slice(0, 60);
+  }
+  return true;
+}
+
+function ensureUserBaseNotifications(username) {
+  if (!username) return [];
+  const cleanUser = String(username).trim().toLowerCase();
+  const userObj = db.users && db.users[cleanUser];
+  if (!userObj) return [];
+  if (!db.notifications || typeof db.notifications !== 'object') {
+    db.notifications = {};
+  }
+  if (!Array.isArray(db.notifications[cleanUser])) {
+    db.notifications[cleanUser] = [];
+  }
+
+  let changed = false;
+
+  // 1. Notificaciones de subida de videos nuevos (imagen en miniatura + texto al lado)
+  const latestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
+  const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+
+  const recentVideos = [
+    {
+      id: latestVid,
+      titleEs: latestTitle,
+      titleEn: latestVid === 'PPgK7kuznm0'
+        ? 'The Brutal Siege of Antioch in 1098: Famine, Betrayal, and Faith'
+        : latestTitle,
+      createdAt: (db.youtubeNotifier && db.youtubeNotifier.lastNotifiedAt) || '2026-10-27T12:00:00.000Z'
+    },
+    {
+      id: 'rJdAGfxEYkw',
+      titleEs: 'El Louvre en el año 1200: La fortaleza olvidada de París',
+      titleEn: 'The Louvre in 1200: The Forgotten Fortress of Paris',
+      createdAt: '2026-10-20T12:00:00.000Z'
+    }
+  ];
+
+  // Agregar cualquier otro video horizontal detectado automáticamente en autoDocumentaries
+  if (Array.isArray(db.autoDocumentaries)) {
+    db.autoDocumentaries.slice(0, 4).forEach(doc => {
+      if (doc && doc.id && !recentVideos.some(v => v.id === doc.id)) {
+        recentVideos.unshift({
+          id: doc.id,
+          titleEs: doc.titleEs || 'Nuevo Documental',
+          titleEn: doc.titleEn || doc.titleEs || 'New Documentary',
+          createdAt: doc.publishedAt || new Date().toISOString()
+        });
+      }
+    });
+  }
+
+  for (let i = recentVideos.length - 1; i >= 0; i--) {
+    const v = recentVideos[i];
+    const added = addUserNotification(cleanUser, {
+      id: `yt-video-${v.id}`,
+      type: 'video',
+      titleEs: '🎬 Nuevo documental subido a YouTube',
+      titleEn: '🎬 New documentary uploaded to YouTube',
+      bodyEs: `«${v.titleEs}»`,
+      bodyEn: `“${v.titleEn}”`,
+      thumbUrl: `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`,
+      videoId: v.id,
+      createdAt: v.createdAt,
+      read: i > 0 // El último documental estrenado aparece sin leer inicialmente para avisar al usuario
+    });
+    if (added) changed = true;
+  }
+
+  // 2. Mensajes directos con los administradores (Chat en vivo)
+  if (userObj.role === 'admin') {
+    Object.values(db.conversations || {}).forEach(conv => {
+      if (conv && conv.unreadByAdmin > 0 && Array.isArray(conv.messages) && conv.messages.length > 0) {
+        const lastMsg = conv.messages[conv.messages.length - 1];
+        if (lastMsg && lastMsg.role !== 'admin') {
+          const added = addUserNotification(cleanUser, {
+            id: `chat-msg-${lastMsg.id}`,
+            type: 'chat_message',
+            chatUser: conv.username,
+            titleEs: `✉️ Mensaje de ${conv.displayName || conv.username}`,
+            titleEn: `✉️ Message from ${conv.displayName || conv.username}`,
+            bodyEs: `«${String(lastMsg.text || '').slice(0, 110)}»`,
+            bodyEn: `“${String(lastMsg.text || '').slice(0, 110)}”`,
+            createdAt: lastMsg.createdAt || conv.updatedAt,
+            read: false
+          });
+          if (added) changed = true;
+        }
+      }
+    });
+  } else {
+    const myConv = db.conversations && db.conversations[cleanUser];
+    if (myConv && Array.isArray(myConv.messages) && myConv.messages.length > 0) {
+      const adminMsgs = myConv.messages.filter(m => m && m.role === 'admin');
+      if (adminMsgs.length > 0) {
+        const latestAdminMsg = adminMsgs[adminMsgs.length - 1];
+        const added = addUserNotification(cleanUser, {
+          id: `chat-msg-${latestAdminMsg.id}`,
+          type: 'chat_message',
+          titleEs: '✉️ Mensaje de los Administradores',
+          titleEn: '✉️ Message from the Administrators',
+          bodyEs: `«${String(latestAdminMsg.text || '').slice(0, 110)}»`,
+          bodyEn: `“${String(latestAdminMsg.text || '').slice(0, 110)}”`,
+          createdAt: latestAdminMsg.createdAt || myConv.updatedAt,
+          read: !(myConv.unreadByUser > 0)
+        });
+        if (added) changed = true;
+      }
+    }
+  }
+
+  // 3. Notificaciones personales del Muro de Debate (respuestas a publicaciones del usuario)
+  if (Array.isArray(db.comments)) {
+    db.comments.forEach(post => {
+      if (!post) return;
+      const postOwner = resolveUsernameByAuthor(post.author, post.role, post.authorUsername);
+      const replies = Array.isArray(post.replies) ? post.replies : [];
+      if (postOwner === cleanUser) {
+        replies.forEach(r => {
+          const replyOwner = resolveUsernameByAuthor(r.author, r.role, r.authorUsername);
+          if (replyOwner !== cleanUser) {
+            const added = addUserNotification(cleanUser, {
+              id: `wall-reply-${r.id}`,
+              type: 'wall_reply',
+              postId: post.id,
+              titleEs: `💬 ${r.author} comentó en tu publicación del Muro`,
+              titleEn: `💬 ${r.author} commented on your Wall post`,
+              bodyEs: `«${String(r.text || '').slice(0, 100)}»`,
+              bodyEn: `“${String(r.text || '').slice(0, 100)}”`,
+              createdAt: r.createdAt || post.createdAt,
+              read: false
+            });
+            if (added) changed = true;
+          }
+        });
+      }
+    });
+  }
+
+  if (changed) {
+    saveDatabase();
+  }
+
+  return db.notifications[cleanUser];
 }
 
 const MIME_TYPES = {
@@ -621,13 +822,103 @@ const server = http.createServer(async (req, res) => {
     if (session.role === 'admin') {
       conv.unreadByUser = (conv.unreadByUser || 0) + 1;
       conv.unreadByAdmin = 0;
+      addUserNotification(convOwner, {
+        id: `chat-msg-${msg.id}`,
+        type: 'chat_message',
+        titleEs: '✉️ Nuevo mensaje de los Administradores',
+        titleEn: '✉️ New message from the Administrators',
+        bodyEs: `«${cleanText.slice(0, 110)}»`,
+        bodyEn: `“${cleanText.slice(0, 110)}”`,
+        createdAt: msg.createdAt,
+        read: false
+      });
     } else {
       conv.unreadByAdmin = (conv.unreadByAdmin || 0) + 1;
       conv.unreadByUser = 0;
+      Object.values(db.users || {}).forEach(u => {
+        if (u && u.role === 'admin') {
+          addUserNotification(u.username, {
+            id: `chat-msg-${msg.id}`,
+            type: 'chat_message',
+            chatUser: convOwner,
+            titleEs: `✉️ Mensaje de ${session.displayName || session.username}`,
+            titleEn: `✉️ Message from ${session.displayName || session.username}`,
+            bodyEs: `«${cleanText.slice(0, 110)}»`,
+            bodyEn: `“${cleanText.slice(0, 110)}”`,
+            createdAt: msg.createdAt,
+            read: false
+          });
+        }
+      });
     }
 
     saveDatabase();
     return sendJson(res, 201, { message: msg, messages: conv.messages });
+  }
+
+  // --- CENTRO DE NOTIFICACIONES DEL USUARIO (CAMPANITA) ---
+  if (pathname === '/api/notifications' && req.method === 'GET') {
+    const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Inicia sesión para ver tus notificaciones.' });
+    }
+    const list = ensureUserBaseNotifications(session.username);
+    const sorted = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const unreadCount = sorted.filter(n => n && !n.read).length;
+    return sendJson(res, 200, {
+      notifications: sorted,
+      unreadCount
+    });
+  }
+
+  if (pathname === '/api/notifications/read' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Inicia sesión para gestionar tus notificaciones.' });
+    }
+    const { notificationId, all } = await parseBody(req);
+    const list = ensureUserBaseNotifications(session.username);
+    let updated = false;
+
+    if (all) {
+      list.forEach(n => {
+        if (n && !n.read) {
+          n.read = true;
+          updated = true;
+        }
+      });
+      if (session.role === 'admin') {
+        Object.values(db.conversations || {}).forEach(c => {
+          if (c && c.unreadByAdmin > 0) c.unreadByAdmin = 0;
+        });
+      } else if (db.conversations && db.conversations[session.username]) {
+        db.conversations[session.username].unreadByUser = 0;
+      }
+    } else if (notificationId) {
+      const target = list.find(n => n && n.id === notificationId);
+      if (target && !target.read) {
+        target.read = true;
+        updated = true;
+        if (target.type === 'chat_message') {
+          if (session.role === 'admin' && target.chatUser && db.conversations && db.conversations[target.chatUser]) {
+            db.conversations[target.chatUser].unreadByAdmin = 0;
+          } else if (session.role !== 'admin' && db.conversations && db.conversations[session.username]) {
+            db.conversations[session.username].unreadByUser = 0;
+          }
+        }
+      }
+    }
+
+    if (updated) {
+      saveDatabase();
+    }
+    const sorted = [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const unreadCount = sorted.filter(n => n && !n.read).length;
+    return sendJson(res, 200, {
+      ok: true,
+      notifications: sorted,
+      unreadCount
+    });
   }
 
   if (pathname === '/api/admin/conversations' && req.method === 'GET') {
@@ -975,18 +1266,40 @@ const server = http.createServer(async (req, res) => {
       : (session.displayName || session.username);
 
     if (!Array.isArray(db.comments)) db.comments = [];
-    db.comments.push({
+    const newPost = {
       id: crypto.randomUUID(),
       author,
+      authorUsername: session.username,
       role: session.role,
       text: cleanText.slice(0, 1500),
       likes: [],
       replies: [],
       createdAt: new Date().toISOString()
-    });
+    };
+    db.comments.push(newPost);
     if (db.comments.length > 100) {
       db.comments = db.comments.slice(-100);
     }
+
+    // Si un seguidor publica en el Muro de Debate, notificar al Administrador
+    if (session.role !== 'admin') {
+      Object.values(db.users || {}).forEach(u => {
+        if (u && u.role === 'admin') {
+          addUserNotification(u.username, {
+            id: `wall-post-${newPost.id}`,
+            type: 'wall_reply',
+            postId: newPost.id,
+            titleEs: `🏛️ ${author} publicó en el Muro de Debate`,
+            titleEn: `🏛️ ${author} posted on the Debate Wall`,
+            bodyEs: `«${newPost.text.slice(0, 100)}»`,
+            bodyEn: `“${newPost.text.slice(0, 100)}”`,
+            createdAt: newPost.createdAt,
+            read: false
+          });
+        }
+      });
+    }
+
     saveDatabase();
     return sendJson(res, 201, { ok: true });
   }
@@ -998,6 +1311,9 @@ const server = http.createServer(async (req, res) => {
     }
     const { postId, replyId } = await parseBody(req);
     const voterKey = `user:${session.username}`;
+    const actorName = session.role === 'admin'
+      ? 'Huellas de la Humanidad'
+      : (session.displayName || session.username);
 
     if (!Array.isArray(db.comments)) db.comments = [];
     const post = db.comments.find(p => p.id === postId);
@@ -1011,13 +1327,47 @@ const server = http.createServer(async (req, res) => {
       if (!reply) return sendJson(res, 404, { error: 'Comentario no encontrado.' });
       if (!Array.isArray(reply.likes)) reply.likes = [];
       const idx = reply.likes.indexOf(voterKey);
-      if (idx >= 0) reply.likes.splice(idx, 1);
-      else reply.likes.push(voterKey);
+      if (idx >= 0) {
+        reply.likes.splice(idx, 1);
+      } else {
+        reply.likes.push(voterKey);
+        const replyOwner = resolveUsernameByAuthor(reply.author, reply.role, reply.authorUsername);
+        if (replyOwner && replyOwner !== session.username) {
+          addUserNotification(replyOwner, {
+            id: `wall-like-reply-${reply.id}-${session.username}`,
+            type: 'wall_like',
+            postId: post.id,
+            titleEs: `❤️ A ${actorName} le gustó tu comentario en el Muro`,
+            titleEn: `❤️ ${actorName} liked your comment on the Wall`,
+            bodyEs: `«${String(reply.text || '').slice(0, 95)}»`,
+            bodyEn: `“${String(reply.text || '').slice(0, 95)}”`,
+            createdAt: new Date().toISOString(),
+            read: false
+          });
+        }
+      }
     } else {
       if (!Array.isArray(post.likes)) post.likes = [];
       const idx = post.likes.indexOf(voterKey);
-      if (idx >= 0) post.likes.splice(idx, 1);
-      else post.likes.push(voterKey);
+      if (idx >= 0) {
+        post.likes.splice(idx, 1);
+      } else {
+        post.likes.push(voterKey);
+        const postOwner = resolveUsernameByAuthor(post.author, post.role, post.authorUsername);
+        if (postOwner && postOwner !== session.username) {
+          addUserNotification(postOwner, {
+            id: `wall-like-post-${post.id}-${session.username}`,
+            type: 'wall_like',
+            postId: post.id,
+            titleEs: `❤️ A ${actorName} le gustó tu publicación en el Muro`,
+            titleEn: `❤️ ${actorName} liked your post on the Wall`,
+            bodyEs: `«${String(post.text || '').slice(0, 95)}»`,
+            bodyEn: `“${String(post.text || '').slice(0, 95)}”`,
+            createdAt: new Date().toISOString(),
+            read: false
+          });
+        }
+      }
     }
 
     saveDatabase();
@@ -1046,16 +1396,59 @@ const server = http.createServer(async (req, res) => {
       : (session.displayName || session.username);
 
     if (!Array.isArray(post.replies)) post.replies = [];
-    post.replies.push({
+    const newReply = {
       id: crypto.randomUUID(),
       parentId: parentId || null,
       replyToAuthor: String(replyToAuthor || '').trim().slice(0, 60),
       author,
+      authorUsername: session.username,
       role: session.role,
       text: cleanText.slice(0, 1000),
       likes: [],
       createdAt: new Date().toISOString()
-    });
+    };
+    post.replies.push(newReply);
+
+    // Notificar al autor de la publicación original en el Muro
+    const postOwner = resolveUsernameByAuthor(post.author, post.role, post.authorUsername);
+    if (postOwner && postOwner !== session.username) {
+      addUserNotification(postOwner, {
+        id: `wall-reply-${newReply.id}`,
+        type: 'wall_reply',
+        postId: post.id,
+        titleEs: `💬 ${author} comentó en tu publicación del Muro`,
+        titleEn: `💬 ${author} commented on your Wall post`,
+        bodyEs: `«${newReply.text.slice(0, 100)}»`,
+        bodyEn: `“${newReply.text.slice(0, 100)}”`,
+        createdAt: newReply.createdAt,
+        read: false
+      });
+    }
+
+    // Si es respuesta directa a otro comentario, notificar también al autor de ese comentario
+    let parentOwner = null;
+    if (parentId) {
+      const parentComment = post.replies.find(r => r.id === parentId);
+      if (parentComment) {
+        parentOwner = resolveUsernameByAuthor(parentComment.author, parentComment.role, parentComment.authorUsername);
+      }
+    }
+    if (!parentOwner && replyToAuthor) {
+      parentOwner = resolveUsernameByAuthor(replyToAuthor, null, null);
+    }
+    if (parentOwner && parentOwner !== session.username && parentOwner !== postOwner) {
+      addUserNotification(parentOwner, {
+        id: `wall-reply-target-${newReply.id}`,
+        type: 'wall_reply',
+        postId: post.id,
+        titleEs: `💬 ${author} respondió a tu comentario en el Muro`,
+        titleEn: `💬 ${author} replied to your comment on the Wall`,
+        bodyEs: `«${newReply.text.slice(0, 100)}»`,
+        bodyEn: `“${newReply.text.slice(0, 100)}”`,
+        createdAt: newReply.createdAt,
+        read: false
+      });
+    }
 
     saveDatabase();
     return sendJson(res, 201, { ok: true });
@@ -1728,10 +2121,24 @@ function checkYoutubeAndNotify() {
 
             // Si se estrena un nuevo video antes de cumplirse las 24h de un nuevo seguidor, cancelar el envío diferido del video anterior
             Object.values(db.users || {}).forEach(u => {
-              if (u && u.welcomeVideoFollowup && !u.welcomeVideoFollowup.sent) {
+              if (!u) return;
+              if (u.welcomeVideoFollowup && !u.welcomeVideoFollowup.sent) {
                 u.welcomeVideoFollowup.cancelledByNewRelease = true;
                 u.welcomeVideoFollowup.sent = true;
               }
+              // Agregar notificación en la campanita del sitio con miniatura y título del nuevo video
+              addUserNotification(u.username, {
+                id: `yt-video-${latestId}`,
+                type: 'video',
+                titleEs: '🎬 Nuevo documental subido a YouTube',
+                titleEn: '🎬 New documentary uploaded to YouTube',
+                bodyEs: `«${cleanLatestTitle}»`,
+                bodyEn: `“${cleanLatestTitle}”`,
+                thumbUrl: `https://i.ytimg.com/vi/${latestId}/mqdefault.jpg`,
+                videoId: latestId,
+                createdAt: new Date().toISOString(),
+                read: false
+              });
             });
 
             saveDatabase();

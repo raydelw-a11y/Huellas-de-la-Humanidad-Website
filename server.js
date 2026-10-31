@@ -599,8 +599,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 409, { error: 'Ese nombre de usuario ya está registrado. Elige otro o inicia sesión.' });
     }
 
-    const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
-    const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+    const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || '7oexZOHGQ8k';
+    const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona';
 
     db.users[cleanUser] = {
       username: cleanUser,

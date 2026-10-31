@@ -56,11 +56,11 @@ let db = {
     topics: [] // [ { id, title, author, createdAt, voters: [] } ]
   },
   youtubeNotifier: {
-    lastVideoId: 'PPgK7kuznm0',
-    lastHorizontalVideoId: 'PPgK7kuznm0',
-    lastVideoTitle: 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe',
+    lastVideoId: '7oexZOHGQ8k',
+    lastHorizontalVideoId: '7oexZOHGQ8k',
+    lastVideoTitle: 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona',
     lastNotifiedAt: null,
-    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0']
+    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k']
   },
   autoDocumentaries: [],
   nextRelease: null,
@@ -1771,7 +1771,7 @@ let lastYoutubeCheckTime = 0;
 let isCheckingYoutube = false;
 
 const BASE_DOCUMENTARY_IDS = new Set([
-  'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
+  '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
   'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
   '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
   'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
@@ -2055,17 +2055,6 @@ function checkYoutubeAndNotify() {
             return resolve();
           }
 
-          // Verificar adicionalmente que el más reciente sea 100% horizontal (no Short)
-          const topCandidate = horizontalEntries[0];
-          const isConfirmedHorizontal = BASE_DOCUMENTARY_IDS.has(topCandidate.id) || (await verifyIsHorizontalYoutubeVideo(topCandidate.id));
-          if (!isConfirmedHorizontal) {
-            horizontalEntries.shift();
-          }
-          if (horizontalEntries.length === 0) {
-            isCheckingYoutube = false;
-            return resolve();
-          }
-
           if (!Array.isArray(db.autoDocumentaries)) {
             db.autoDocumentaries = [];
           }
@@ -2074,7 +2063,7 @@ function checkYoutubeAndNotify() {
           // Registrar automáticamente cualquier video horizontal nuevo para el Mapa Interactivo y la Biblioteca
           for (const item of horizontalEntries) {
             const alreadyInAuto = db.autoDocumentaries.some(d => d && d.id === item.id);
-            if (!alreadyInAuto && (!BASE_DOCUMENTARY_IDS.has(item.id) || item.id === 'PPgK7kuznm0')) {
+            if (!alreadyInAuto && (!BASE_DOCUMENTARY_IDS.has(item.id) || item.id === '7oexZOHGQ8k' || item.id === 'PPgK7kuznm0')) {
               const meta = inferDocumentaryMetadata(item.id, item.rawTitle, item.desc, item.pub);
               db.autoDocumentaries.unshift(meta);
               dbChanged = true;
@@ -2091,7 +2080,7 @@ function checkYoutubeAndNotify() {
               lastHorizontalVideoId: latestId,
               lastVideoTitle: cleanLatestTitle,
               lastNotifiedAt: new Date().toISOString(),
-              notifiedVideoIds: [latestId]
+              notifiedVideoIds: [...BASE_DOCUMENTARY_IDS, latestId]
             };
             saveDatabase();
             isCheckingYoutube = false;
@@ -2099,18 +2088,31 @@ function checkYoutubeAndNotify() {
           }
 
           if (!Array.isArray(db.youtubeNotifier.notifiedVideoIds)) {
-            db.youtubeNotifier.notifiedVideoIds = ['rJdAGfxEYkw', 'PPgK7kuznm0'];
-          } else if (!db.youtubeNotifier.notifiedVideoIds.includes('PPgK7kuznm0')) {
-            db.youtubeNotifier.notifiedVideoIds.push('PPgK7kuznm0');
+            db.youtubeNotifier.notifiedVideoIds = [...BASE_DOCUMENTARY_IDS];
+          } else {
+            for (const baseId of BASE_DOCUMENTARY_IDS) {
+              if (!db.youtubeNotifier.notifiedVideoIds.includes(baseId)) {
+                db.youtubeNotifier.notifiedVideoIds.push(baseId);
+              }
+            }
           }
           if (!db.youtubeNotifier.lastHorizontalVideoId) {
-            db.youtubeNotifier.lastHorizontalVideoId = 'PPgK7kuznm0';
+            db.youtubeNotifier.lastHorizontalVideoId = latestId;
           }
 
-          const prevHorizontalId = db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId || '';
-          const alreadyNotified = db.youtubeNotifier.notifiedVideoIds.includes(latestId);
+          const alreadyNotified = db.youtubeNotifier.notifiedVideoIds.includes(latestId) || BASE_DOCUMENTARY_IDS.has(latestId);
+          const pubTimeMs = new Date(latest.pub || 0).getTime();
+          const isRecentUpload = pubTimeMs > 0 && (Date.now() - pubTimeMs) <= 24 * 60 * 60 * 1000;
 
-          if (prevHorizontalId !== latestId || !alreadyNotified) {
+          if (db.youtubeNotifier.lastHorizontalVideoId !== latestId) {
+            db.youtubeNotifier.lastVideoId = latestId;
+            db.youtubeNotifier.lastHorizontalVideoId = latestId;
+            db.youtubeNotifier.lastVideoTitle = cleanLatestTitle;
+            dbChanged = true;
+          }
+
+          // SOLO enviar correos si el video JAMÁS ha sido notificado, NO está en la biblioteca base y se subió hace menos de 24 horas
+          if (!alreadyNotified && isRecentUpload) {
             db.youtubeNotifier.lastVideoId = latestId;
             db.youtubeNotifier.lastHorizontalVideoId = latestId;
             db.youtubeNotifier.lastVideoTitle = cleanLatestTitle;

@@ -36,6 +36,60 @@ function validatePasswordRules(password) {
 }
 
 const ADMIN_DEFAULT_PWD = process.env.ADMIN_PASSWORD || 'Huellas#2026';
+const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
+const EMAIL_LOGO_URL = 'https://huellasdelahumanidad.com/logo.png';
+let lastYoutubeCheckTime = 0;
+let isCheckingYoutube = false;
+
+const BASE_DOCUMENTARY_IDS = new Set([
+  'Iswv7f6AoCU', '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
+  'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
+  '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
+  'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
+  'S4hg8P0gtzg', '9MtSnB7sBog', 'oRXFu8r5wHU', 'qCwGXLfWWuE', 'Q1Rjnt5_Gr4',
+  'HTqDUWWZE7s'
+]);
+
+const KNOWN_PLACES_GAZETTEER = [
+  { re: /antioqu[ií]a/i, es: 'Antioquía, Siria', en: 'Antioch, Syria', lon: 36.16, lat: 36.20, region: 'europe' },
+  { re: /jerusal[eé]n/i, es: 'Jerusalén', en: 'Jerusalem', lon: 35.21, lat: 31.77, region: 'europe' },
+  { re: /constantinopla|estambul|bizancio/i, es: 'Constantinopla', en: 'Constantinople', lon: 28.98, lat: 41.01, region: 'europe' },
+  { re: /babilonia|mesopotamia|bagdad/i, es: 'Babilonia, Mesopotamia', en: 'Babylon, Mesopotamia', lon: 44.42, lat: 32.54, region: 'europe' },
+  { re: /pompeya|vesubio/i, es: 'Pompeya, Italia', en: 'Pompeii, Italy', lon: 14.49, lat: 40.75, region: 'europe' },
+  { re: /\broma\b|coliseo|vaticano/i, es: 'Roma, Italia', en: 'Rome, Italy', lon: 12.49, lat: 41.89, region: 'europe' },
+  { re: /florencia/i, es: 'Florencia, Italia', en: 'Florence, Italy', lon: 11.25, lat: 43.77, region: 'europe' },
+  { re: /venecia/i, es: 'Venecia, Italia', en: 'Venice, Italy', lon: 12.33, lat: 45.44, region: 'europe' },
+  { re: /atenas|esparta|grecia|acrópolis|acropolis|creta/i, es: 'Atenas, Grecia', en: 'Athens, Greece', lon: 23.73, lat: 37.98, region: 'europe' },
+  { re: /giza|el cairo|pir[aá]mides|egipto|alejandr[ií]a|tebas|luxor/i, es: 'Egipto', en: 'Egypt', lon: 31.13, lat: 29.98, region: 'europe' },
+  { re: /nazaret|galilea/i, es: 'Nazaret, Galilea', en: 'Nazareth, Galilee', lon: 35.30, lat: 32.70, region: 'europe' },
+  { re: /par[ií]s|louvre|versalles|bastilla/i, es: 'París, Francia', en: 'Paris, France', lon: 2.34, lat: 48.86, region: 'europe' },
+  { re: /normand[ií]a/i, es: 'Normandía, Francia', en: 'Normandy, France', lon: -0.85, lat: 49.34, region: 'europe' },
+  { re: /londres|inglaterra| Reino Unido/i, es: 'Londres, Inglaterra', en: 'London, England', lon: -0.13, lat: 51.51, region: 'europe' },
+  { re: /belfast|irlanda/i, es: 'Belfast, Irlanda', en: 'Belfast, Ireland', lon: -5.93, lat: 54.60, region: 'europe' },
+  { re: /escocia|edimburgo/i, es: 'Edimburgo, Escocia', en: 'Edinburgh, Scotland', lon: -3.19, lat: 55.95, region: 'europe' },
+  { re: /madrid|toledo|escorial/i, es: 'Madrid, España', en: 'Madrid, Spain', lon: -3.70, lat: 40.42, region: 'europe' },
+  { re: /granada|alhambra|sevilla|c[oó]rdoba|andaluc[ií]a/i, es: 'Andalucía, España', en: 'Andalusia, Spain', lon: -3.60, lat: 37.18, region: 'europe' },
+  { re: /barcelona|catalu[ñn]a/i, es: 'Barcelona, España', en: 'Barcelona, Spain', lon: 2.17, lat: 41.39, region: 'europe' },
+  { re: /lisboa|portugal/i, es: 'Lisboa, Portugal', en: 'Lisbon, Portugal', lon: -9.14, lat: 38.72, region: 'europe' },
+  { re: /berl[ií]n|reichstag|alemania/i, es: 'Berlín, Alemania', en: 'Berlin, Germany', lon: 13.38, lat: 52.52, region: 'europe' },
+  { re: /viena|austria/i, es: 'Viena, Austria', en: 'Vienna, Austria', lon: 16.37, lat: 48.21, region: 'europe' },
+  { re: /varsovia|polonia|auschwitz|cracovia/i, es: 'Polonia', en: 'Poland', lon: 21.01, lat: 52.23, region: 'europe' },
+  { re: /mosc[uú]|stalingrado|rusia|san petersburgo/i, es: 'Moscú, Rusia', en: 'Moscow, Russia', lon: 37.62, lat: 55.75, region: 'europe' },
+  { re: /chern[oó]bil|pr[ií]piat|ucrania|kiev/i, es: 'Chernóbil, Ucrania', en: 'Chernobyl, Ukraine', lon: 30.10, lat: 51.39, region: 'europe' },
+  { re: /la habana|mariel|\bcuba\b|santiago de cuba/i, es: 'La Habana, Cuba', en: 'Havana, Cuba', lon: -82.37, lat: 23.11, region: 'americas' },
+  { re: /torres gemelas|manhattan|nueva york|world trade center/i, es: 'Nueva York, EE. UU.', en: 'New York, USA', lon: -74.01, lat: 40.71, region: 'americas' },
+  { re: /san francisco|alcatraz|california/i, es: 'San Francisco, California', en: 'San Francisco, California', lon: -122.42, lat: 37.77, region: 'americas' },
+  { re: /washington|chicago|boston|filadelfia|estados unidos/i, es: 'Estados Unidos', en: 'United States', lon: -77.04, lat: 38.90, region: 'americas' },
+  { re: /teotihuac[aá]n|tenochtitl[aá]n|m[eé]xico|chich[eé]n itz[aá]|yucat[aá]n/i, es: 'México', en: 'Mexico', lon: -99.13, lat: 19.43, region: 'americas' },
+  { re: /machu picchu|cusco|per[uú]|inca/i, es: 'Cusco, Perú', en: 'Cusco, Peru', lon: -72.54, lat: -13.16, region: 'americas' },
+  { re: /colombia|bogot[aá]|cartagena/i, es: 'Colombia', en: 'Colombia', lon: -74.07, lat: 4.71, region: 'americas' },
+  { re: /argentina|buenos aires|los andes/i, es: 'Buenos Aires, Argentina', en: 'Buenos Aires, Argentina', lon: -58.38, lat: -34.60, region: 'americas' },
+  { re: /tokio|hiroshima|nagasaki|kioto|jap[oó]n/i, es: 'Japón', en: 'Japan', lon: 139.69, lat: 35.68, region: 'asia' },
+  { re: /pek[ií]n|china|shangh[aá]i|muralla china/i, es: 'China', en: 'China', lon: 116.40, lat: 39.90, region: 'asia' },
+  { re: /krakatoa|sumatra|indonesia|java/i, es: 'Indonesia', en: 'Indonesia', lon: 105.42, lat: -6.10, region: 'asia' },
+  { re: /india|nueva delhi|taj mahal/i, es: 'India', en: 'India', lon: 77.21, lat: 28.61, region: 'asia' },
+  { re: /camboya|angkor|vietnam/i, es: 'Sudeste Asiático', en: 'Southeast Asia', lon: 103.86, lat: 13.41, region: 'asia' }
+];
 
 // Estado en memoria
 let db = {
@@ -601,6 +655,10 @@ const server = http.createServer(async (req, res) => {
 
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
+
+  if (pathname.startsWith('/api/') && pathname !== '/api/presence/leave') {
+    recordActiveVisitor(req, parsedUrl);
+  }
 
   // --- API ROUTES ---
   if (pathname === '/api/register' && req.method === 'POST') {
@@ -1586,6 +1644,20 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true, activeVisitors: getActiveVisitorCount() });
   }
 
+  if (pathname === '/api/admin/active-users' && req.method === 'GET') {
+    const session = getAuthSession(req);
+    if (!session || session.role !== 'admin') {
+      return sendJson(res, 403, { error: 'Acceso exclusivo para administradores.' });
+    }
+    recordActiveVisitor(req, parsedUrl);
+    const summary = getActiveVisitorsSummary();
+    return sendJson(res, 200, {
+      activeVisitors: summary.count,
+      activeUsers: summary.activeUsers,
+      guestCount: summary.guestCount
+    });
+  }
+
   if (pathname === '/api/youtube-videos' && req.method === 'GET') {
     recordActiveVisitor(req, parsedUrl);
     if (Date.now() - lastYoutubeCheckTime > 60 * 1000) {
@@ -1615,6 +1687,7 @@ const server = http.createServer(async (req, res) => {
     const tk = Math.max(10600, Number(stats.tiktok) || 10600);
     const fb = Math.max(22792, Number(stats.facebook) || 22792);
     const ig = Math.max(1128, Number(stats.instagram) || 1128);
+    const summary = getActiveVisitorsSummary();
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return sendJson(res, 200, {
       youtube: yt,
@@ -1622,7 +1695,9 @@ const server = http.createServer(async (req, res) => {
       facebook: fb,
       instagram: ig,
       total: yt + tk + fb + ig,
-      activeVisitors: getActiveVisitorCount(),
+      activeVisitors: summary.count,
+      activeUsers: summary.activeUsers,
+      guestCount: summary.guestCount,
       updatedAt: stats.updatedAt || new Date().toISOString()
     });
   }
@@ -1650,30 +1725,105 @@ const server = http.createServer(async (req, res) => {
   res.end('No encontrado');
 });
 
-const activeVisitors = new Map(); // visitorKey -> timestampMs
+const activeVisitors = new Map(); // visitorKey -> { key, lastSeen, username, displayName, role }
 
 function recordActiveVisitor(req, parsedUrl) {
+  const now = Date.now();
+  const session = getAuthSession(req);
+  const paramUser = String(parsedUrl.searchParams.get('u') || '').trim().toLowerCase();
+  const isExplicitGuest = parsedUrl.searchParams.get('guest') === '1';
+  const uObj = session
+    ? db.users[session.username]
+    : (!isExplicitGuest && paramUser && db.users && db.users[paramUser] ? db.users[paramUser] : null);
+
   const vid = String(parsedUrl.searchParams.get('vid') || parsedUrl.searchParams.get('voterId') || '').trim();
-  if (vid) {
-    activeVisitors.set(vid, Date.now());
+
+  if (uObj) {
+    // Si ya había un registro temporal user:username o de otro vid del mismo usuario, consolidarlo
+    for (const [k, entry] of activeVisitors.entries()) {
+      if (entry && entry.username === uObj.username && k !== (vid || `user:${uObj.username}`)) {
+        activeVisitors.delete(k);
+      }
+    }
+    const targetKey = vid || `user:${uObj.username}`;
+    activeVisitors.set(targetKey, {
+      key: targetKey,
+      lastSeen: now,
+      username: uObj.username,
+      displayName: uObj.displayName || uObj.username,
+      role: uObj.role || 'user'
+    });
     return;
   }
+
+  if (vid) {
+    const prev = activeVisitors.get(vid);
+    activeVisitors.set(vid, {
+      key: vid,
+      lastSeen: now,
+      username: isExplicitGuest ? null : (prev && prev.username ? prev.username : null),
+      displayName: isExplicitGuest ? null : (prev && prev.displayName ? prev.displayName : null),
+      role: isExplicitGuest ? 'guest' : (prev && prev.role ? prev.role : 'guest')
+    });
+    return;
+  }
+
   const ua = String(req.headers['user-agent'] || '');
   if (/bot|crawl|spider|uptime|render|curl/i.test(ua)) return;
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   if (ip) {
-    activeVisitors.set(`ip:${ip}`, Date.now());
+    const ipKey = `ip:${ip}`;
+    const prev = activeVisitors.get(ipKey);
+    activeVisitors.set(ipKey, {
+      key: ipKey,
+      lastSeen: now,
+      username: prev && prev.username ? prev.username : null,
+      displayName: prev && prev.displayName ? prev.displayName : null,
+      role: prev && prev.role ? prev.role : 'guest'
+    });
   }
 }
 
-function getActiveVisitorCount() {
+function getActiveVisitorsSummary() {
   const now = Date.now();
-  for (const [key, lastSeen] of activeVisitors.entries()) {
-    if (now - lastSeen > 22000) {
+  const userMap = new Map();
+  let guestCount = 0;
+
+  for (const [key, entry] of activeVisitors.entries()) {
+    const lastSeen = typeof entry === 'number' ? entry : (entry && entry.lastSeen ? entry.lastSeen : 0);
+    if (now - lastSeen > 25000) {
       activeVisitors.delete(key);
+      continue;
+    }
+    if (entry && typeof entry === 'object' && entry.username) {
+      const uname = String(entry.username).toLowerCase();
+      const existing = userMap.get(uname);
+      if (!existing || lastSeen > existing.lastSeen) {
+        const conv = db.conversations && db.conversations[uname];
+        userMap.set(uname, {
+          username: uname,
+          displayName: entry.displayName || uname,
+          role: entry.role || 'user',
+          lastSeen,
+          unreadByAdmin: conv ? (conv.unreadByAdmin || 0) : 0
+        });
+      }
+    } else {
+      guestCount++;
     }
   }
-  return Math.max(1, activeVisitors.size);
+
+  const activeUsers = Array.from(userMap.values()).sort((a, b) => {
+    if (a.role !== b.role) return a.role === 'admin' ? 1 : -1;
+    return b.lastSeen - a.lastSeen;
+  });
+
+  const count = Math.max(1, activeUsers.length + guestCount);
+  return { count, activeUsers, guestCount };
+}
+
+function getActiveVisitorCount() {
+  return getActiveVisitorsSummary().count;
 }
 
 let lastSocialRefreshTime = 0;
@@ -1810,61 +1960,6 @@ loadDatabase().then(() => {
   // Vigilar automáticamente nuevos videos horizontales en el canal de YouTube cada 2 minutos
   setInterval(checkYoutubeAndNotify, 2 * 60 * 1000);
 });
-
-const YT_CHANNEL_ID = 'UCayIhjKhh0KFaJlzRIRkSZQ';
-const EMAIL_LOGO_URL = 'https://huellasdelahumanidad.com/logo.png';
-let lastYoutubeCheckTime = 0;
-let isCheckingYoutube = false;
-
-const BASE_DOCUMENTARY_IDS = new Set([
-  'Iswv7f6AoCU', '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
-  'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
-  '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
-  'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
-  'S4hg8P0gtzg', '9MtSnB7sBog', 'oRXFu8r5wHU', 'qCwGXLfWWuE', 'Q1Rjnt5_Gr4',
-  'HTqDUWWZE7s'
-]);
-
-const KNOWN_PLACES_GAZETTEER = [
-  { re: /antioqu[ií]a/i, es: 'Antioquía, Siria', en: 'Antioch, Syria', lon: 36.16, lat: 36.20, region: 'europe' },
-  { re: /jerusal[eé]n/i, es: 'Jerusalén', en: 'Jerusalem', lon: 35.21, lat: 31.77, region: 'europe' },
-  { re: /constantinopla|estambul|bizancio/i, es: 'Constantinopla', en: 'Constantinople', lon: 28.98, lat: 41.01, region: 'europe' },
-  { re: /babilonia|mesopotamia|bagdad/i, es: 'Babilonia, Mesopotamia', en: 'Babylon, Mesopotamia', lon: 44.42, lat: 32.54, region: 'europe' },
-  { re: /pompeya|vesubio/i, es: 'Pompeya, Italia', en: 'Pompeii, Italy', lon: 14.49, lat: 40.75, region: 'europe' },
-  { re: /\broma\b|coliseo|vaticano/i, es: 'Roma, Italia', en: 'Rome, Italy', lon: 12.49, lat: 41.89, region: 'europe' },
-  { re: /florencia/i, es: 'Florencia, Italia', en: 'Florence, Italy', lon: 11.25, lat: 43.77, region: 'europe' },
-  { re: /venecia/i, es: 'Venecia, Italia', en: 'Venice, Italy', lon: 12.33, lat: 45.44, region: 'europe' },
-  { re: /atenas|esparta|grecia|acrópolis|acropolis|creta/i, es: 'Atenas, Grecia', en: 'Athens, Greece', lon: 23.73, lat: 37.98, region: 'europe' },
-  { re: /giza|el cairo|pir[aá]mides|egipto|alejandr[ií]a|tebas|luxor/i, es: 'Egipto', en: 'Egypt', lon: 31.13, lat: 29.98, region: 'europe' },
-  { re: /nazaret|galilea/i, es: 'Nazaret, Galilea', en: 'Nazareth, Galilee', lon: 35.30, lat: 32.70, region: 'europe' },
-  { re: /par[ií]s|louvre|versalles|bastilla/i, es: 'París, Francia', en: 'Paris, France', lon: 2.34, lat: 48.86, region: 'europe' },
-  { re: /normand[ií]a/i, es: 'Normandía, Francia', en: 'Normandy, France', lon: -0.85, lat: 49.34, region: 'europe' },
-  { re: /londres|inglaterra| Reino Unido/i, es: 'Londres, Inglaterra', en: 'London, England', lon: -0.13, lat: 51.51, region: 'europe' },
-  { re: /belfast|irlanda/i, es: 'Belfast, Irlanda', en: 'Belfast, Ireland', lon: -5.93, lat: 54.60, region: 'europe' },
-  { re: /escocia|edimburgo/i, es: 'Edimburgo, Escocia', en: 'Edinburgh, Scotland', lon: -3.19, lat: 55.95, region: 'europe' },
-  { re: /madrid|toledo|escorial/i, es: 'Madrid, España', en: 'Madrid, Spain', lon: -3.70, lat: 40.42, region: 'europe' },
-  { re: /granada|alhambra|sevilla|c[oó]rdoba|andaluc[ií]a/i, es: 'Andalucía, España', en: 'Andalusia, Spain', lon: -3.60, lat: 37.18, region: 'europe' },
-  { re: /barcelona|catalu[ñn]a/i, es: 'Barcelona, España', en: 'Barcelona, Spain', lon: 2.17, lat: 41.39, region: 'europe' },
-  { re: /lisboa|portugal/i, es: 'Lisboa, Portugal', en: 'Lisbon, Portugal', lon: -9.14, lat: 38.72, region: 'europe' },
-  { re: /berl[ií]n|reichstag|alemania/i, es: 'Berlín, Alemania', en: 'Berlin, Germany', lon: 13.38, lat: 52.52, region: 'europe' },
-  { re: /viena|austria/i, es: 'Viena, Austria', en: 'Vienna, Austria', lon: 16.37, lat: 48.21, region: 'europe' },
-  { re: /varsovia|polonia|auschwitz|cracovia/i, es: 'Polonia', en: 'Poland', lon: 21.01, lat: 52.23, region: 'europe' },
-  { re: /mosc[uú]|stalingrado|rusia|san petersburgo/i, es: 'Moscú, Rusia', en: 'Moscow, Russia', lon: 37.62, lat: 55.75, region: 'europe' },
-  { re: /chern[oó]bil|pr[ií]piat|ucrania|kiev/i, es: 'Chernóbil, Ucrania', en: 'Chernobyl, Ukraine', lon: 30.10, lat: 51.39, region: 'europe' },
-  { re: /la habana|mariel|\bcuba\b|santiago de cuba/i, es: 'La Habana, Cuba', en: 'Havana, Cuba', lon: -82.37, lat: 23.11, region: 'americas' },
-  { re: /torres gemelas|manhattan|nueva york|world trade center/i, es: 'Nueva York, EE. UU.', en: 'New York, USA', lon: -74.01, lat: 40.71, region: 'americas' },
-  { re: /san francisco|alcatraz|california/i, es: 'San Francisco, California', en: 'San Francisco, California', lon: -122.42, lat: 37.77, region: 'americas' },
-  { re: /washington|chicago|boston|filadelfia|estados unidos/i, es: 'Estados Unidos', en: 'United States', lon: -77.04, lat: 38.90, region: 'americas' },
-  { re: /teotihuac[aá]n|tenochtitl[aá]n|m[eé]xico|chich[eé]n itz[aá]|yucat[aá]n/i, es: 'México', en: 'Mexico', lon: -99.13, lat: 19.43, region: 'americas' },
-  { re: /machu picchu|cusco|per[uú]|inca/i, es: 'Cusco, Perú', en: 'Cusco, Peru', lon: -72.54, lat: -13.16, region: 'americas' },
-  { re: /colombia|bogot[aá]|cartagena/i, es: 'Colombia', en: 'Colombia', lon: -74.07, lat: 4.71, region: 'americas' },
-  { re: /argentina|buenos aires|los andes/i, es: 'Buenos Aires, Argentina', en: 'Buenos Aires, Argentina', lon: -58.38, lat: -34.60, region: 'americas' },
-  { re: /tokio|hiroshima|nagasaki|kioto|jap[oó]n/i, es: 'Japón', en: 'Japan', lon: 139.69, lat: 35.68, region: 'asia' },
-  { re: /pek[ií]n|china|shangh[aá]i|muralla china/i, es: 'China', en: 'China', lon: 116.40, lat: 39.90, region: 'asia' },
-  { re: /krakatoa|sumatra|indonesia|java/i, es: 'Indonesia', en: 'Indonesia', lon: 105.42, lat: -6.10, region: 'asia' },
-  { re: /india|nueva delhi|taj mahal/i, es: 'India', en: 'India', lon: 77.21, lat: 28.61, region: 'asia' },
-  { re: /camboya|angkor|vietnam/i, es: 'Sudeste Asiático', en: 'Southeast Asia', lon: 103.86, lat: 13.41, region: 'asia' }
-];
 
 function decodeXmlEntities(str) {
   return String(str || '')
@@ -2085,17 +2180,16 @@ function sendEmailViaResend(toEmail, subject, htmlBody) {
 
 function fetchYoutubeVideosFromChannelTab() {
   return new Promise((resolve) => {
-    const req = https.get('https://www.youtube.com/@huellas_de_la_humanidad/videos', {
+    const req = https.get('https://www.youtube.com/@huellas_de_la_humanidad/videos?hl=es&persist_hl=1', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
-        'Cookie': 'CONSENT=YES+cb'
+        'Accept-Language': 'es-ES,es;q=0.9',
+        'Cookie': 'CONSENT=YES+cb; PREF=hl=es'
       }
     }, (res) => {
       let html = '';
       res.on('data', chunk => {
-        html += chunk;
-        if (html.length > 3.5e6) res.destroy();
+        if (html.length < 8e6) html += chunk;
       });
       res.on('end', () => {
         try {
@@ -2225,9 +2319,14 @@ function checkYoutubeAndNotify() {
             horizontalEntries.push({ id: vid, rawTitle, href, desc, pub });
           }
 
-          // Si el feed XML de YouTube devuelve 404 o vacío, consultar directamente la pestaña /videos del canal
-          if (horizontalEntries.length === 0) {
-            horizontalEntries = await fetchYoutubeVideosFromChannelTab();
+          // Consultar primero la pestaña /videos en vivo (siempre al día al segundo) y combinar con XML si existiera
+          const liveTabEntries = await fetchYoutubeVideosFromChannelTab();
+          if (liveTabEntries.length > 0) {
+            const xmlMap = new Map(horizontalEntries.map(e => [e.id, e]));
+            horizontalEntries = liveTabEntries.map(item => {
+              const xmlItem = xmlMap.get(item.id);
+              return xmlItem ? { ...item, desc: xmlItem.desc || item.desc, pub: xmlItem.pub || item.pub } : item;
+            });
           }
 
           if (horizontalEntries.length === 0) {

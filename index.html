@@ -6,10 +6,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="app-build-version" content="11051835">
+    <meta name="app-build-version" content="11051845">
     <script>
         (function () {
-            var CURRENT_BUILD = '11051835';
+            var CURRENT_BUILD = '11051845';
             try {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -84,7 +84,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=11051835">
+    <link rel="stylesheet" href="style.css?v=11051845">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -116,10 +116,47 @@
                             <span title="Facebook"><i class="fa-brands fa-facebook"></i></span>
                         </div>
                     </div>
-                    <div id="admin-active-visitors-box" class="admin-active-visitors-box hidden" title="Personas en el sitio en tiempo real (Solo visible para Administradores)">
-                        <span class="status-dot gold-live small-dot" aria-hidden="true"></span>
-                        <span class="active-visitors-label" data-i18n="admin_active_visitors">Activos:</span>
-                        <span id="active-visitors-count" class="active-visitors-count">1</span>
+                    <div id="admin-active-visitors-box" class="admin-active-visitors-box hidden" title="Clic para ver usuarios activos y chatear rápido (Solo Administradores)">
+                        <button type="button" id="admin-active-visitors-btn" class="admin-active-visitors-btn">
+                            <span class="status-dot gold-live small-dot" aria-hidden="true"></span>
+                            <span class="active-visitors-label" data-i18n="admin_active_visitors">Activos:</span>
+                            <span id="active-visitors-count" class="active-visitors-count">1</span>
+                            <i class="fa-solid fa-chevron-down active-visitors-chevron"></i>
+                        </button>
+
+                        <!-- Submenú 1: Listado de usernames activos en este momento -->
+                        <div id="admin-active-users-submenu" class="admin-active-submenu hidden">
+                            <div class="admin-active-submenu-header">
+                                <span><i class="fa-solid fa-users"></i> <span data-i18n="admin_active_now_title">Usuarios Activos</span></span>
+                                <button type="button" id="close-active-users-submenu" class="admin-submenu-close-btn" aria-label="Cerrar">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div id="admin-active-users-list" class="admin-active-users-list"></div>
+                        </div>
+
+                        <!-- Submenú 2: Chateo rápido al hacer clic en un username -->
+                        <div id="admin-quick-chat-submenu" class="admin-quick-chat-submenu hidden">
+                            <div class="admin-quick-chat-header">
+                                <button type="button" id="admin-quick-chat-back" class="admin-quick-chat-back-btn" title="Volver a usuarios activos">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                                <div class="admin-quick-chat-user-info">
+                                    <span class="status-dot online"></span>
+                                    <span id="admin-quick-chat-username" class="admin-quick-chat-username">@usuario</span>
+                                </div>
+                                <button type="button" id="close-admin-quick-chat" class="admin-submenu-close-btn" aria-label="Cerrar chat rápido">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div id="admin-quick-chat-messages" class="admin-quick-chat-messages"></div>
+                            <form id="admin-quick-chat-form" class="admin-quick-chat-form">
+                                <input type="text" id="admin-quick-chat-input" data-i18n-placeholder="ph_quick_chat" placeholder="Escribe un mensaje rápido..." maxlength="500" autocomplete="off" required>
+                                <button type="submit" class="admin-quick-chat-send-btn" title="Enviar">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 <div class="header-content">
@@ -714,9 +751,9 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
         </footer>
     </main>
 
-    <div class="build-timestamp">Actualizado: 06:35 PM - 11/05/2026</div>
+    <div class="build-timestamp">Actualizado: 06:45 PM - 11/05/2026</div>
 
-    <script src="world-map-data.js?v=11051835"></script>
-    <script src="script.js?v=11051835"></script>
+    <script src="world-map-data.js?v=11051845"></script>
+    <script src="script.js?v=11051845"></script>
 </body>
 </html>

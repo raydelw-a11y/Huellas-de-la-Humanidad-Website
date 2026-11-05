@@ -716,19 +716,45 @@ body {
 .followers-platforms-mini i.fa-facebook { color: #4da3ff; }
 
 .admin-active-visitors-box {
-    background: rgba(10, 8, 6, 0.88);
-    border: 1px solid rgba(212, 175, 55, 0.45);
+    position: relative;
+    min-width: 148px;
+    z-index: 65;
+}
+
+.admin-active-visitors-btn {
+    width: 100%;
+    background: rgba(10, 8, 6, 0.9);
+    border: 1px solid rgba(212, 175, 55, 0.5);
     border-radius: 8px;
-    padding: 0.26rem 0.65rem;
+    padding: 0.3rem 0.65rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-width: 148px;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.65), inset 0 0 8px rgba(212, 175, 55, 0.08);
     font-family: 'Cinzel', Georgia, serif;
     font-size: 0.68rem;
     letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.22s ease;
+}
+
+.admin-active-visitors-btn:hover,
+.admin-active-visitors-btn.active {
+    border-color: var(--gold-light);
+    background: rgba(26, 20, 14, 0.96);
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.28), inset 0 0 10px rgba(212, 175, 55, 0.14);
+}
+
+.active-visitors-chevron {
+    color: var(--primary-color);
+    font-size: 0.6rem;
+    margin-left: 2px;
+    transition: transform 0.22s ease;
+}
+
+.admin-active-visitors-btn.active .active-visitors-chevron {
+    transform: rotate(180deg);
 }
 
 .status-dot.gold-live.small-dot {
@@ -747,6 +773,226 @@ body {
     font-weight: 800;
     font-size: 0.78rem;
     line-height: 1;
+}
+
+/* Submenús flotantes de Usuarios Activos y Chateo Rápido (Admin) */
+.admin-active-submenu,
+.admin-quick-chat-submenu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 285px;
+    background: rgba(14, 11, 8, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    border-radius: 14px;
+    padding: 0.75rem;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.88), 0 0 18px rgba(212, 175, 55, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    z-index: 90;
+    text-align: left;
+}
+
+.admin-active-submenu-header,
+.admin-quick-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.28);
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.04em;
+}
+
+.admin-submenu-close-btn,
+.admin-quick-chat-back-btn {
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: var(--gold-light);
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.admin-submenu-close-btn:hover,
+.admin-quick-chat-back-btn:hover {
+    background: var(--primary-color);
+    color: #0c0a08;
+}
+
+.admin-active-users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.admin-active-user-item {
+    width: 100%;
+    background: rgba(26, 20, 15, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.28);
+    border-radius: 9px;
+    padding: 0.48rem 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1rem;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.admin-active-user-item:hover {
+    border-color: var(--primary-color);
+    background: rgba(212, 175, 55, 0.16);
+    transform: translateX(2px);
+}
+
+.admin-active-user-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.admin-active-user-name {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-active-user-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.admin-active-unread-pill {
+    background: #e50914;
+    color: #fff;
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+
+.admin-active-guest-note {
+    font-size: 0.86rem;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 0.3rem 0.4rem 0.1rem;
+    border-top: 1px dashed rgba(212, 175, 55, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-quick-chat-user-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-quick-chat-username {
+    font-family: 'Cinzel', Georgia, serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-quick-chat-messages {
+    background: rgba(8, 6, 4, 0.82);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    border-radius: 9px;
+    padding: 0.55rem;
+    height: 195px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.admin-quick-chat-messages .chat-bubble {
+    font-size: 0.94rem;
+    padding: 0.42rem 0.65rem;
+    max-width: 90%;
+}
+
+.admin-quick-chat-form {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-quick-chat-form input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(8, 6, 4, 0.9);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+    color: var(--text-light);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 0.98rem;
+}
+
+.admin-quick-chat-form input:focus {
+    outline: none;
+    border-color: var(--gold-light);
+}
+
+.admin-quick-chat-send-btn {
+    background: linear-gradient(135deg, #d4af37, #99741c);
+    color: #0c0a08;
+    border: none;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.admin-quick-chat-send-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
 }
 
 .header-content {

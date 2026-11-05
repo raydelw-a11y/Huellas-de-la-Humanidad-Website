@@ -165,7 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_admin_release_title: 'Escribe el título del próximo video...',
             label_admin_release_date: 'Fecha de estreno (Opcional · Cuenta regresiva):',
             btn_save_release: 'Publicar Próximo Estreno',
-            btn_reset_release: 'Dejar en «Tema por decidir»'
+            btn_reset_release: 'Dejar en «Tema por decidir»',
+            admin_active_now_title: 'Usuarios Activos',
+            ph_quick_chat: 'Escribe un mensaje rápido...'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
@@ -299,7 +301,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ph_admin_release_title: 'Write the title of the next video...',
             label_admin_release_date: 'Premiere Date (Optional · Countdown):',
             btn_save_release: 'Publish Next Premiere',
-            btn_reset_release: 'Reset to “Topic to Be Decided”'
+            btn_reset_release: 'Reset to “Topic to Be Decided”',
+            admin_active_now_title: 'Active Users',
+            ph_quick_chat: 'Write a quick message...'
         }
     };
 
@@ -1268,12 +1272,255 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateActiveVisitorsDisplay(count) {
+    function updateActiveVisitorsDisplay(count, activeUsers = null, guestCount = null) {
         const countEl = document.getElementById('active-visitors-count');
         if (countEl && Number.isFinite(Number(count))) {
             countEl.textContent = Math.max(1, Math.round(Number(count))).toLocaleString('en-US');
         }
+        if (Array.isArray(activeUsers)) {
+            cachedActiveUsers = activeUsers;
+            cachedGuestCount = Number.isFinite(Number(guestCount)) ? Number(guestCount) : 0;
+            const submenu = document.getElementById('admin-active-users-submenu');
+            if (submenu && !submenu.classList.contains('hidden')) {
+                renderAdminActiveUsersList();
+            }
+        }
     }
+
+    // --- SUBMENÚ DE USUARIOS ACTIVOS Y CHATEO RÁPIDO (EXCLUSIVO ADMIN) ---
+    let cachedActiveUsers = [];
+    let cachedGuestCount = 0;
+    let quickChatTargetUser = null;
+    let quickChatPollTimer = null;
+
+    const adminActiveVisitorsBoxEl = document.getElementById('admin-active-visitors-box');
+    const adminActiveVisitorsBtn = document.getElementById('admin-active-visitors-btn');
+    const adminActiveUsersSubmenu = document.getElementById('admin-active-users-submenu');
+    const adminActiveUsersListEl = document.getElementById('admin-active-users-list');
+    const closeActiveUsersSubmenuBtn = document.getElementById('close-active-users-submenu');
+
+    const adminQuickChatSubmenu = document.getElementById('admin-quick-chat-submenu');
+    const adminQuickChatBackBtn = document.getElementById('admin-quick-chat-back');
+    const closeAdminQuickChatBtn = document.getElementById('close-admin-quick-chat');
+    const adminQuickChatUsernameEl = document.getElementById('admin-quick-chat-username');
+    const adminQuickChatMessagesEl = document.getElementById('admin-quick-chat-messages');
+    const adminQuickChatForm = document.getElementById('admin-quick-chat-form');
+    const adminQuickChatInput = document.getElementById('admin-quick-chat-input');
+
+    async function fetchAdminActiveUsers() {
+        if (!authToken || !currentUser || currentUser.role !== 'admin') return;
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/active-users?vid=${encodeURIComponent(voterId)}&u=${encodeURIComponent(currentUser.username)}&t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            updateActiveVisitorsDisplay(data.activeVisitors, data.activeUsers || [], data.guestCount || 0);
+        } catch (e) {}
+    }
+
+    function renderAdminActiveUsersList() {
+        if (!adminActiveUsersListEl) return;
+        adminActiveUsersListEl.innerHTML = '';
+
+        const usersToShow = [...cachedActiveUsers];
+        if (currentUser && currentUser.username && !usersToShow.some(u => u.username === currentUser.username)) {
+            usersToShow.push({
+                username: currentUser.username,
+                displayName: currentUser.displayName || currentUser.username,
+                role: currentUser.role || 'admin',
+                unreadByAdmin: 0
+            });
+        }
+
+        if (usersToShow.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'admin-active-guest-note';
+            empty.textContent = currentLang === 'en' ? 'No logged-in users active right now.' : 'Sin usuarios con sesión iniciada en este instante.';
+            adminActiveUsersListEl.appendChild(empty);
+        } else {
+            usersToShow.forEach(u => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'admin-active-user-item';
+                btn.title = currentLang === 'en' ? `Click for quick chat with @${u.username}` : `Clic para chateo rápido con @${u.username}`;
+
+                const left = document.createElement('div');
+                left.className = 'admin-active-user-left';
+
+                const dot = document.createElement('span');
+                dot.className = 'status-dot online';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'admin-active-user-name';
+                nameSpan.textContent = `@${u.username}`;
+
+                left.appendChild(dot);
+                left.appendChild(nameSpan);
+
+                if (u.role === 'admin') {
+                    const crown = document.createElement('span');
+                    crown.className = 'admin-badge';
+                    crown.style.fontSize = '0.58rem';
+                    crown.style.padding = '1px 5px';
+                    crown.innerHTML = '<i class="fa-solid fa-crown"></i>';
+                    left.appendChild(crown);
+                }
+
+                const right = document.createElement('div');
+                right.className = 'admin-active-user-right';
+                if (u.unreadByAdmin > 0) {
+                    const pill = document.createElement('span');
+                    pill.className = 'admin-active-unread-pill';
+                    pill.textContent = u.unreadByAdmin;
+                    right.appendChild(pill);
+                }
+                const chatIcon = document.createElement('i');
+                chatIcon.className = 'fa-regular fa-comment-dots';
+                right.appendChild(chatIcon);
+
+                btn.appendChild(left);
+                btn.appendChild(right);
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openAdminQuickChat(u.username);
+                });
+
+                adminActiveUsersListEl.appendChild(btn);
+            });
+        }
+
+        if (cachedGuestCount > 0) {
+            const guestRow = document.createElement('div');
+            guestRow.className = 'admin-active-guest-note';
+            guestRow.innerHTML = `<i class="fa-regular fa-eye"></i> <span>${currentLang === 'en' ? `Anonymous visitors: ${cachedGuestCount}` : `Visitantes sin sesión: ${cachedGuestCount}`}</span>`;
+            adminActiveUsersListEl.appendChild(guestRow);
+        }
+    }
+
+    async function loadAdminQuickChatMessages(targetUsername) {
+        if (!authToken || !targetUsername || !adminQuickChatMessagesEl) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/chat/messages?user=${encodeURIComponent(targetUsername)}&t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            renderMessages(adminQuickChatMessagesEl, data.messages || []);
+        } catch (e) {}
+    }
+
+    function openAdminQuickChat(username) {
+        quickChatTargetUser = username;
+        if (adminActiveUsersSubmenu) adminActiveUsersSubmenu.classList.add('hidden');
+        if (adminQuickChatSubmenu) adminQuickChatSubmenu.classList.remove('hidden');
+        if (adminQuickChatUsernameEl) adminQuickChatUsernameEl.textContent = `@${username}`;
+        if (adminQuickChatMessagesEl) {
+            adminQuickChatMessagesEl.innerHTML = `<p class="empty-conv-text" style="font-size:0.88rem;">...</p>`;
+        }
+        loadAdminQuickChatMessages(username);
+        if (quickChatPollTimer) clearInterval(quickChatPollTimer);
+        quickChatPollTimer = setInterval(() => {
+            if (quickChatTargetUser) loadAdminQuickChatMessages(quickChatTargetUser);
+        }, 3500);
+        setTimeout(() => {
+            if (adminQuickChatInput) adminQuickChatInput.focus();
+        }, 40);
+    }
+
+    function closeAllAdminActivePopovers() {
+        if (adminActiveUsersSubmenu) adminActiveUsersSubmenu.classList.add('hidden');
+        if (adminQuickChatSubmenu) adminQuickChatSubmenu.classList.add('hidden');
+        if (adminActiveVisitorsBtn) adminActiveVisitorsBtn.classList.remove('active');
+        quickChatTargetUser = null;
+        if (quickChatPollTimer) {
+            clearInterval(quickChatPollTimer);
+            quickChatPollTimer = null;
+        }
+    }
+
+    if (adminActiveVisitorsBtn) {
+        adminActiveVisitorsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isListOpen = adminActiveUsersSubmenu && !adminActiveUsersSubmenu.classList.contains('hidden');
+            const isChatOpen = adminQuickChatSubmenu && !adminQuickChatSubmenu.classList.contains('hidden');
+            if (isListOpen || isChatOpen) {
+                closeAllAdminActivePopovers();
+            } else {
+                adminActiveVisitorsBtn.classList.add('active');
+                if (adminQuickChatSubmenu) adminQuickChatSubmenu.classList.add('hidden');
+                if (adminActiveUsersSubmenu) adminActiveUsersSubmenu.classList.remove('hidden');
+                renderAdminActiveUsersList();
+                fetchAdminActiveUsers();
+            }
+        });
+    }
+
+    if (closeActiveUsersSubmenuBtn) {
+        closeActiveUsersSubmenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAllAdminActivePopovers();
+        });
+    }
+
+    if (adminQuickChatBackBtn) {
+        adminQuickChatBackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            quickChatTargetUser = null;
+            if (quickChatPollTimer) {
+                clearInterval(quickChatPollTimer);
+                quickChatPollTimer = null;
+            }
+            if (adminQuickChatSubmenu) adminQuickChatSubmenu.classList.add('hidden');
+            if (adminActiveUsersSubmenu) adminActiveUsersSubmenu.classList.remove('hidden');
+            renderAdminActiveUsersList();
+            fetchAdminActiveUsers();
+        });
+    }
+
+    if (closeAdminQuickChatBtn) {
+        closeAdminQuickChatBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeAllAdminActivePopovers();
+        });
+    }
+
+    if (adminQuickChatForm) {
+        adminQuickChatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!quickChatTargetUser || !authToken || !adminQuickChatInput) return;
+            const text = adminQuickChatInput.value.trim();
+            if (!text) return;
+            adminQuickChatInput.value = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/chat/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ text, targetUser: quickChatTargetUser })
+                });
+                const data = await res.json();
+                if (res.ok && data.messages) {
+                    renderMessages(adminQuickChatMessagesEl, data.messages);
+                    if (selectedAdminUser === quickChatTargetUser) {
+                        renderMessages(document.getElementById('admin-messages-box'), data.messages);
+                    }
+                    loadAdminConversations();
+                }
+            } catch (err) {}
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (adminActiveVisitorsBoxEl && !adminActiveVisitorsBoxEl.contains(e.target)) {
+            closeAllAdminActivePopovers();
+        }
+    });
 
     async function loadPoll() {
         try {
@@ -2823,8 +3070,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            const staleFallbackIds = new Set(['PPgK7kuznm0', '7oexZOHGQ8k', 'rJdAGfxEYkw']);
             if (data.latestVideoId && ytIframe && !userManuallySelectedDoc) {
-                if (!ytIframe.src.includes(data.latestVideoId)) {
+                const isNewerOrTop =
+                    !staleFallbackIds.has(data.latestVideoId) ||
+                    (DOCUMENTARIES[0] && DOCUMENTARIES[0].id === data.latestVideoId);
+                if (isNewerOrTop && !ytIframe.src.includes(data.latestVideoId)) {
                     ytIframe.src = `https://www.youtube.com/embed/${data.latestVideoId}`;
                     currentActiveVideoId = data.latestVideoId;
                     loadVideoComments(currentActiveVideoId);
@@ -3591,11 +3842,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSocialFollowerStats() {
         try {
-            const res = await fetch(`${API_BASE}/api/social-stats?vid=${encodeURIComponent(voterId)}&t=${Date.now()}`, { cache: 'no-store' });
+            const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+            const userParam = (authToken && currentUser && currentUser.username)
+                ? `&u=${encodeURIComponent(currentUser.username)}`
+                : '&guest=1';
+            const res = await fetch(`${API_BASE}/api/social-stats?vid=${encodeURIComponent(voterId)}${userParam}&t=${Date.now()}`, {
+                cache: 'no-store',
+                headers
+            });
             if (!res.ok) return;
             const data = await res.json();
             if (data && data.activeVisitors !== undefined) {
-                updateActiveVisitorsDisplay(data.activeVisitors);
+                updateActiveVisitorsDisplay(data.activeVisitors, data.activeUsers, data.guestCount);
             }
             const yt = Math.max(1060, Number(data.youtube) || 1060);
             const tk = Math.max(10600, Number(data.tiktok) || 10600);

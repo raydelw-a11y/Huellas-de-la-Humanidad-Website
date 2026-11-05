@@ -56,11 +56,11 @@ let db = {
     topics: [] // [ { id, title, author, createdAt, voters: [] } ]
   },
   youtubeNotifier: {
-    lastVideoId: '7oexZOHGQ8k',
-    lastHorizontalVideoId: '7oexZOHGQ8k',
-    lastVideoTitle: 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona',
+    lastVideoId: 'Iswv7f6AoCU',
+    lastHorizontalVideoId: 'Iswv7f6AoCU',
+    lastVideoTitle: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
     lastNotifiedAt: null,
-    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k']
+    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k', 'Iswv7f6AoCU']
   },
   autoDocumentaries: [],
   nextRelease: null,
@@ -255,6 +255,33 @@ async function loadDatabase() {
       });
     }
   });
+
+  // Asegurar que el último documental base (Iswv7f6AoCU) esté sincronizado y nunca re-envíe correos antiguos
+  if (!db.youtubeNotifier || typeof db.youtubeNotifier !== 'object') {
+    db.youtubeNotifier = {
+      lastVideoId: 'Iswv7f6AoCU',
+      lastHorizontalVideoId: 'Iswv7f6AoCU',
+      lastVideoTitle: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
+      lastNotifiedAt: null,
+      notifiedVideoIds: [...BASE_DOCUMENTARY_IDS]
+    };
+  } else {
+    if (!Array.isArray(db.youtubeNotifier.notifiedVideoIds)) {
+      db.youtubeNotifier.notifiedVideoIds = [...BASE_DOCUMENTARY_IDS];
+    } else {
+      for (const baseId of BASE_DOCUMENTARY_IDS) {
+        if (!db.youtubeNotifier.notifiedVideoIds.includes(baseId)) {
+          db.youtubeNotifier.notifiedVideoIds.push(baseId);
+        }
+      }
+    }
+    const staleIds = new Set(['PPgK7kuznm0', '7oexZOHGQ8k', 'rJdAGfxEYkw']);
+    if (!db.youtubeNotifier.lastHorizontalVideoId || staleIds.has(db.youtubeNotifier.lastHorizontalVideoId)) {
+      db.youtubeNotifier.lastVideoId = 'Iswv7f6AoCU';
+      db.youtubeNotifier.lastHorizontalVideoId = 'Iswv7f6AoCU';
+      db.youtubeNotifier.lastVideoTitle = 'Así fue la llegada de los Españoles a México y Cuba en 1885';
+    }
+  }
 }
 
 async function saveDatabase() {
@@ -302,6 +329,9 @@ async function saveDatabase() {
 function sendJson(res, status, data) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
@@ -411,23 +441,31 @@ function ensureUserBaseNotifications(username) {
   let changed = false;
 
   // 1. Notificaciones de subida de videos nuevos (imagen en miniatura + texto al lado)
-  const latestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
-  const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+  const latestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'Iswv7f6AoCU';
+  const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así fue la llegada de los Españoles a México y Cuba en 1885';
 
   const recentVideos = [
     {
       id: latestVid,
       titleEs: latestTitle,
-      titleEn: latestVid === 'PPgK7kuznm0'
-        ? 'The Brutal Siege of Antioch in 1098: Famine, Betrayal, and Faith'
-        : latestTitle,
-      createdAt: (db.youtubeNotifier && db.youtubeNotifier.lastNotifiedAt) || '2026-10-27T12:00:00.000Z'
+      titleEn: latestVid === 'Iswv7f6AoCU'
+        ? 'This Was the Arrival of the Spanish in Mexico and Cuba in 1885'
+        : (latestVid === 'PPgK7kuznm0'
+          ? 'The Brutal Siege of Antioch in 1098: Famine, Betrayal, and Faith'
+          : latestTitle),
+      createdAt: (db.youtubeNotifier && db.youtubeNotifier.lastNotifiedAt) || '2026-11-05T15:26:24.000Z'
     },
     {
-      id: 'rJdAGfxEYkw',
-      titleEs: 'El Louvre en el año 1200: La fortaleza olvidada de París',
-      titleEn: 'The Louvre in 1200: The Forgotten Fortress of Paris',
-      createdAt: '2026-10-20T12:00:00.000Z'
+      id: '7oexZOHGQ8k',
+      titleEs: 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona',
+      titleEn: 'What Life Was Like in the 13th-Century Royal Court: The Dark Price of the Crown',
+      createdAt: '2026-11-01T12:00:00.000Z'
+    },
+    {
+      id: 'PPgK7kuznm0',
+      titleEs: 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe',
+      titleEn: 'The Brutal Siege of Antioch in 1098: Famine, Betrayal, and Faith',
+      createdAt: '2026-10-27T12:00:00.000Z'
     }
   ];
 
@@ -599,8 +637,8 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 409, { error: 'Ese nombre de usuario ya está registrado. Elige otro o inicia sesión.' });
     }
 
-    const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || '7oexZOHGQ8k';
-    const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona';
+    const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'Iswv7f6AoCU';
+    const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así fue la llegada de los Españoles a México y Cuba en 1885';
 
     db.users[cleanUser] = {
       username: cleanUser,
@@ -720,8 +758,8 @@ const server = http.createServer(async (req, res) => {
     u.notifyYoutube = cleanEmail ? Boolean(notifyYoutube) : false;
 
     if (cleanEmail && u.notifyYoutube && !hadEmailBefore && !u.welcomeVideoFollowup) {
-      const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
-      const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+      const currentLatestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'Iswv7f6AoCU';
+      const currentLatestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así fue la llegada de los Españoles a México y Cuba en 1885';
       u.welcomeVideoFollowup = {
         dueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         videoIdAtSignup: currentLatestVid,
@@ -1554,8 +1592,8 @@ const server = http.createServer(async (req, res) => {
       await checkYoutubeAndNotify();
     }
     const autoDocs = Array.isArray(db.autoDocumentaries) ? db.autoDocumentaries : [];
-    const latestId = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'PPgK7kuznm0';
-    const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe';
+    const latestId = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'Iswv7f6AoCU';
+    const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así fue la llegada de los Españoles a México y Cuba en 1885';
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return sendJson(res, 200, {
       latestVideoId: latestId,
@@ -1596,7 +1634,15 @@ const server = http.createServer(async (req, res) => {
 
   if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
     const ext = path.extname(fullPath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' });
+    const isCodeOrHtml = ext === '.html' || ext === '.js' || ext === '.css' || ext === '.json';
+    res.writeHead(200, {
+      'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+      ...(isCodeOrHtml ? {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      } : {})
+    });
     return fs.createReadStream(fullPath).pipe(res);
   }
 
@@ -1771,7 +1817,7 @@ let lastYoutubeCheckTime = 0;
 let isCheckingYoutube = false;
 
 const BASE_DOCUMENTARY_IDS = new Set([
-  '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
+  'Iswv7f6AoCU', '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
   'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
   '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
   'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
@@ -1852,6 +1898,34 @@ function verifyIsHorizontalYoutubeVideo(videoId) {
 }
 
 function inferDocumentaryMetadata(videoId, rawTitle, description, publishedAt) {
+  if (videoId === 'Iswv7f6AoCU') {
+    return {
+      id: 'Iswv7f6AoCU',
+      titleEs: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
+      titleEn: 'This Was the Arrival of the Spanish in Mexico and Cuba in 1885',
+      eraEs: 'La Habana y México · Año 1885',
+      eraEn: 'Havana & Mexico · Year 1885',
+      category: 'cuba',
+      region: 'americas',
+      lon: -82.37,
+      lat: 23.11,
+      publishedAt: publishedAt || '2026-11-05T15:26:24.000Z'
+    };
+  }
+  if (videoId === '7oexZOHGQ8k') {
+    return {
+      id: '7oexZOHGQ8k',
+      titleEs: 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona',
+      titleEn: 'What Life Was Like in the 13th-Century Royal Court: The Dark Price of the Crown',
+      eraEs: 'Europa Occidental · Siglo XIII',
+      eraEn: 'Western Europe · 13th Century',
+      category: 'medieval',
+      region: 'europe',
+      lon: 2.35,
+      lat: 48.85,
+      publishedAt: publishedAt || '2026-11-01T12:00:00.000Z'
+    };
+  }
   if (videoId === 'PPgK7kuznm0') {
     return {
       id: 'PPgK7kuznm0',
@@ -2009,6 +2083,112 @@ function sendEmailViaResend(toEmail, subject, htmlBody) {
   });
 }
 
+function fetchYoutubeVideosFromChannelTab() {
+  return new Promise((resolve) => {
+    const req = https.get('https://www.youtube.com/@huellas_de_la_humanidad/videos', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
+        'Cookie': 'CONSENT=YES+cb'
+      }
+    }, (res) => {
+      let html = '';
+      res.on('data', chunk => {
+        html += chunk;
+        if (html.length > 3.5e6) res.destroy();
+      });
+      res.on('end', () => {
+        try {
+          const m = html.match(/var ytInitialData = (\{[\s\S]*?\});<\/script>/);
+          if (!m) return resolve([]);
+          const data = JSON.parse(m[1]);
+          const tabs = (data.contents && data.contents.twoColumnBrowseResultsRenderer && data.contents.twoColumnBrowseResultsRenderer.tabs) || [];
+          const results = [];
+          for (const t of tabs) {
+            const tr = t.tabRenderer;
+            if (tr && tr.content && tr.content.richGridRenderer) {
+              const items = tr.content.richGridRenderer.contents || [];
+              for (const it of items) {
+                const content = it.richItemRenderer && it.richItemRenderer.content;
+                if (!content) continue;
+                if (content.lockupViewModel) {
+                  const lvm = content.lockupViewModel;
+                  const vid = lvm.contentId;
+                  const title = lvm.metadata &&
+                                lvm.metadata.lockupMetadataViewModel &&
+                                lvm.metadata.lockupMetadataViewModel.title &&
+                                lvm.metadata.lockupMetadataViewModel.title.content;
+                  if (vid && title && !/#shorts?\b/i.test(title)) {
+                    results.push({
+                      id: String(vid).trim(),
+                      rawTitle: String(title).trim(),
+                      href: `https://www.youtube.com/watch?v=${vid}`,
+                      desc: '',
+                      pub: ''
+                    });
+                  }
+                } else if (content.videoRenderer) {
+                  const vr = content.videoRenderer;
+                  const vid = vr.videoId;
+                  const title = (vr.title && vr.title.runs && vr.title.runs[0] && vr.title.runs[0].text) ||
+                                (vr.title && vr.title.simpleText);
+                  if (vid && title && !/#shorts?\b/i.test(title)) {
+                    results.push({
+                      id: String(vid).trim(),
+                      rawTitle: String(title).trim(),
+                      href: `https://www.youtube.com/watch?v=${vid}`,
+                      desc: '',
+                      pub: ''
+                    });
+                  }
+                }
+              }
+            }
+          }
+          resolve(results);
+        } catch (e) {
+          resolve([]);
+        }
+      });
+      res.on('error', () => resolve([]));
+    });
+    req.setTimeout(9000, () => {
+      req.destroy();
+      resolve([]);
+    });
+    req.on('error', () => resolve([]));
+  });
+}
+
+function fetchVideoPublishDateIso(videoId) {
+  return new Promise((resolve) => {
+    const req = https.get(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Cookie': 'CONSENT=YES+cb'
+      }
+    }, (res) => {
+      let html = '';
+      res.on('data', chunk => {
+        html += chunk;
+        if (html.length > 1.5e6) res.destroy();
+      });
+      res.on('end', () => {
+        const m = html.match(/itemprop="uploadDate"\s+content="([^"]+)"/i) ||
+                  html.match(/"publishDate":"([^"]+)"/) ||
+                  html.match(/"uploadDate":"([^"]+)"/);
+        resolve(m ? m[1] : '');
+      });
+      res.on('error', () => resolve(''));
+    });
+    req.setTimeout(6000, () => {
+      req.destroy();
+      resolve('');
+    });
+    req.on('error', () => resolve(''));
+  });
+}
+
 function checkYoutubeAndNotify() {
   if (isCheckingYoutube) return Promise.resolve();
   isCheckingYoutube = true;
@@ -2020,13 +2200,8 @@ function checkYoutubeAndNotify() {
       res.on('data', chunk => xml += chunk);
       res.on('end', async () => {
         try {
+          let horizontalEntries = [];
           const rawEntries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(m => m[1]);
-          if (rawEntries.length === 0) {
-            isCheckingYoutube = false;
-            return resolve();
-          }
-
-          const horizontalEntries = [];
           for (const entryXml of rawEntries) {
             const idMatch = entryXml.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
             const titleMatch = entryXml.match(/<title>([^<]+)<\/title>/);
@@ -2050,6 +2225,11 @@ function checkYoutubeAndNotify() {
             horizontalEntries.push({ id: vid, rawTitle, href, desc, pub });
           }
 
+          // Si el feed XML de YouTube devuelve 404 o vacío, consultar directamente la pestaña /videos del canal
+          if (horizontalEntries.length === 0) {
+            horizontalEntries = await fetchYoutubeVideosFromChannelTab();
+          }
+
           if (horizontalEntries.length === 0) {
             isCheckingYoutube = false;
             return resolve();
@@ -2061,10 +2241,10 @@ function checkYoutubeAndNotify() {
 
           let dbChanged = false;
           // Registrar automáticamente cualquier video horizontal nuevo para el Mapa Interactivo y la Biblioteca
-          for (const item of horizontalEntries) {
+          for (const item of horizontalEntries.slice(0, 8)) {
             const alreadyInAuto = db.autoDocumentaries.some(d => d && d.id === item.id);
-            if (!alreadyInAuto && (!BASE_DOCUMENTARY_IDS.has(item.id) || item.id === '7oexZOHGQ8k' || item.id === 'PPgK7kuznm0')) {
-              const meta = inferDocumentaryMetadata(item.id, item.rawTitle, item.desc, item.pub);
+            if (!alreadyInAuto && (!BASE_DOCUMENTARY_IDS.has(item.id) || item.id === 'Iswv7f6AoCU' || item.id === '7oexZOHGQ8k' || item.id === 'PPgK7kuznm0')) {
+              const meta = inferDocumentaryMetadata(item.id, item.rawTitle, item.desc, item.pub || new Date().toISOString());
               db.autoDocumentaries.unshift(meta);
               dbChanged = true;
             }
@@ -2072,7 +2252,10 @@ function checkYoutubeAndNotify() {
 
           const latest = horizontalEntries[0];
           const latestId = latest.id;
-          const cleanLatestTitle = latest.rawTitle.replace(/\s*\|\s*Documental Completo.*$/i, '').trim() || latest.rawTitle;
+          const cleanLatestTitle = latest.rawTitle
+            .replace(/\s*\|\s*Documental Completo.*$/i, '')
+            .replace(/\s*\|\s*Huellas de la Humanidad.*$/i, '')
+            .trim() || latest.rawTitle;
 
           if (!db.youtubeNotifier || typeof db.youtubeNotifier !== 'object') {
             db.youtubeNotifier = {
@@ -2101,7 +2284,11 @@ function checkYoutubeAndNotify() {
           }
 
           const alreadyNotified = db.youtubeNotifier.notifiedVideoIds.includes(latestId) || BASE_DOCUMENTARY_IDS.has(latestId);
-          const pubTimeMs = new Date(latest.pub || 0).getTime();
+          let pubIso = latest.pub;
+          if (!alreadyNotified && !pubIso) {
+            pubIso = await fetchVideoPublishDateIso(latestId);
+          }
+          const pubTimeMs = new Date(pubIso || 0).getTime();
           const isRecentUpload = pubTimeMs > 0 && (Date.now() - pubTimeMs) <= 24 * 60 * 60 * 1000;
 
           if (db.youtubeNotifier.lastHorizontalVideoId !== latestId) {

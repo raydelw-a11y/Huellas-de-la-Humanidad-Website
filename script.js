@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(updateBgVideoVerticalScroll, 150);
     }
 
-    let currentActiveVideoId = 'PPgK7kuznm0';
+    let currentActiveVideoId = 'Iswv7f6AoCU';
 
     function playDocumentaryInMainPlayer(videoId, title) {
         if (!ytIframe) return;
@@ -851,7 +851,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadUserNotifications() {
         if (!authToken || !currentUser) return;
         try {
-            const res = await fetch(`${API_BASE}/api/notifications`, {
+            const res = await fetch(`${API_BASE}/api/notifications?t=${Date.now()}`, {
+                cache: 'no-store',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
             if (!res.ok) return;
@@ -1574,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadReleaseCountdown() {
         try {
             const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-            const res = await fetch(`${API_BASE}/api/release`, { headers });
+            const res = await fetch(`${API_BASE}/api/release?t=${Date.now()}`, { headers, cache: 'no-store' });
             if (!res.ok) return;
             const data = await res.json();
             if (data && data.isAdmin) {
@@ -2014,6 +2015,28 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     const DOCUMENTARIES = [
+        {
+            id: 'Iswv7f6AoCU',
+            titleEs: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
+            titleEn: 'The Arrival of the Spanish in Mexico and Cuba in 1885',
+            eraEs: 'La Habana y México · Año 1885',
+            eraEn: 'Havana & Mexico · Year 1885',
+            category: 'cuba',
+            region: 'americas',
+            lon: -82.37,
+            lat: 23.11
+        },
+        {
+            id: '7oexZOHGQ8k',
+            titleEs: 'Así Era Vivir en la Corte Real del Siglo XIII: El Oscuro Precio de la Corona',
+            titleEn: 'What Life Was Like in the 13th-Century Royal Court: The Dark Price of the Crown',
+            eraEs: 'Europa · Siglo XIII (Año 1229)',
+            eraEn: 'Europe · 13th Century (Year 1229)',
+            category: 'medieval',
+            region: 'europe',
+            lon: 12.49,
+            lat: 41.89
+        },
         {
             id: 'PPgK7kuznm0',
             titleEs: 'Así Fue el Brutal Asedio de Antioquía en 1098: Hambre, Traición y Fe',
@@ -3097,7 +3120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadComments(isBackgroundPoll = false) {
         try {
             const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-            const res = await fetch(`${API_BASE}/api/comments?voterId=${encodeURIComponent(voterId)}`, { headers });
+            const res = await fetch(`${API_BASE}/api/comments?voterId=${encodeURIComponent(voterId)}&t=${Date.now()}`, { headers, cache: 'no-store' });
             if (!res.ok) return;
             const data = await res.json();
             const posts = data.comments || [];

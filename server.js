@@ -1998,12 +1998,12 @@ function inferDocumentaryMetadata(videoId, rawTitle, description, publishedAt) {
       id: 'Iswv7f6AoCU',
       titleEs: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
       titleEn: 'This Was the Arrival of the Spanish in Mexico and Cuba in 1885',
-      eraEs: 'La Habana y México · Año 1885',
-      eraEn: 'Havana & Mexico · Year 1885',
+      eraEs: 'México y La Habana, Cuba · Año 1885',
+      eraEn: 'Mexico & Havana, Cuba · Year 1885',
       category: 'cuba',
       region: 'americas',
-      lon: -82.37,
-      lat: 23.11,
+      lon: -88.5,
+      lat: 21.5,
       publishedAt: publishedAt || '2026-11-05T15:26:24.000Z'
     };
   }

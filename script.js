@@ -2266,12 +2266,12 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'Iswv7f6AoCU',
             titleEs: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
             titleEn: 'The Arrival of the Spanish in Mexico and Cuba in 1885',
-            eraEs: 'La Habana y México · Año 1885',
-            eraEn: 'Havana & Mexico · Year 1885',
+            eraEs: 'México y La Habana, Cuba · Año 1885',
+            eraEn: 'Mexico & Havana, Cuba · Year 1885',
             category: 'cuba',
             region: 'americas',
-            lon: -82.37,
-            lat: 23.11
+            lon: -88.5,
+            lat: 21.5
         },
         {
             id: '7oexZOHGQ8k',
@@ -2760,10 +2760,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let activeCoords = null;
+        const placedPinPositions = [];
 
-        DOCUMENTARIES.forEach((doc) => {
-            const { leftPct, topPct } = projectLonLatToViewBoxPct(doc.lon, doc.lat, vb);
+        DOCUMENTARIES.forEach((doc, idx) => {
+            let { leftPct, topPct } = projectLonLatToViewBoxPct(doc.lon, doc.lat, vb);
             if (leftPct < 0.5 || leftPct > 99.5 || topPct < 0.5 || topPct > 99.5) return;
+
+            // Evitar que dos pines queden exactamente superpuestos en el mismo punto del mapa
+            let attempts = 0;
+            while (
+                attempts < 8 &&
+                placedPinPositions.some(p => Math.hypot(p.leftPct - leftPct, p.topPct - topPct) < 1.35)
+            ) {
+                attempts++;
+                const angle = (attempts * Math.PI) / 3;
+                const radius = 1.45 * Math.ceil(attempts / 6);
+                leftPct = Math.max(1, Math.min(99, leftPct + Math.cos(angle) * radius));
+                topPct = Math.max(1, Math.min(99, topPct + Math.sin(angle) * radius));
+            }
+            placedPinPositions.push({ leftPct, topPct });
 
             const isSelected = Boolean(selectedMapDoc && selectedMapDoc.id === doc.id);
             const pin = document.createElement('button');
@@ -2771,6 +2786,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pin.className = `map-pin-btn ${isSelected ? 'active' : ''}`;
             pin.style.left = `${leftPct}%`;
             pin.style.top = `${topPct}%`;
+            pin.style.zIndex = String(50 - Math.min(40, idx));
             pin.setAttribute('aria-label', `${docEra(doc)} — ${docTitle(doc)}`);
 
             // Al pasar el puntero encima aparece la línea y el texto

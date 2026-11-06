@@ -458,7 +458,7 @@ function addUserNotification(username, notif) {
   const id = notif.id || crypto.randomUUID();
   const existingIdx = list.findIndex(item => item && (
     item.id === id ||
-    (notif.videoId && item.videoId && item.videoId === notif.videoId)
+    (notif.type === 'video' && item.type === 'video' && notif.videoId && item.videoId && item.videoId === notif.videoId)
   ));
   if (existingIdx >= 0) {
     return false;
@@ -472,6 +472,7 @@ function addUserNotification(username, notif) {
     bodyEn: notif.bodyEn || notif.bodyEs || '',
     thumbUrl: notif.thumbUrl || '',
     videoId: notif.videoId || '',
+    commentId: notif.commentId || '',
     postId: notif.postId || '',
     chatUser: notif.chatUser || '',
     createdAt: notif.createdAt || new Date().toISOString(),
@@ -497,12 +498,12 @@ function ensureUserBaseNotifications(username) {
 
   let changed = false;
 
-  // Limpiar cualquier notificación duplicada del mismo video o mismo ID
+  // Limpiar cualquier notificación duplicada del mismo video de estreno o mismo ID
   const seenNotifKeys = new Set();
   const dedupedList = [];
   for (const item of db.notifications[cleanUser]) {
     if (!item) continue;
-    const key = item.videoId ? `vid:${item.videoId}` : `id:${item.id}`;
+    const key = (item.type === 'video' && item.videoId) ? `vid:${item.videoId}` : `id:${item.id}`;
     if (seenNotifKeys.has(key)) {
       changed = true;
       continue;
@@ -641,6 +642,56 @@ function ensureUserBaseNotifications(username) {
           }
         });
       }
+    });
+  }
+
+  // 4. Notificaciones de comentarios, likes y respuestas en los videos de la página
+  if (db.videoComments && typeof db.videoComments === 'object') {
+    Object.entries(db.videoComments).forEach(([vidId, commentsArr]) => {
+      if (!Array.isArray(commentsArr)) return;
+      commentsArr.forEach(c => {
+        if (!c) return;
+        const commentOwner = resolveUsernameByAuthor(c.author, c.role, c.authorUsername);
+        if (userObj.role === 'admin' && commentOwner !== cleanUser) {
+          const added = addUserNotification(cleanUser, {
+            id: `video-comment-${c.id}`,
+            type: 'video_comment',
+            videoId: vidId,
+            commentId: c.id,
+            thumbUrl: `https://i.ytimg.com/vi/${vidId}/mqdefault.jpg`,
+            titleEs: `💬 ${c.author || 'Usuario'} comentó en un documental`,
+            titleEn: `💬 ${c.author || 'User'} commented on a documentary`,
+            bodyEs: `«${String(c.text || '').slice(0, 100)}»`,
+            bodyEn: `“${String(c.text || '').slice(0, 100)}”`,
+            createdAt: c.createdAt,
+            read: false
+          });
+          if (added) changed = true;
+        }
+        const replies = Array.isArray(c.replies) ? c.replies : [];
+        if (commentOwner === cleanUser) {
+          replies.forEach(r => {
+            if (!r) return;
+            const replyOwner = resolveUsernameByAuthor(r.author, r.role, r.authorUsername);
+            if (replyOwner !== cleanUser) {
+              const added = addUserNotification(cleanUser, {
+                id: `video-reply-${r.id}`,
+                type: 'video_reply',
+                videoId: vidId,
+                commentId: c.id,
+                thumbUrl: `https://i.ytimg.com/vi/${vidId}/mqdefault.jpg`,
+                titleEs: `💬 ${r.author || 'Usuario'} respondió a tu comentario en un video`,
+                titleEn: `💬 ${r.author || 'User'} replied to your comment on a video`,
+                bodyEs: `«${String(r.text || '').slice(0, 100)}»`,
+                bodyEn: `“${String(r.text || '').slice(0, 100)}”`,
+                createdAt: r.createdAt || c.createdAt,
+                read: false
+              });
+              if (added) changed = true;
+            }
+          });
+        }
+      });
     });
   }
 
@@ -1757,19 +1808,40 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 201, { ok: true });
   }
 
-  // --- COMENTARIOS PROPIOS DE CADA VIDEO DE YOUTUBE (REQUIERE CUENTA PARA COMENTAR) ---
+  // --- COMENTARIOS PROPIOS DE CADA VIDEO DE YOUTUBE (CON ME GUSTA, RESPUESTAS Y NOTIFICACIONES) ---
   if (pathname === '/api/video-comments' && req.method === 'GET') {
     const session = getAuthSession(req);
+    const currentUname = session ? session.username : null;
     const videoId = String(parsedUrl.searchParams.get('videoId') || '').trim();
     if (!db.videoComments || typeof db.videoComments !== 'object') db.videoComments = {};
     const list = Array.isArray(db.videoComments[videoId]) ? db.videoComments[videoId] : [];
-    const formatted = list.slice(-100).reverse().map(c => ({
-      id: c.id,
-      author: c.author || 'Usuario',
-      role: c.role || 'user',
-      text: c.text || '',
-      createdAt: c.createdAt
-    }));
+    const formatted = list.slice(-100).reverse().map(c => {
+      const likesArr = Array.isArray(c.likes) ? c.likes : [];
+      const repliesArr = Array.isArray(c.replies) ? c.replies : [];
+      return {
+        id: c.id,
+        author: c.author || 'Usuario',
+        role: c.role || 'user',
+        text: c.text || '',
+        likesCount: likesArr.length,
+        likedByMe: Boolean(currentUname && likesArr.includes(currentUname)),
+        replies: repliesArr.map(r => {
+          const rLikes = Array.isArray(r.likes) ? r.likes : [];
+          return {
+            id: r.id,
+            parentId: r.parentId || null,
+            replyToAuthor: r.replyToAuthor || '',
+            author: r.author || 'Usuario',
+            role: r.role || 'user',
+            text: r.text || '',
+            likesCount: rLikes.length,
+            likedByMe: Boolean(currentUname && rLikes.includes(currentUname)),
+            createdAt: r.createdAt
+          };
+        }),
+        createdAt: c.createdAt
+      };
+    });
     return sendJson(res, 200, {
       videoId,
       comments: formatted,
@@ -1795,16 +1867,213 @@ const server = http.createServer(async (req, res) => {
     if (!db.videoComments || typeof db.videoComments !== 'object') db.videoComments = {};
     if (!Array.isArray(db.videoComments[cleanVid])) db.videoComments[cleanVid] = [];
 
-    db.videoComments[cleanVid].push({
+    const newComment = {
       id: crypto.randomUUID(),
       author,
+      authorUsername: session.username,
       role: session.role,
       text: cleanText.slice(0, 1200),
+      likes: [],
+      replies: [],
       createdAt: new Date().toISOString()
-    });
+    };
+
+    db.videoComments[cleanVid].push(newComment);
     if (db.videoComments[cleanVid].length > 150) {
       db.videoComments[cleanVid] = db.videoComments[cleanVid].slice(-150);
     }
+
+    // Generar notificación a los administradores y a quienes hayan participado en los comentarios de este video
+    const recipients = new Set();
+    Object.values(db.users || {}).forEach(u => {
+      if (u && u.role === 'admin' && u.username !== session.username) {
+        recipients.add(u.username);
+      }
+    });
+    db.videoComments[cleanVid].forEach(c => {
+      if (!c || c.id === newComment.id) return;
+      const cOwner = resolveUsernameByAuthor(c.author, c.role, c.authorUsername);
+      if (cOwner && cOwner !== session.username) recipients.add(cOwner);
+    });
+
+    recipients.forEach(targetUname => {
+      addUserNotification(targetUname, {
+        id: `video-comment-${newComment.id}`,
+        type: 'video_comment',
+        videoId: cleanVid,
+        commentId: newComment.id,
+        thumbUrl: `https://i.ytimg.com/vi/${cleanVid}/mqdefault.jpg`,
+        titleEs: `💬 ${author} comentó en un documental`,
+        titleEn: `💬 ${author} commented on a documentary`,
+        bodyEs: `«${newComment.text.slice(0, 100)}»`,
+        bodyEn: `“${newComment.text.slice(0, 100)}”`,
+        createdAt: newComment.createdAt,
+        read: false
+      });
+    });
+
+    saveDatabase();
+    return sendJson(res, 201, { ok: true, commentId: newComment.id });
+  }
+
+  if (pathname === '/api/video-comments/like' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Inicia sesión para dar Me gusta a los comentarios.' });
+    }
+    const { videoId, commentId, replyId } = await parseBody(req);
+    const cleanVid = String(videoId || '').trim();
+    if (!db.videoComments || !Array.isArray(db.videoComments[cleanVid])) {
+      return sendJson(res, 404, { error: 'Comentario no encontrado.' });
+    }
+    const comment = db.videoComments[cleanVid].find(c => c && c.id === commentId);
+    if (!comment) {
+      return sendJson(res, 404, { error: 'Comentario no encontrado.' });
+    }
+
+    const actorName = session.role === 'admin'
+      ? 'Huellas de la Humanidad'
+      : (session.displayName || session.username);
+
+    let targetObj = comment;
+    if (replyId) {
+      if (!Array.isArray(comment.replies)) comment.replies = [];
+      targetObj = comment.replies.find(r => r && r.id === replyId);
+      if (!targetObj) {
+        return sendJson(res, 404, { error: 'Respuesta no encontrada.' });
+      }
+    }
+
+    if (!Array.isArray(targetObj.likes)) targetObj.likes = [];
+    const idx = targetObj.likes.indexOf(session.username);
+    if (idx >= 0) {
+      targetObj.likes.splice(idx, 1);
+    } else {
+      targetObj.likes.push(session.username);
+      const targetOwner = resolveUsernameByAuthor(targetObj.author, targetObj.role, targetObj.authorUsername);
+      if (targetOwner && targetOwner !== session.username) {
+        addUserNotification(targetOwner, {
+          id: `video-like-${targetObj.id}-${session.username}`,
+          type: 'video_like',
+          videoId: cleanVid,
+          commentId: comment.id,
+          thumbUrl: `https://i.ytimg.com/vi/${cleanVid}/mqdefault.jpg`,
+          titleEs: `❤️ A ${actorName} le gustó tu comentario en un video`,
+          titleEn: `❤️ ${actorName} liked your comment on a video`,
+          bodyEs: `«${String(targetObj.text || '').slice(0, 95)}»`,
+          bodyEn: `“${String(targetObj.text || '').slice(0, 95)}”`,
+          createdAt: new Date().toISOString(),
+          read: false
+        });
+      }
+    }
+
+    saveDatabase();
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/video-comments/reply' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    if (!session) {
+      return sendJson(res, 401, { error: 'Inicia sesión para responder comentarios.' });
+    }
+    const { videoId, commentId, parentId, replyToAuthor, text } = await parseBody(req);
+    const cleanVid = String(videoId || '').trim();
+    const cleanText = String(text || '').trim();
+    if (!cleanVid || !cleanText) {
+      return sendJson(res, 400, { error: 'Escribe tu respuesta.' });
+    }
+    if (!db.videoComments || !Array.isArray(db.videoComments[cleanVid])) {
+      return sendJson(res, 404, { error: 'Comentario no encontrado.' });
+    }
+    const comment = db.videoComments[cleanVid].find(c => c && c.id === commentId);
+    if (!comment) {
+      return sendJson(res, 404, { error: 'Comentario no encontrado.' });
+    }
+
+    const author = session.role === 'admin'
+      ? 'Huellas de la Humanidad'
+      : (session.displayName || session.username);
+
+    if (!Array.isArray(comment.replies)) comment.replies = [];
+    const newReply = {
+      id: crypto.randomUUID(),
+      parentId: parentId || null,
+      replyToAuthor: String(replyToAuthor || '').trim().slice(0, 60),
+      author,
+      authorUsername: session.username,
+      role: session.role,
+      text: cleanText.slice(0, 1000),
+      likes: [],
+      createdAt: new Date().toISOString()
+    };
+    comment.replies.push(newReply);
+
+    const notifiedUsers = new Set();
+    const commentOwner = resolveUsernameByAuthor(comment.author, comment.role, comment.authorUsername);
+    if (commentOwner && commentOwner !== session.username) {
+      notifiedUsers.add(commentOwner);
+      addUserNotification(commentOwner, {
+        id: `video-reply-${newReply.id}`,
+        type: 'video_reply',
+        videoId: cleanVid,
+        commentId: comment.id,
+        thumbUrl: `https://i.ytimg.com/vi/${cleanVid}/mqdefault.jpg`,
+        titleEs: `💬 ${author} respondió a tu comentario en un video`,
+        titleEn: `💬 ${author} replied to your comment on a video`,
+        bodyEs: `«${newReply.text.slice(0, 100)}»`,
+        bodyEn: `“${newReply.text.slice(0, 100)}”`,
+        createdAt: newReply.createdAt,
+        read: false
+      });
+    }
+
+    let parentOwner = null;
+    if (parentId) {
+      const parentReply = comment.replies.find(r => r && r.id === parentId);
+      if (parentReply) {
+        parentOwner = resolveUsernameByAuthor(parentReply.author, parentReply.role, parentReply.authorUsername);
+      }
+    }
+    if (!parentOwner && replyToAuthor) {
+      parentOwner = resolveUsernameByAuthor(replyToAuthor, null, null);
+    }
+    if (parentOwner && parentOwner !== session.username && !notifiedUsers.has(parentOwner)) {
+      notifiedUsers.add(parentOwner);
+      addUserNotification(parentOwner, {
+        id: `video-reply-target-${newReply.id}`,
+        type: 'video_reply',
+        videoId: cleanVid,
+        commentId: comment.id,
+        thumbUrl: `https://i.ytimg.com/vi/${cleanVid}/mqdefault.jpg`,
+        titleEs: `💬 ${author} respondió a tu comentario en un video`,
+        titleEn: `💬 ${author} replied to your comment on a video`,
+        bodyEs: `«${newReply.text.slice(0, 100)}»`,
+        bodyEn: `“${newReply.text.slice(0, 100)}”`,
+        createdAt: newReply.createdAt,
+        read: false
+      });
+    }
+
+    // Notificar también a los Administradores si un seguidor responde en un video
+    Object.values(db.users || {}).forEach(u => {
+      if (u && u.role === 'admin' && u.username !== session.username && !notifiedUsers.has(u.username)) {
+        addUserNotification(u.username, {
+          id: `video-reply-admin-${newReply.id}`,
+          type: 'video_reply',
+          videoId: cleanVid,
+          commentId: comment.id,
+          thumbUrl: `https://i.ytimg.com/vi/${cleanVid}/mqdefault.jpg`,
+          titleEs: `💬 ${author} respondió un comentario en un video`,
+          titleEn: `💬 ${author} replied to a comment on a video`,
+          bodyEs: `«${newReply.text.slice(0, 100)}»`,
+          bodyEn: `“${newReply.text.slice(0, 100)}”`,
+          createdAt: newReply.createdAt,
+          read: false
+        });
+      }
+    });
+
     saveDatabase();
     return sendJson(res, 201, { ok: true });
   }
@@ -1814,10 +2083,17 @@ const server = http.createServer(async (req, res) => {
     if (!session || session.role !== 'admin') {
       return sendJson(res, 403, { error: 'Solo el Administrador puede eliminar comentarios.' });
     }
-    const { videoId, commentId } = await parseBody(req);
+    const { videoId, commentId, replyId } = await parseBody(req);
     const cleanVid = String(videoId || '').trim();
     if (db.videoComments && Array.isArray(db.videoComments[cleanVid])) {
-      db.videoComments[cleanVid] = db.videoComments[cleanVid].filter(c => c.id !== commentId);
+      if (replyId) {
+        const comment = db.videoComments[cleanVid].find(c => c && c.id === commentId);
+        if (comment && Array.isArray(comment.replies)) {
+          comment.replies = comment.replies.filter(r => r && r.id !== replyId && r.parentId !== replyId);
+        }
+      } else {
+        db.videoComments[cleanVid] = db.videoComments[cleanVid].filter(c => c.id !== commentId);
+      }
       saveDatabase();
     }
     return sendJson(res, 200, { ok: true });

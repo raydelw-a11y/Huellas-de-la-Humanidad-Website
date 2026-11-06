@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const out = [];
         for (const n of list) {
             if (!n) continue;
-            const key = n.videoId ? `vid:${n.videoId}` : `id:${n.id}`;
+            const key = (n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`;
             if (seen.has(key)) continue;
             seen.add(key);
             out.push(n);
@@ -1037,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function dispatchBrowserWindowNotification(n) {
         if (!n) return;
-        const key = n.videoId ? `vid:${n.videoId}` : `id:${n.id}`;
+        const key = (n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`;
         const seenKeys = getSeenBrowserNotifKeys();
         if (seenKeys.has(key)) return;
         seenKeys.add(key);
@@ -1239,13 +1239,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 hasInitializedBrowserNotifs = true;
                 deduped.forEach(n => {
                     if (!n) return;
-                    seenKeys.add(n.videoId ? `vid:${n.videoId}` : `id:${n.id}`);
+                    seenKeys.add((n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`);
                 });
                 saveSeenBrowserNotifKeys(seenKeys);
             } else {
                 deduped.forEach(n => {
                     if (n && !n.read) {
-                        const key = n.videoId ? `vid:${n.videoId}` : `id:${n.id}`;
+                        const key = (n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`;
                         if (!seenKeys.has(key)) {
                             dispatchBrowserWindowNotification(n);
                         }
@@ -1293,6 +1293,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 .replace(/^[«“"]+|[»”"]+$/g, '')
                 .trim();
             playDocumentaryInMainPlayer(n.videoId, cleanTitle || 'Documental');
+            return;
+        }
+
+        if (n.type === 'video_comment' || n.type === 'video_like' || n.type === 'video_reply') {
+            switchMainView('home');
+            if (n.videoId && n.videoId !== currentActiveVideoId) {
+                const matchDoc = DOCUMENTARIES.find(d => d && d.id === n.videoId);
+                playDocumentaryInMainPlayer(n.videoId, matchDoc ? docTitle(matchDoc) : 'Documental');
+            } else {
+                loadVideoComments(currentActiveVideoId);
+            }
+            setTimeout(() => {
+                const commentEl = n.commentId ? document.getElementById(`video-comment-${n.commentId}`) : null;
+                const target = commentEl || document.getElementById('video-comments-section');
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 260);
             return;
         }
 
@@ -3615,20 +3633,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- SECCIÓN DE COMENTARIOS PROPIA DEL VIDEO ACTIVO EN YOUTUBE ---
+    // --- SECCIÓN DE COMENTARIOS PROPIA DEL VIDEO ACTIVO EN YOUTUBE (CON LIKES, RESPUESTAS Y NOTIFICACIONES) ---
     let lastVideoCommentsSig = '';
+    let activeVideoReplyTargets = {}; // commentId -> { parentId, replyToAuthor }
 
     async function loadVideoComments(videoId = currentActiveVideoId, isBackgroundPoll = false) {
         if (!videoId) return;
         try {
             const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-            const res = await fetch(`${API_BASE}/api/video-comments?videoId=${encodeURIComponent(videoId)}`, { headers });
+            const res = await fetch(`${API_BASE}/api/video-comments?videoId=${encodeURIComponent(videoId)}&t=${Date.now()}`, {
+                headers,
+                cache: 'no-store'
+            });
             if (!res.ok) return;
             const data = await res.json();
             if (data.videoId && data.videoId !== currentActiveVideoId) return;
             const list = data.comments || [];
             const sig = `${videoId}|${JSON.stringify(list)}|${Boolean(data.isAdmin)}|${currentLang}|${Boolean(authToken && currentUser)}`;
-            if (isBackgroundPoll && sig === lastVideoCommentsSig) return;
+            if (isBackgroundPoll) {
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.id && activeEl.id.startsWith('video-reply-input-')) {
+                    return;
+                }
+                if (sig === lastVideoCommentsSig) return;
+            }
             lastVideoCommentsSig = sig;
             renderVideoComments(list, Boolean(data.isAdmin));
         } catch (err) {}
@@ -3637,13 +3665,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderVideoComments(comments, isAdmin) {
         lastVideoCommentsData = { comments, isAdmin };
         updateComposerIdentity();
+        const isLogged = Boolean(authToken && currentUser);
+        const totalCommentsAndReplies = (comments || []).reduce(
+            (acc, c) => acc + 1 + (Array.isArray(c && c.replies) ? c.replies.length : 0),
+            0
+        );
         if (videoCommentsCountBadge) {
-            videoCommentsCountBadge.textContent = comments.length;
+            videoCommentsCountBadge.textContent = totalCommentsAndReplies;
         }
         if (!videoCommentsList) return;
         videoCommentsList.innerHTML = '';
 
-        if (comments.length === 0) {
+        if (!comments || comments.length === 0) {
             videoCommentsList.innerHTML = `<p class="empty-conv-text" style="margin:0.35rem 0;">${t('video_comments_empty')}</p>`;
             return;
         }
@@ -3651,6 +3684,7 @@ document.addEventListener('DOMContentLoaded', () => {
         comments.forEach(c => {
             const item = document.createElement('div');
             item.className = 'video-comment-item';
+            item.id = `video-comment-${c.id}`;
 
             const displayAuthor = (!c.author || c.author === 'Seguidor') ? t('poll_follower') : c.author;
             const av = document.createElement('div');
@@ -3699,12 +3733,251 @@ document.addEventListener('DOMContentLoaded', () => {
             txt.className = 'video-comment-text';
             txt.textContent = c.text;
 
+            // Barra de acciones del comentario (Me gusta / Responder)
+            const subActions = document.createElement('div');
+            subActions.className = 'fb-comment-subactions';
+            subActions.style.marginTop = '4px';
+
+            const cLikeBtn = document.createElement('button');
+            cLikeBtn.type = 'button';
+            cLikeBtn.className = `fb-subaction-link ${c.likedByMe ? 'liked' : ''}`;
+            cLikeBtn.innerHTML = `<i class="fa-solid fa-thumbs-up"></i> ${t('fb_like')} (${c.likesCount || 0})`;
+            cLikeBtn.addEventListener('click', () => {
+                if (!isLogged) return promptAccountCreation('register');
+                toggleVideoCommentLike(c.id, null);
+            });
+
+            const cReplyBtn = document.createElement('button');
+            cReplyBtn.type = 'button';
+            cReplyBtn.className = 'fb-subaction-link';
+            cReplyBtn.innerHTML = `<i class="fa-solid fa-reply"></i> ${t('fb_reply')}`;
+            cReplyBtn.addEventListener('click', () => {
+                if (!isLogged) return promptAccountCreation('register');
+                activeVideoReplyTargets[c.id] = {
+                    parentId: null,
+                    replyToAuthor: displayAuthor
+                };
+                renderVideoComments(lastVideoCommentsData.comments, lastVideoCommentsData.isAdmin);
+                setTimeout(() => {
+                    const inp = document.getElementById(`video-reply-input-${c.id}`);
+                    if (inp) inp.focus();
+                }, 40);
+            });
+
+            subActions.appendChild(cLikeBtn);
+            subActions.appendChild(cReplyBtn);
+
             body.appendChild(meta);
             body.appendChild(txt);
+            body.appendChild(subActions);
+
+            // Hilo de respuestas a este comentario del video
+            const replies = Array.isArray(c.replies) ? c.replies : [];
+            if (replies.length > 0) {
+                const repliesThread = document.createElement('div');
+                repliesThread.className = 'fb-comments-thread video-replies-thread';
+                repliesThread.style.marginTop = '8px';
+
+                replies.forEach(r => {
+                    const rAuthor = (!r.author || r.author === 'Seguidor') ? t('poll_follower') : r.author;
+                    const row = document.createElement('div');
+                    row.className = `fb-comment-row ${r.parentId ? 'is-nested-reply' : ''}`;
+
+                    const rAvatar = document.createElement('div');
+                    rAvatar.className = 'fb-avatar small';
+                    rAvatar.textContent = rAuthor.charAt(0).toUpperCase();
+
+                    const contentWrap = document.createElement('div');
+                    contentWrap.className = 'fb-comment-content-wrap';
+
+                    const bubble = document.createElement('div');
+                    bubble.className = 'fb-comment-bubble';
+
+                    const rHeader = document.createElement('div');
+                    rHeader.className = 'fb-comment-author';
+                    const rNameSpan = document.createElement('span');
+                    rNameSpan.textContent = rAuthor;
+                    if (r.role === 'admin') {
+                        const rBadge = document.createElement('span');
+                        rBadge.className = 'admin-badge';
+                        rBadge.style.marginLeft = '5px';
+                        rBadge.innerHTML = '<i class="fa-solid fa-crown"></i> ADMIN';
+                        rNameSpan.appendChild(rBadge);
+                    }
+                    const rTimeSpan = document.createElement('span');
+                    rTimeSpan.style.fontWeight = '400';
+                    rTimeSpan.style.color = 'var(--text-muted)';
+                    rTimeSpan.textContent = formatDateTime(r.createdAt);
+                    rHeader.appendChild(rNameSpan);
+                    rHeader.appendChild(rTimeSpan);
+
+                    const rText = document.createElement('div');
+                    rText.className = 'fb-comment-text';
+                    if (r.replyToAuthor) {
+                        const mention = document.createElement('span');
+                        mention.className = 'fb-reply-mention';
+                        mention.textContent = `@${r.replyToAuthor}`;
+                        rText.appendChild(mention);
+                    }
+                    rText.appendChild(document.createTextNode(r.text));
+
+                    bubble.appendChild(rHeader);
+                    bubble.appendChild(rText);
+                    contentWrap.appendChild(bubble);
+
+                    const rSubActions = document.createElement('div');
+                    rSubActions.className = 'fb-comment-subactions';
+
+                    const rLikeBtn = document.createElement('button');
+                    rLikeBtn.type = 'button';
+                    rLikeBtn.className = `fb-subaction-link ${r.likedByMe ? 'liked' : ''}`;
+                    rLikeBtn.innerHTML = `<i class="fa-solid fa-thumbs-up"></i> ${t('fb_like')} (${r.likesCount || 0})`;
+                    rLikeBtn.addEventListener('click', () => {
+                        if (!isLogged) return promptAccountCreation('register');
+                        toggleVideoCommentLike(c.id, r.id);
+                    });
+
+                    const rReplyBtn = document.createElement('button');
+                    rReplyBtn.type = 'button';
+                    rReplyBtn.className = 'fb-subaction-link';
+                    rReplyBtn.innerHTML = `<i class="fa-solid fa-reply"></i> ${t('fb_reply')}`;
+                    rReplyBtn.addEventListener('click', () => {
+                        if (!isLogged) return promptAccountCreation('register');
+                        activeVideoReplyTargets[c.id] = {
+                            parentId: r.id,
+                            replyToAuthor: rAuthor
+                        };
+                        renderVideoComments(lastVideoCommentsData.comments, lastVideoCommentsData.isAdmin);
+                        setTimeout(() => {
+                            const inp = document.getElementById(`video-reply-input-${c.id}`);
+                            if (inp) inp.focus();
+                        }, 40);
+                    });
+
+                    rSubActions.appendChild(rLikeBtn);
+                    rSubActions.appendChild(rReplyBtn);
+
+                    if (isAdmin) {
+                        const rDelBtn = document.createElement('button');
+                        rDelBtn.type = 'button';
+                        rDelBtn.className = 'fb-subaction-link';
+                        rDelBtn.style.color = '#ff9da6';
+                        rDelBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                        rDelBtn.addEventListener('click', () => deleteVideoComment(c.id, r.id));
+                        rSubActions.appendChild(rDelBtn);
+                    }
+
+                    contentWrap.appendChild(rSubActions);
+                    row.appendChild(rAvatar);
+                    row.appendChild(contentWrap);
+                    repliesThread.appendChild(row);
+                });
+
+                body.appendChild(repliesThread);
+            }
+
+            // Caja de respuesta en línea cuando el usuario pulsa "Responder" en este comentario
+            const replyTarget = activeVideoReplyTargets[c.id];
+            if (isLogged && replyTarget) {
+                const replyForm = document.createElement('form');
+                replyForm.className = 'fb-inline-reply-form';
+                replyForm.style.marginTop = '8px';
+
+                const pill = document.createElement('div');
+                pill.className = 'fb-replying-to-pill';
+                pill.innerHTML = `
+                    <span><i class="fa-solid fa-reply"></i> ${t('fb_replying_to')} <strong>@${replyTarget.replyToAuthor}</strong></span>
+                `;
+                const cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.className = 'fb-subaction-link';
+                cancelBtn.textContent = t('fb_cancel');
+                cancelBtn.addEventListener('click', () => {
+                    delete activeVideoReplyTargets[c.id];
+                    renderVideoComments(lastVideoCommentsData.comments, lastVideoCommentsData.isAdmin);
+                });
+                pill.appendChild(cancelBtn);
+                replyForm.appendChild(pill);
+
+                const inputRow = document.createElement('div');
+                inputRow.className = 'fb-reply-input-row';
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `video-reply-input-${c.id}`;
+                input.maxLength = 900;
+                input.placeholder = `${t('fb_write_reply')} @${replyTarget.replyToAuthor}...`;
+                input.required = true;
+
+                const sendBtn = document.createElement('button');
+                sendBtn.type = 'submit';
+                sendBtn.className = 'fb-reply-send-btn';
+                sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>';
+
+                inputRow.appendChild(input);
+                inputRow.appendChild(sendBtn);
+                replyForm.appendChild(inputRow);
+
+                replyForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const text = input.value.trim();
+                    if (!text) return;
+                    input.value = '';
+                    await submitVideoReply(c.id, replyTarget.parentId, replyTarget.replyToAuthor, text);
+                });
+
+                body.appendChild(replyForm);
+            }
+
             item.appendChild(av);
             item.appendChild(body);
             videoCommentsList.appendChild(item);
         });
+    }
+
+    async function toggleVideoCommentLike(commentId, replyId = null) {
+        if (!authToken || !currentUser) return promptAccountCreation('register');
+        try {
+            const res = await fetch(`${API_BASE}/api/video-comments/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    videoId: currentActiveVideoId,
+                    commentId,
+                    replyId
+                })
+            });
+            if (res.ok) {
+                loadVideoComments(currentActiveVideoId);
+            }
+        } catch (err) {}
+    }
+
+    async function submitVideoReply(commentId, parentId, replyToAuthor, text) {
+        if (!authToken || !currentUser) return promptAccountCreation('register');
+        try {
+            const res = await fetch(`${API_BASE}/api/video-comments/reply`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    videoId: currentActiveVideoId,
+                    commentId,
+                    parentId,
+                    replyToAuthor,
+                    text
+                })
+            });
+            if (res.ok) {
+                delete activeVideoReplyTargets[commentId];
+                loadVideoComments(currentActiveVideoId);
+            }
+        } catch (err) {}
     }
 
     if (videoCommentForm) {
@@ -3732,7 +4005,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    async function deleteVideoComment(commentId) {
+    async function deleteVideoComment(commentId, replyId = null) {
         if (!authToken) return;
         try {
             await fetch(`${API_BASE}/api/video-comments/delete`, {
@@ -3741,7 +4014,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ videoId: currentActiveVideoId, commentId })
+                body: JSON.stringify({ videoId: currentActiveVideoId, commentId, replyId })
             });
             loadVideoComments(currentActiveVideoId);
         } catch (err) {}

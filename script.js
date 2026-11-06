@@ -2675,15 +2675,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const LIBRARY_CATEGORIES = [
         { key: 'all', es: 'Todos', en: 'All' },
-        { key: 'prehistoria', es: 'Prehistoria y Orígenes', en: 'Prehistory & Origins' },
-        { key: 'prehispanica', es: 'América Prehispánica', en: 'Pre-Hispanic America' },
-        { key: 'antigua', es: 'Civilizaciones Antiguas', en: 'Ancient Civilizations' },
-        { key: 'medieval', es: 'Edad Media y Victoriana', en: 'Middle Ages & Victorian' },
-        { key: 'ww2', es: 'Segunda Guerra Mundial', en: 'World War II' },
         { key: 'cuba', es: 'Historia de Cuba', en: 'History of Cuba' },
+        { key: 'medieval', es: 'Edad Media y Victoriana', en: 'Middle Ages & Victorian' },
+        { key: 'antigua', es: 'Civilizaciones Antiguas', en: 'Ancient Civilizations' },
         { key: 'wtc', es: 'Torres Gemelas y 11-S', en: 'Twin Towers & 9/11' },
+        { key: 'misterios', es: 'Crímenes y Prisiones', en: 'Crime & Prisons' },
         { key: 'catastrofes', es: 'Grandes Catástrofes', en: 'Great Catastrophes' },
-        { key: 'misterios', es: 'Crímenes y Prisiones', en: 'Crime & Prisons' }
+        { key: 'prehistoria', es: 'Prehistoria y Orígenes', en: 'Prehistory & Origins' },
+        { key: 'ww2', es: 'Segunda Guerra Mundial', en: 'World War II' },
+        { key: 'prehispanica', es: 'América Prehispánica', en: 'Pre-Hispanic America' }
     ];
 
     const DOCUMENTARIES = [
@@ -3429,7 +3429,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!filtersBox) return;
         filtersBox.innerHTML = '';
 
-        LIBRARY_CATEGORIES.forEach(cat => {
+        // Ordenar dinámicamente las listas según el orden en que se han subido los videos (del más reciente al más antiguo)
+        const orderedCategories = [...LIBRARY_CATEGORIES].sort((a, b) => {
+            if (a.key === 'all') return -1;
+            if (b.key === 'all') return 1;
+            const idxA = DOCUMENTARIES.findIndex(d => d.category === a.key);
+            const idxB = DOCUMENTARIES.findIndex(d => d.category === b.key);
+            const rankA = idxA === -1 ? 9999 : idxA;
+            const rankB = idxB === -1 ? 9999 : idxB;
+            return rankA - rankB;
+        });
+
+        orderedCategories.forEach(cat => {
             const count = cat.key === 'all'
                 ? DOCUMENTARIES.length
                 : DOCUMENTARIES.filter(d => d.category === cat.key).length;

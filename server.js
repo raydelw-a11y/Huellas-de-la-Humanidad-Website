@@ -2559,7 +2559,11 @@ function inferDocumentaryMetadata(videoId, rawTitle, description, publishedAt) {
     category = 'catastrofes';
   } else if (/prisi[oó]n|alcatraz|crimen|fingi[oó]|misterio|caso real/i.test(fullText)) {
     category = 'misterios';
-  } else if (/a\.\s*c\.|egipto|giza|pompeya|roma\b|grecia|mesopotamia|babilonia|neandertal|nazaret|antes de cristo|teotihuac[aá]n/i.test(fullText)) {
+  } else if (/neandertal|prehistoria|homo sapiens|edad de piedra|paleol[ií]tico|cavern/i.test(fullText)) {
+    category = 'prehistoria';
+  } else if (/teotihuac[aá]n|maya|azteca|mexica|inca|prehisp[aá]nic|mesoam[eé]rica|tenochtitl[aá]n|chich[eé]n|machu picchu/i.test(fullText)) {
+    category = 'prehispanica';
+  } else if (/a\.\s*c\.|egipto|giza|pompeya|roma\b|grecia|mesopotamia|babilonia|nazaret|antes de cristo/i.test(fullText)) {
     category = 'antigua';
   }
 

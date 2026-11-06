@@ -2675,6 +2675,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const LIBRARY_CATEGORIES = [
         { key: 'all', es: 'Todos', en: 'All' },
+        { key: 'prehistoria', es: 'Prehistoria y Orígenes', en: 'Prehistory & Origins' },
+        { key: 'prehispanica', es: 'América Prehispánica', en: 'Pre-Hispanic America' },
         { key: 'antigua', es: 'Civilizaciones Antiguas', en: 'Ancient Civilizations' },
         { key: 'medieval', es: 'Edad Media y Victoriana', en: 'Middle Ages & Victorian' },
         { key: 'ww2', es: 'Segunda Guerra Mundial', en: 'World War II' },
@@ -2845,7 +2847,7 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Last Neanderthal: The Hidden Truth in Our DNA',
             eraEs: 'Peñón de Gibraltar, Iberia · 40.000 a.C.',
             eraEn: 'Rock of Gibraltar, Iberia · 40,000 BC',
-            category: 'antigua',
+            category: 'prehistoria',
             region: 'europe',
             lon: -5.35,
             lat: 36.14
@@ -2911,7 +2913,7 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEn: 'The Construction of Teotihuacan: The Day Humans Moved a Mountain (Ep. 08)',
             eraEs: 'Teotihuacán, México · Siglo II d.C.',
             eraEn: 'Teotihuacan, Mexico · 2nd Century AD',
-            category: 'antigua',
+            category: 'prehispanica',
             region: 'americas',
             lon: -98.84,
             lat: 19.69

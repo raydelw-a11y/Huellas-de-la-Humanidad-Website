@@ -757,6 +757,139 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     let currentNotificationsList = [];
+    let hasInitializedBrowserNotifs = false;
+    const BROWSER_NOTIF_STORAGE_KEY = 'huellas_seen_browser_notifs_v1';
+
+    function getSeenBrowserNotifKeys() {
+        try {
+            const raw = localStorage.getItem(BROWSER_NOTIF_STORAGE_KEY);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    function saveSeenBrowserNotifKeys(setObj) {
+        try {
+            const arr = Array.from(setObj).slice(-120);
+            localStorage.setItem(BROWSER_NOTIF_STORAGE_KEY, JSON.stringify(arr));
+        } catch (e) {}
+    }
+
+    function requestBrowserNotificationPermission() {
+        try {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+        } catch (e) {}
+    }
+
+    // Solicitar permiso de notificaciones del navegador en la primera interacción del usuario en la ventana
+    document.addEventListener('click', requestBrowserNotificationPermission, { once: true });
+
+    function deduplicateNotificationsArray(rawList) {
+        const list = Array.isArray(rawList) ? rawList : [];
+        const seen = new Set();
+        const out = [];
+        for (const n of list) {
+            if (!n) continue;
+            const key = n.videoId ? `vid:${n.videoId}` : `id:${n.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(n);
+        }
+        return out;
+    }
+
+    function dispatchBrowserWindowNotification(n) {
+        if (!n) return;
+        const key = n.videoId ? `vid:${n.videoId}` : `id:${n.id}`;
+        const seenKeys = getSeenBrowserNotifKeys();
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        saveSeenBrowserNotifKeys(seenKeys);
+
+        const titleText = currentLang === 'en' ? (n.titleEn || n.titleEs) : (n.titleEs || n.titleEn);
+        const bodyText = currentLang === 'en' ? (n.bodyEn || n.bodyEs) : (n.bodyEs || n.bodyEn);
+
+        // 1. Notificación nativa del navegador (OS / pestaña en segundo plano)
+        try {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const nativeNotif = new Notification(titleText || 'Huellas de la Humanidad', {
+                    body: bodyText || '',
+                    icon: n.thumbUrl || 'favicon.png?v=2',
+                    tag: key
+                });
+                nativeNotif.onclick = () => {
+                    try { window.focus(); } catch (e) {}
+                    handleNotificationClick(n);
+                    nativeNotif.close();
+                };
+            }
+        } catch (e) {}
+
+        // 2. Banner flotante en vivo dentro de la ventana abierta del navegador
+        const container = document.getElementById('browser-live-toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'browser-live-toast';
+
+        if (n.type === 'video' || n.thumbUrl) {
+            const thumbWrap = document.createElement('div');
+            thumbWrap.className = 'notif-video-thumb-wrap';
+            const img = document.createElement('img');
+            img.src = n.thumbUrl || `https://i.ytimg.com/vi/${n.videoId || 'Iswv7f6AoCU'}/mqdefault.jpg`;
+            img.alt = '';
+            const ytBadge = document.createElement('span');
+            ytBadge.className = 'notif-yt-badge';
+            ytBadge.innerHTML = '<i class="fa-brands fa-youtube"></i>';
+            thumbWrap.appendChild(img);
+            thumbWrap.appendChild(ytBadge);
+            toast.appendChild(thumbWrap);
+        } else {
+            const iconBadge = document.createElement('div');
+            iconBadge.className = `notif-icon-badge type-${n.type || 'info'}`;
+            iconBadge.innerHTML = n.type === 'wall_like'
+                ? '<i class="fa-solid fa-heart"></i>'
+                : (n.type === 'wall_reply'
+                    ? '<i class="fa-solid fa-comments"></i>'
+                    : '<i class="fa-solid fa-envelope-open-text"></i>');
+            toast.appendChild(iconBadge);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'notif-content';
+        const tEl = document.createElement('div');
+        tEl.className = 'notif-title';
+        tEl.textContent = titleText;
+        const bEl = document.createElement('div');
+        bEl.className = 'notif-body';
+        bEl.textContent = bodyText;
+        content.appendChild(tEl);
+        if (bodyText) content.appendChild(bEl);
+        toast.appendChild(content);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'browser-toast-close';
+        closeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toast.remove();
+        });
+        toast.appendChild(closeBtn);
+
+        toast.addEventListener('click', () => {
+            handleNotificationClick(n);
+            toast.remove();
+        });
+
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 9000);
+    }
 
     function updateNotificationBadgeUI(unreadCount) {
         const count = Math.max(0, Number(unreadCount) || 0);
@@ -767,10 +900,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnOpenNotifications) {
             btnOpenNotifications.classList.toggle('has-unread', count > 0);
         }
+        document.title = count > 0 ? `(${count}) Huellas de la Humanidad` : 'Huellas de la Humanidad';
     }
 
     function renderNotificationsList(notifications = currentNotificationsList) {
-        currentNotificationsList = Array.isArray(notifications) ? notifications : [];
+        currentNotificationsList = deduplicateNotificationsArray(notifications);
         if (!notificationsListEl) return;
         notificationsListEl.innerHTML = '';
 
@@ -861,8 +995,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (!res.ok) return;
             const data = await res.json();
-            updateNotificationBadgeUI(data.unreadCount);
-            renderNotificationsList(data.notifications || []);
+            const deduped = deduplicateNotificationsArray(data.notifications || []);
+            const unreadCount = deduped.filter(n => n && !n.read).length;
+            updateNotificationBadgeUI(unreadCount);
+            renderNotificationsList(deduped);
+
+            const seenKeys = getSeenBrowserNotifKeys();
+            if (!hasInitializedBrowserNotifs) {
+                hasInitializedBrowserNotifs = true;
+                deduped.forEach(n => {
+                    if (!n) return;
+                    seenKeys.add(n.videoId ? `vid:${n.videoId}` : `id:${n.id}`);
+                });
+                saveSeenBrowserNotifKeys(seenKeys);
+            } else {
+                deduped.forEach(n => {
+                    if (n && !n.read) {
+                        const key = n.videoId ? `vid:${n.videoId}` : `id:${n.id}`;
+                        if (!seenKeys.has(key)) {
+                            dispatchBrowserWindowNotification(n);
+                        }
+                    }
+                });
+            }
         } catch (e) {}
     }
 
@@ -3087,6 +3242,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const staleFallbackIds = new Set(['PPgK7kuznm0', '7oexZOHGQ8k', 'rJdAGfxEYkw']);
+            if (data.latestVideoId && !staleFallbackIds.has(data.latestVideoId)) {
+                const seenKeys = getSeenBrowserNotifKeys();
+                const vidKey = `vid:${data.latestVideoId}`;
+                const prevKnownYtVid = localStorage.getItem('huellas_last_known_yt_vid');
+                if (!prevKnownYtVid) {
+                    localStorage.setItem('huellas_last_known_yt_vid', data.latestVideoId);
+                    seenKeys.add(vidKey);
+                    saveSeenBrowserNotifKeys(seenKeys);
+                } else if (prevKnownYtVid !== data.latestVideoId) {
+                    localStorage.setItem('huellas_last_known_yt_vid', data.latestVideoId);
+                    if (!seenKeys.has(vidKey)) {
+                        dispatchBrowserWindowNotification({
+                            id: `yt-video-${data.latestVideoId}`,
+                            type: 'video',
+                            titleEs: '🎬 Nuevo documental subido a YouTube',
+                            titleEn: '🎬 New documentary uploaded to YouTube',
+                            bodyEs: `«${data.latestVideoTitle || 'Nuevo Documental'}»`,
+                            bodyEn: `“${data.latestVideoTitle || 'New Documentary'}”`,
+                            thumbUrl: `https://i.ytimg.com/vi/${data.latestVideoId}/mqdefault.jpg`,
+                            videoId: data.latestVideoId,
+                            read: false
+                        });
+                    }
+                }
+            }
             if (data.latestVideoId && ytIframe && !userManuallySelectedDoc) {
                 const isNewerOrTop =
                     !staleFallbackIds.has(data.latestVideoId) ||

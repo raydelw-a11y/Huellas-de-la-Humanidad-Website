@@ -42,7 +42,7 @@ let lastYoutubeCheckTime = 0;
 let isCheckingYoutube = false;
 
 const BASE_DOCUMENTARY_IDS = new Set([
-  '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
+  'Iswv7f6AoCU', '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
   'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
   '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
   'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
@@ -114,7 +114,7 @@ let db = {
     lastHorizontalVideoId: 'Iswv7f6AoCU',
     lastVideoTitle: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
     lastNotifiedAt: null,
-    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k']
+    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k', 'Iswv7f6AoCU']
   },
   autoDocumentaries: [],
   nextRelease: null,
@@ -310,7 +310,7 @@ async function loadDatabase() {
     }
   });
 
-  // Asegurar que los documentales antiguos nunca re-envíen correos, pero permitir el envío único de Iswv7f6AoCU si aún no se envió
+  // Asegurar que todos los documentales base estén en notifiedVideoIds para jamás enviar correos duplicados
   if (!db.youtubeNotifier || typeof db.youtubeNotifier !== 'object') {
     db.youtubeNotifier = {
       lastVideoId: 'Iswv7f6AoCU',
@@ -328,9 +328,6 @@ async function loadDatabase() {
           db.youtubeNotifier.notifiedVideoIds.push(baseId);
         }
       }
-    }
-    if (!db.youtubeNotifier.emailSentForIswv7f6AoCU) {
-      db.youtubeNotifier.notifiedVideoIds = db.youtubeNotifier.notifiedVideoIds.filter(id => id !== 'Iswv7f6AoCU');
     }
     const staleIds = new Set(['PPgK7kuznm0', '7oexZOHGQ8k', 'rJdAGfxEYkw']);
     if (!db.youtubeNotifier.lastHorizontalVideoId || staleIds.has(db.youtubeNotifier.lastHorizontalVideoId)) {
@@ -459,7 +456,10 @@ function addUserNotification(username, notif) {
   }
   const list = db.notifications[cleanUser];
   const id = notif.id || crypto.randomUUID();
-  const existingIdx = list.findIndex(item => item && item.id === id);
+  const existingIdx = list.findIndex(item => item && (
+    item.id === id ||
+    (notif.videoId && item.videoId && item.videoId === notif.videoId)
+  ));
   if (existingIdx >= 0) {
     return false;
   }
@@ -496,6 +496,23 @@ function ensureUserBaseNotifications(username) {
   }
 
   let changed = false;
+
+  // Limpiar cualquier notificación duplicada del mismo video o mismo ID
+  const seenNotifKeys = new Set();
+  const dedupedList = [];
+  for (const item of db.notifications[cleanUser]) {
+    if (!item) continue;
+    const key = item.videoId ? `vid:${item.videoId}` : `id:${item.id}`;
+    if (seenNotifKeys.has(key)) {
+      changed = true;
+      continue;
+    }
+    seenNotifKeys.add(key);
+    dedupedList.push(item);
+  }
+  if (changed) {
+    db.notifications[cleanUser] = dedupedList;
+  }
 
   // 1. Notificaciones de subida de videos nuevos (imagen en miniatura + texto al lado)
   const latestVid = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'Iswv7f6AoCU';
@@ -2402,13 +2419,11 @@ function checkYoutubeAndNotify() {
 
           // SOLO enviar correos si el video JAMÁS ha sido notificado, NO está en la biblioteca base y se subió hace menos de 24 horas
           if (!alreadyNotified && isRecentUpload) {
+            BASE_DOCUMENTARY_IDS.add(latestId);
             db.youtubeNotifier.lastVideoId = latestId;
             db.youtubeNotifier.lastHorizontalVideoId = latestId;
             db.youtubeNotifier.lastVideoTitle = cleanLatestTitle;
             db.youtubeNotifier.lastNotifiedAt = new Date().toISOString();
-            if (latestId === 'Iswv7f6AoCU') {
-              db.youtubeNotifier.emailSentForIswv7f6AoCU = true;
-            }
             if (!db.youtubeNotifier.notifiedVideoIds.includes(latestId)) {
               db.youtubeNotifier.notifiedVideoIds.push(latestId);
             }
@@ -2435,15 +2450,17 @@ function checkYoutubeAndNotify() {
               });
             });
 
-            saveDatabase();
+            await saveDatabase();
 
-            // Enviar correo de notificación a cada seguidor registrado con notificaciones activas
+            // Enviar correo de notificación una única vez por correo electrónico y por video
             const subscribers = Object.values(db.users || {}).filter(u => u && u.email && u.notifyYoutube);
             const seenEmails = new Set();
             for (const sub of subscribers) {
               const targetEmail = String(sub.email || '').trim().toLowerCase();
               if (!targetEmail || seenEmails.has(targetEmail)) continue;
+              if (sub.lastEmailedVideoId === latestId) continue;
               seenEmails.add(targetEmail);
+              sub.lastEmailedVideoId = latestId;
 
               const thumbUrl = `https://i.ytimg.com/vi/${latestId}/hqdefault.jpg`;
               const youtubeVideoUrl = `https://www.youtube.com/watch?v=${latestId}`;
@@ -2464,6 +2481,7 @@ function checkYoutubeAndNotify() {
               // Pausa de 650ms entre envíos para respetar el límite de velocidad de Resend y garantizar entrega al 100%
               await new Promise(r => setTimeout(r, 650));
             }
+            await saveDatabase();
           } else {
             // Revisar seguidores nuevos que cumplieron 24 horas desde su registro sin que se haya estrenado otro video antes
             let followupUpdated = false;

@@ -42,7 +42,7 @@ let lastYoutubeCheckTime = 0;
 let isCheckingYoutube = false;
 
 const BASE_DOCUMENTARY_IDS = new Set([
-  'Iswv7f6AoCU', '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
+  '7oexZOHGQ8k', 'PPgK7kuznm0', 'rJdAGfxEYkw', 'PVVdxqlf5XQ', '27AZ11nTUz0', 'muZvqVzTTQ4',
   'O-ewFhxFahk', 'T8BdFd4Zm7Q', 'OT_2LgSxUtY', '8I2sy6C4l10', 'AdulsJeHVIU',
   '7lgpnoQpDXc', 'FPvbJ3RdC38', 'fovp3_GHPWU', 'CF3K2EjrpqY', 'DYkaMwKC5u8',
   'zIAwu_FxrFA', 'bhEAI_6xEgo', 'rOfrwwANg9k', 'CLxnnVoseeg', 'dn-cp5YPNuY',
@@ -114,7 +114,7 @@ let db = {
     lastHorizontalVideoId: 'Iswv7f6AoCU',
     lastVideoTitle: 'Así fue la llegada de los Españoles a México y Cuba en 1885',
     lastNotifiedAt: null,
-    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k', 'Iswv7f6AoCU']
+    notifiedVideoIds: ['rJdAGfxEYkw', 'PPgK7kuznm0', '7oexZOHGQ8k']
   },
   autoDocumentaries: [],
   nextRelease: null,
@@ -310,7 +310,7 @@ async function loadDatabase() {
     }
   });
 
-  // Asegurar que el último documental base (Iswv7f6AoCU) esté sincronizado y nunca re-envíe correos antiguos
+  // Asegurar que los documentales antiguos nunca re-envíen correos, pero permitir el envío único de Iswv7f6AoCU si aún no se envió
   if (!db.youtubeNotifier || typeof db.youtubeNotifier !== 'object') {
     db.youtubeNotifier = {
       lastVideoId: 'Iswv7f6AoCU',
@@ -328,6 +328,9 @@ async function loadDatabase() {
           db.youtubeNotifier.notifiedVideoIds.push(baseId);
         }
       }
+    }
+    if (!db.youtubeNotifier.emailSentForIswv7f6AoCU) {
+      db.youtubeNotifier.notifiedVideoIds = db.youtubeNotifier.notifiedVideoIds.filter(id => id !== 'Iswv7f6AoCU');
     }
     const staleIds = new Set(['PPgK7kuznm0', '7oexZOHGQ8k', 'rJdAGfxEYkw']);
     if (!db.youtubeNotifier.lastHorizontalVideoId || staleIds.has(db.youtubeNotifier.lastHorizontalVideoId)) {
@@ -2256,6 +2259,7 @@ function fetchYoutubeVideosFromChannelTab() {
 
 function fetchVideoPublishDateIso(videoId) {
   return new Promise((resolve) => {
+    const fallbackIso = videoId === 'Iswv7f6AoCU' ? '2026-11-05T15:26:24-08:00' : '';
     const req = https.get(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -2264,22 +2268,21 @@ function fetchVideoPublishDateIso(videoId) {
     }, (res) => {
       let html = '';
       res.on('data', chunk => {
-        html += chunk;
-        if (html.length > 1.5e6) res.destroy();
+        if (html.length < 5e6) html += chunk;
       });
       res.on('end', () => {
         const m = html.match(/itemprop="uploadDate"\s+content="([^"]+)"/i) ||
                   html.match(/"publishDate":"([^"]+)"/) ||
                   html.match(/"uploadDate":"([^"]+)"/);
-        resolve(m ? m[1] : '');
+        resolve(m ? m[1] : fallbackIso);
       });
-      res.on('error', () => resolve(''));
+      res.on('error', () => resolve(fallbackIso));
     });
-    req.setTimeout(6000, () => {
+    req.setTimeout(7000, () => {
       req.destroy();
-      resolve('');
+      resolve(fallbackIso);
     });
-    req.on('error', () => resolve(''));
+    req.on('error', () => resolve(fallbackIso));
   });
 }
 
@@ -2403,6 +2406,9 @@ function checkYoutubeAndNotify() {
             db.youtubeNotifier.lastHorizontalVideoId = latestId;
             db.youtubeNotifier.lastVideoTitle = cleanLatestTitle;
             db.youtubeNotifier.lastNotifiedAt = new Date().toISOString();
+            if (latestId === 'Iswv7f6AoCU') {
+              db.youtubeNotifier.emailSentForIswv7f6AoCU = true;
+            }
             if (!db.youtubeNotifier.notifiedVideoIds.includes(latestId)) {
               db.youtubeNotifier.notifiedVideoIds.push(latestId);
             }

@@ -865,6 +865,193 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
+  // --- RESTAURAR CONTRASEÑA Y USUARIO POR CORREO ELECTRÓNICO GUARDADO ---
+  if (pathname === '/api/account/recover-request' && req.method === 'POST') {
+    const session = getAuthSession(req);
+    const body = await parseBody(req);
+    const inputEmail = String(body.email || '').trim().toLowerCase();
+
+    let targetUser = null;
+
+    if (session && db.users[session.username]) {
+      const u = db.users[session.username];
+      const savedEmail = String(u.email || '').trim().toLowerCase();
+      if (!savedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(savedEmail)) {
+        return sendJson(res, 400, {
+          error: 'Para restaurar tu contraseña y usuario primero debes tener un correo electrónico guardado en Opciones de la Cuenta.'
+        });
+      }
+      targetUser = u;
+    } else {
+      if (!inputEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inputEmail)) {
+        return sendJson(res, 400, {
+          error: 'Ingresa el correo electrónico que tienes guardado en tu cuenta.'
+        });
+      }
+      const match = Object.values(db.users || {}).find(
+        u => u && u.email && String(u.email).trim().toLowerCase() === inputEmail
+      );
+      if (!match) {
+        return sendJson(res, 404, {
+          error: 'No existe ninguna cuenta con ese correo electrónico guardado. Recuerda que para restaurar usuario y contraseña debes haber guardado un correo previamente.'
+        });
+      }
+      targetUser = match;
+    }
+
+    const recoverToken = createSessionToken({
+      purpose: 'recover',
+      username: targetUser.username,
+      email: String(targetUser.email).trim().toLowerCase(),
+      exp: Date.now() + 60 * 60 * 1000 // 1 hora de validez
+    });
+
+    const originHeader = String(req.headers.origin || '').trim();
+    const baseSiteUrl = (originHeader && /^https?:\/\//i.test(originHeader) && !originHeader.includes('onrender.com'))
+      ? originHeader.replace(/\/+$/, '')
+      : 'https://huellasdelahumanidad.com';
+    const recoverUrl = `${baseSiteUrl}/?recover=${encodeURIComponent(recoverToken)}`;
+
+    const emailHtml = buildBrandEmailHtml({
+      title: 'Restaurar Usuario y Contraseña',
+      greetingName: targetUser.displayName || targetUser.username,
+      bodyHtml: `
+        <p style="margin:0 0 12px;">Hemos recibido tu solicitud para restaurar tu usuario y contraseña en <strong>Huellas de la Humanidad</strong>.</p>
+        <p style="margin:0 0 14px;background:rgba(212,175,55,0.12);border:1px solid rgba(212,175,55,0.4);padding:10px 14px;border-radius:8px;color:#f4ebd9;">
+          Tu usuario actual registrado es: <strong style="color:#d4af37;">@${targetUser.username}</strong>
+        </p>
+        <p style="margin:0;">Haz clic en el botón de abajo para abrir el enlace seguro donde podrás restaurar o actualizar tu nombre de usuario y elegir tu nueva contraseña (válido por 60 minutos):</p>
+      `,
+      ctaText: 'Restaurar Usuario y Contraseña',
+      ctaUrl: recoverUrl
+    });
+
+    const sent = await sendEmailViaResend(
+      targetUser.email,
+      'Enlace para restaurar tu usuario y contraseña · Huellas de la Humanidad',
+      emailHtml
+    );
+
+    if (!sent && process.env.RESEND_API_KEY) {
+      return sendJson(res, 500, {
+        error: 'No se pudo enviar el correo en este momento. Intenta de nuevo en unos segundos.'
+      });
+    }
+
+    return sendJson(res, 200, {
+      ok: true,
+      email: targetUser.email,
+      message: `Hemos enviado el enlace de restauración a tu correo guardado (${targetUser.email}). Revisa tu bandeja de entrada.`
+    });
+  }
+
+  if (pathname === '/api/account/recover-verify' && req.method === 'GET') {
+    const token = String(parsedUrl.searchParams.get('token') || '').trim();
+    const payload = verifySessionToken(token);
+    if (!payload || payload.purpose !== 'recover' || !payload.username || !payload.exp || Date.now() > Number(payload.exp)) {
+      return sendJson(res, 400, {
+        error: 'El enlace de restauración no es válido o ha expirado. Solicita uno nuevo desde Opciones de la Cuenta.'
+      });
+    }
+    const u = db.users[payload.username];
+    if (!u || String(u.email || '').trim().toLowerCase() !== String(payload.email || '').trim().toLowerCase()) {
+      return sendJson(res, 404, {
+        error: 'La cuenta asociada a este enlace ya no coincide o fue modificada.'
+      });
+    }
+    return sendJson(res, 200, {
+      ok: true,
+      username: u.username,
+      displayName: u.displayName || u.username,
+      email: u.email
+    });
+  }
+
+  if (pathname === '/api/account/recover-confirm' && req.method === 'POST') {
+    const { token, newUsername, newPassword } = await parseBody(req);
+    const payload = verifySessionToken(String(token || '').trim());
+    if (!payload || payload.purpose !== 'recover' || !payload.username || !payload.exp || Date.now() > Number(payload.exp)) {
+      return sendJson(res, 400, {
+        error: 'El enlace de restauración no es válido o ha expirado. Solicita uno nuevo.'
+      });
+    }
+
+    const oldUsername = String(payload.username).toLowerCase();
+    const u = db.users[oldUsername];
+    if (!u || String(u.email || '').trim().toLowerCase() !== String(payload.email || '').trim().toLowerCase()) {
+      return sendJson(res, 404, { error: 'Cuenta no encontrada.' });
+    }
+
+    const rawDesiredUser = String(newUsername || u.username).trim();
+    const cleanNewUser = rawDesiredUser.toLowerCase();
+
+    const looksLikeEmail =
+      cleanNewUser.includes('@') ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanNewUser) ||
+      /\.(com|net|org|es|edu|gov|io|co|us|mx|ar|cl|pe|ve|cu|info|biz|me|live|outlook|hotmail|gmail|yahoo|icloud)$/i.test(cleanNewUser);
+
+    if (looksLikeEmail) {
+      return sendJson(res, 400, {
+        error: 'El correo electrónico no se puede usar como nombre de usuario. Elige un apodo único.'
+      });
+    }
+
+    if (!cleanNewUser || cleanNewUser.length < 3 || cleanNewUser.length > 30 || !/^[a-z0-9_.-]+$/.test(cleanNewUser)) {
+      return sendJson(res, 400, {
+        error: 'El usuario debe tener entre 3 y 30 caracteres (letras, números, punto o guion, sin usar un correo).'
+      });
+    }
+
+    if (cleanNewUser !== oldUsername && db.users[cleanNewUser]) {
+      return sendJson(res, 409, {
+        error: 'Ese nombre de usuario ya está ocupado por otra cuenta. Elige otro o conserva el tuyo.'
+      });
+    }
+
+    const pwdError = validatePasswordRules(newPassword);
+    if (pwdError) {
+      return sendJson(res, 400, { error: pwdError });
+    }
+
+    u.passwordHash = hashPassword(newPassword);
+
+    let finalUsername = oldUsername;
+    if (cleanNewUser !== oldUsername && u.role !== 'admin') {
+      finalUsername = cleanNewUser;
+      u.username = cleanNewUser;
+      u.displayName = rawDesiredUser;
+      db.users[cleanNewUser] = u;
+      delete db.users[oldUsername];
+
+      if (db.conversations && db.conversations[oldUsername]) {
+        const conv = db.conversations[oldUsername];
+        conv.username = cleanNewUser;
+        conv.displayName = rawDesiredUser;
+        db.conversations[cleanNewUser] = conv;
+        delete db.conversations[oldUsername];
+      }
+      if (db.notifications && db.notifications[oldUsername]) {
+        db.notifications[cleanNewUser] = db.notifications[oldUsername];
+        delete db.notifications[oldUsername];
+      }
+    }
+
+    await saveDatabase();
+
+    const sessionToken = createSessionToken({ username: finalUsername, role: u.role });
+    return sendJson(res, 200, {
+      ok: true,
+      token: sessionToken,
+      user: {
+        username: u.username,
+        displayName: u.displayName || u.username,
+        email: u.email || '',
+        notifyYoutube: Boolean(u.notifyYoutube),
+        role: u.role
+      }
+    });
+  }
+
   if (pathname === '/api/chat/messages' && req.method === 'GET') {
     const session = getAuthSession(req);
     if (!session) return sendJson(res, 401, { error: 'Sesión no válida. Inicia sesión de nuevo.' });

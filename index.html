@@ -6,10 +6,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="app-build-version" content="11051909">
+    <meta name="app-build-version" content="11051923">
     <script>
         (function () {
-            var CURRENT_BUILD = '11051909';
+            var CURRENT_BUILD = '11051923';
             try {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -84,7 +84,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=11051909">
+    <link rel="stylesheet" href="style.css?v=11051923">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -269,6 +269,11 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                     <button type="submit" class="gold-submit-btn">
                         <i class="fa-solid fa-right-to-bracket"></i> <span data-i18n="btn_enter_account">Entrar a mi Cuenta</span>
                     </button>
+                    <div class="auth-forgot-row">
+                        <button type="button" id="btn-login-forgot-open" class="auth-forgot-link-btn">
+                            <i class="fa-solid fa-envelope-circle-check"></i> <span data-i18n="btn_forgot_credentials">¿Olvidaste tu usuario o contraseña? Restaurar por correo</span>
+                        </button>
+                    </div>
                 </form>
 
                 <!-- Submenú 2: Crear Cuenta -->
@@ -321,6 +326,64 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
                     </label>
                     <button type="submit" class="gold-submit-btn">
                         <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_settings">Guardar Opciones</span>
+                    </button>
+
+                    <div class="settings-recovery-divider"></div>
+                    <div class="settings-recovery-box">
+                        <h4 class="settings-recovery-title"><i class="fa-solid fa-key"></i> <span data-i18n="settings_recovery_heading">Restaurar Contraseña y Usuario</span></h4>
+                        <p class="settings-recovery-desc" data-i18n="settings_recovery_desc">Si olvidaste o deseas restaurar tu contraseña y usuario, debes tener tu correo electrónico guardado arriba. Te enviaremos un enlace seguro a tu correo para restaurarlos.</p>
+                        <button type="button" id="btn-settings-send-recovery" class="outline-gold-btn settings-recovery-btn">
+                            <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_recovery_link">Enviar enlace de restauración a mi correo guardado</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Submenú 5: Solicitar Enlace para Restaurar Usuario y Contraseña por Correo Guardado -->
+                <form id="recover-request-form" class="auth-form hidden">
+                    <h3 class="submenu-title"><i class="fa-solid fa-envelope-open-text"></i> <span data-i18n="recover_req_title">Restaurar Usuario y Contraseña</span></h3>
+                    <p class="settings-recovery-desc" data-i18n="recover_req_desc">Ingresa el correo electrónico que guardaste en las opciones de tu cuenta. Te enviaremos un enlace seguro con tu usuario actual para restaurar tu usuario y contraseña.</p>
+                    <div class="form-group">
+                        <label for="recover-email-input" data-i18n="label_saved_email">Correo Electrónico Guardado en tu Cuenta</label>
+                        <input type="email" id="recover-email-input" data-i18n-placeholder="ph_recover_email" placeholder="tucorreo@ejemplo.com" autocomplete="email" required>
+                    </div>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_send_recover_email">Enviar Enlace de Restauración</span>
+                    </button>
+                    <div class="auth-forgot-row">
+                        <button type="button" id="btn-recover-back-login" class="auth-forgot-link-btn">
+                            <i class="fa-solid fa-arrow-left"></i> <span data-i18n="btn_back_to_login">Volver a Iniciar Sesión</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Submenú 6: Confirmar Restauración de Usuario y Contraseña desde el Enlace del Correo -->
+                <form id="recover-reset-form" class="auth-form hidden">
+                    <h3 class="submenu-title"><i class="fa-solid fa-unlock-keyhole"></i> <span data-i18n="recover_reset_title">Restaurar Usuario y Contraseña</span></h3>
+                    <p class="settings-recovery-desc" data-i18n="recover_reset_desc">Tu enlace fue verificado. Puedes conservar tu nombre de usuario actual o restaurarlo por otro, y crear tu nueva contraseña:</p>
+                    <div class="form-group">
+                        <label for="recover-new-username" data-i18n="label_recover_username">Tu Nombre de Usuario (puedes conservarlo o cambiarlo)</label>
+                        <input type="text" id="recover-new-username" data-i18n-placeholder="ph_reg_user" placeholder="Ej: historiador_99 (no uses tu correo)" autocomplete="off" minlength="3" maxlength="30" required>
+                        <div id="recover-username-error" class="field-inline-error hidden" role="alert">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span data-i18n="err_email_as_user">Error: No puedes usar tu correo electrónico como nombre de usuario. Elige un apodo único.</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="recover-new-password" data-i18n="label_recover_new_pwd">Nueva Contraseña</label>
+                        <div class="password-input-wrap">
+                            <input type="password" id="recover-new-password" data-i18n-placeholder="ph_reg_pwd" placeholder="Mínimo 8 caracteres, 1 número y 1 símbolo" autocomplete="new-password" required>
+                            <button type="button" class="toggle-pwd-btn" data-target="recover-new-password" aria-label="Mostrar u ocultar contraseña">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        <ul class="pwd-rules-list" id="recover-pwd-rules">
+                            <li id="recover-rule-length"><i class="fa-regular fa-circle"></i> <span data-i18n="rule_len">Mínimo 8 caracteres</span></li>
+                            <li id="recover-rule-number"><i class="fa-regular fa-circle"></i> <span data-i18n="rule_num">Al menos 1 número (0-9)</span></li>
+                            <li id="recover-rule-symbol"><i class="fa-regular fa-circle"></i> <span data-i18n="rule_sym">Al menos 1 símbolo (!@#$%^&*...)</span></li>
+                        </ul>
+                    </div>
+                    <button type="submit" class="gold-submit-btn">
+                        <i class="fa-solid fa-check-double"></i> <span data-i18n="btn_confirm_recover">Guardar Usuario y Nueva Contraseña</span>
                     </button>
                 </form>
 
@@ -753,9 +816,9 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
 
     <div id="browser-live-toast-container" class="browser-live-toast-container" aria-live="polite"></div>
 
-    <div class="build-timestamp">Actualizado: 07:09 PM - 11/05/2026</div>
+    <div class="build-timestamp">Actualizado: 07:23 PM - 11/05/2026</div>
 
-    <script src="world-map-data.js?v=11051909"></script>
-    <script src="script.js?v=11051909"></script>
+    <script src="world-map-data.js?v=11051923"></script>
+    <script src="script.js?v=11051923"></script>
 </body>
 </html>

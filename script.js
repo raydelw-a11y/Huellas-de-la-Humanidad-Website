@@ -167,7 +167,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_save_release: 'Publicar Próximo Estreno',
             btn_reset_release: 'Dejar en «Tema por decidir»',
             admin_active_now_title: 'Usuarios Activos',
-            ph_quick_chat: 'Escribe un mensaje rápido...'
+            ph_quick_chat: 'Escribe un mensaje rápido...',
+            btn_forgot_credentials: '¿Olvidaste tu usuario o contraseña? Restaurar por correo',
+            settings_recovery_heading: 'Restaurar Contraseña y Usuario',
+            settings_recovery_desc: 'Si olvidaste o deseas restaurar tu contraseña y usuario, debes tener tu correo electrónico guardado arriba. Te enviaremos un enlace seguro a tu correo para restaurarlos.',
+            btn_send_recovery_link: 'Enviar enlace de restauración a mi correo guardado',
+            recover_req_title: 'Restaurar Usuario y Contraseña',
+            recover_req_desc: 'Ingresa el correo electrónico que guardaste en las opciones de tu cuenta. Te enviaremos un enlace seguro con tu usuario actual para restaurar tu usuario y contraseña.',
+            label_saved_email: 'Correo Electrónico Guardado en tu Cuenta',
+            ph_recover_email: 'tucorreo@ejemplo.com',
+            btn_send_recover_email: 'Enviar Enlace de Restauración',
+            btn_back_to_login: 'Volver a Iniciar Sesión',
+            recover_reset_title: 'Restaurar Usuario y Contraseña',
+            recover_reset_desc: 'Tu enlace fue verificado. Puedes conservar tu nombre de usuario actual o restaurarlo por otro, y crear tu nueva contraseña:',
+            label_recover_username: 'Tu Nombre de Usuario (puedes conservarlo o cambiarlo)',
+            label_recover_new_pwd: 'Nueva Contraseña',
+            btn_confirm_recover: 'Guardar Usuario y Nueva Contraseña'
         },
         en: {
             header_bio: '“If you want to keep crossing the threshold of time to experience history from within, subscribe today.\nEvery story leaves a footprint. Here we follow their traces.”',
@@ -303,7 +318,22 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_save_release: 'Publish Next Premiere',
             btn_reset_release: 'Reset to “Topic to Be Decided”',
             admin_active_now_title: 'Active Users',
-            ph_quick_chat: 'Write a quick message...'
+            ph_quick_chat: 'Write a quick message...',
+            btn_forgot_credentials: 'Forgot your username or password? Restore via email',
+            settings_recovery_heading: 'Restore Password & Username',
+            settings_recovery_desc: 'If you forgot or want to restore your password and username, you must have an email saved above. We will send a secure link to your email to restore them.',
+            btn_send_recovery_link: 'Send recovery link to my saved email',
+            recover_req_title: 'Restore Username & Password',
+            recover_req_desc: 'Enter the email address saved in your account settings. We will send you a secure link with your current username to restore your username and password.',
+            label_saved_email: 'Email Address Saved in Your Account',
+            ph_recover_email: 'youremail@example.com',
+            btn_send_recover_email: 'Send Recovery Link',
+            btn_back_to_login: 'Back to Sign In',
+            recover_reset_title: 'Restore Username & Password',
+            recover_reset_desc: 'Your link has been verified. You may keep your current username or change it, and set your new password:',
+            label_recover_username: 'Your Username (keep or change)',
+            label_recover_new_pwd: 'New Password',
+            btn_confirm_recover: 'Save Username & New Password'
         }
     };
 
@@ -440,10 +470,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const accountSettingsForm = document.getElementById('account-settings-form');
+    const recoverRequestForm = document.getElementById('recover-request-form');
+    const recoverResetForm = document.getElementById('recover-reset-form');
+    const btnLoginForgotOpen = document.getElementById('btn-login-forgot-open');
+    const btnRecoverBackLogin = document.getElementById('btn-recover-back-login');
+    const btnSettingsSendRecovery = document.getElementById('btn-settings-send-recovery');
     const notificationsSubmenuPanel = document.getElementById('notifications-submenu-panel');
     const notificationsListEl = document.getElementById('notifications-list');
     const btnMarkAllNotifsRead = document.getElementById('btn-mark-all-notifs-read');
     const authFeedback = document.getElementById('auth-feedback');
+
+    let activeRecoverToken = '';
 
     const chatGuestPrompt = document.getElementById('chat-guest-prompt');
     const chatTriggerLogin = document.getElementById('chat-trigger-login');
@@ -490,11 +527,17 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.classList.toggle('hidden', mode !== 'login');
         registerForm.classList.toggle('hidden', mode !== 'register');
         accountSettingsForm.classList.toggle('hidden', mode !== 'settings');
+        if (recoverRequestForm) {
+            recoverRequestForm.classList.toggle('hidden', mode !== 'recover-request');
+        }
+        if (recoverResetForm) {
+            recoverResetForm.classList.toggle('hidden', mode !== 'recover-reset');
+        }
         if (notificationsSubmenuPanel) {
             notificationsSubmenuPanel.classList.toggle('hidden', mode !== 'notifications');
         }
 
-        btnOpenLogin.classList.toggle('active', mode === 'login');
+        btnOpenLogin.classList.toggle('active', mode === 'login' || mode === 'recover-request' || mode === 'recover-reset');
         btnOpenRegister.classList.toggle('active', mode === 'register');
         if (btnOpenSettings) btnOpenSettings.classList.toggle('active', mode === 'settings');
         if (btnOpenNotifications) btnOpenNotifications.classList.toggle('active', mode === 'notifications');
@@ -582,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkPasswordRules(regPasswordInput.value);
     });
 
-    [loginForm, registerForm, accountSettingsForm].forEach(form => {
+    [loginForm, registerForm, accountSettingsForm, recoverRequestForm, recoverResetForm].forEach(form => {
         if (!form) return;
         form.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -748,6 +791,197 @@ document.addEventListener('DOMContentLoaded', () => {
             showFeedback('Error de conexión al guardar opciones.');
         }
     });
+
+    // --- RESTAURAR CONTRASEÑA Y USUARIO POR CORREO ELECTRÓNICO GUARDADO ---
+    if (btnLoginForgotOpen) {
+        btnLoginForgotOpen.addEventListener('click', () => {
+            openSubmenu('recover-request');
+            const input = document.getElementById('recover-email-input');
+            if (input) setTimeout(() => input.focus(), 120);
+        });
+    }
+
+    if (btnRecoverBackLogin) {
+        btnRecoverBackLogin.addEventListener('click', () => {
+            openSubmenu('login');
+        });
+    }
+
+    if (btnSettingsSendRecovery) {
+        btnSettingsSendRecovery.addEventListener('click', async () => {
+            clearFeedback();
+            const savedEmail = currentUser && currentUser.email ? String(currentUser.email).trim() : '';
+            if (!savedEmail) {
+                return showFeedback(
+                    currentLang === 'en'
+                        ? 'To restore your password and username, you must first save an email address in Account Settings above.'
+                        : 'Para restaurar tu contraseña y usuario primero debes guardar un correo electrónico arriba en Opciones de la Cuenta.'
+                );
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/account/recover-request`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {})
+                    },
+                    body: JSON.stringify({ email: savedEmail })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    return showFeedback(data.error || 'No se pudo enviar el enlace de restauración.');
+                }
+                showFeedback(
+                    data.message || `Enlace de restauración enviado a tu correo guardado (${savedEmail}).`,
+                    'success'
+                );
+            } catch (err) {
+                showFeedback('Error de conexión al enviar el enlace de restauración.');
+            }
+        });
+    }
+
+    if (recoverRequestForm) {
+        recoverRequestForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearFeedback();
+            const emailEl = document.getElementById('recover-email-input');
+            const email = emailEl ? emailEl.value.trim() : '';
+            if (!email) {
+                return showFeedback('Ingresa el correo electrónico que tienes guardado en tu cuenta.');
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/account/recover-request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    return showFeedback(data.error || 'No se encontró ninguna cuenta con ese correo guardado.');
+                }
+                showFeedback(
+                    data.message || 'Te hemos enviado el enlace a tu correo electrónico para restaurar tu usuario y contraseña.',
+                    'success'
+                );
+            } catch (err) {
+                showFeedback('Error de conexión con el servidor.');
+            }
+        });
+    }
+
+    const recoverNewUsernameInput = document.getElementById('recover-new-username');
+    const recoverUsernameError = document.getElementById('recover-username-error');
+    const recoverNewPasswordInput = document.getElementById('recover-new-password');
+    const recoverRuleLength = document.getElementById('recover-rule-length');
+    const recoverRuleNumber = document.getElementById('recover-rule-number');
+    const recoverRuleSymbol = document.getElementById('recover-rule-symbol');
+
+    function checkRecoverPasswordRules(pwd) {
+        const hasLen = pwd.length >= 8;
+        const hasNum = /[0-9]/.test(pwd);
+        const hasSym = /[^A-Za-z0-9]/.test(pwd);
+
+        updateRuleItem(recoverRuleLength, hasLen);
+        updateRuleItem(recoverRuleNumber, hasNum);
+        updateRuleItem(recoverRuleSymbol, hasSym);
+
+        return hasLen && hasNum && hasSym;
+    }
+
+    if (recoverNewPasswordInput) {
+        recoverNewPasswordInput.addEventListener('input', () => {
+            checkRecoverPasswordRules(recoverNewPasswordInput.value);
+        });
+    }
+
+    if (recoverNewUsernameInput) {
+        ['input', 'change', 'blur'].forEach(evt => {
+            recoverNewUsernameInput.addEventListener(evt, () => {
+                const invalid = isEmailLikeUsername(recoverNewUsernameInput.value);
+                recoverNewUsernameInput.classList.toggle('input-error', invalid);
+                if (recoverUsernameError) recoverUsernameError.classList.toggle('hidden', !invalid);
+            });
+        });
+    }
+
+    if (recoverResetForm) {
+        recoverResetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearFeedback();
+
+            const newUsername = recoverNewUsernameInput ? recoverNewUsernameInput.value.trim() : '';
+            const newPassword = recoverNewPasswordInput ? recoverNewPasswordInput.value : '';
+
+            if (isEmailLikeUsername(newUsername)) {
+                return showFeedback(t('err_email_as_user'));
+            }
+            if (!checkRecoverPasswordRules(newPassword)) {
+                return showFeedback('La nueva contraseña debe tener mínimo 8 caracteres, al menos 1 número y 1 símbolo.');
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/account/recover-confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: activeRecoverToken,
+                        newUsername,
+                        newPassword
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    return showFeedback(data.error || 'No se pudo completar la restauración.');
+                }
+                activeRecoverToken = '';
+                try {
+                    const cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete('recover');
+                    window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+                } catch (e) {}
+
+                saveSession(data.token, data.user);
+                enterChatView();
+                showFeedback('¡Tu usuario y contraseña han sido restaurados con éxito!', 'success');
+                setTimeout(() => {
+                    closeSubmenu();
+                }, 2200);
+            } catch (err) {
+                showFeedback('Error de conexión al guardar la restauración.');
+            }
+        });
+    }
+
+    async function checkUrlRecoveryToken() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const recToken = params.get('recover');
+            if (!recToken) return;
+            activeRecoverToken = recToken.trim();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            openSubmenu('recover-reset');
+
+            const res = await fetch(`${API_BASE}/api/account/recover-verify?token=${encodeURIComponent(activeRecoverToken)}`, {
+                cache: 'no-store'
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                return showFeedback(data.error || 'El enlace de restauración ha expirado o no es válido.');
+            }
+            if (recoverNewUsernameInput && data.username) {
+                recoverNewUsernameInput.value = data.username;
+            }
+            showFeedback(
+                currentLang === 'en'
+                    ? `Account found (@${data.username}). Keep or update your username and enter your new password.`
+                    : `Cuenta verificada (@${data.username}). Conserva o cambia tu usuario y escribe tu nueva contraseña.`,
+                'success'
+            );
+        } catch (err) {
+            showFeedback('No se pudo verificar el enlace de restauración.');
+        }
+    }
 
     function saveSession(token, user) {
         authToken = token;
@@ -4103,4 +4337,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (authToken && currentUser) {
         enterChatView();
     }
+
+    checkUrlRecoveryToken();
 });

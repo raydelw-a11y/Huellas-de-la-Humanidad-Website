@@ -992,7 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentNotificationsList = [];
     let hasInitializedBrowserNotifs = false;
-    const BROWSER_NOTIF_STORAGE_KEY = 'huellas_seen_browser_notifs_v1';
+    const BROWSER_NOTIF_STORAGE_KEY = 'huellas_seen_browser_notifs_v2';
 
     function getSeenBrowserNotifKeys() {
         try {
@@ -1019,7 +1019,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Solicitar permiso de notificaciones del navegador en la primera interacción del usuario en la ventana
-    document.addEventListener('click', requestBrowserNotificationPermission, { once: true });
+    ['click', 'keydown', 'touchstart'].forEach(evtName => {
+        document.addEventListener(evtName, requestBrowserNotificationPermission, { once: true, passive: true });
+    });
 
     function deduplicateNotificationsArray(rawList) {
         const list = Array.isArray(rawList) ? rawList : [];
@@ -1048,17 +1050,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Notificación nativa del navegador (OS / pestaña en segundo plano)
         try {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                const nativeNotif = new Notification(titleText || 'Huellas de la Humanidad', {
-                    body: bodyText || '',
-                    icon: n.thumbUrl || 'favicon.png?v=2',
-                    tag: key
-                });
-                nativeNotif.onclick = () => {
-                    try { window.focus(); } catch (e) {}
-                    handleNotificationClick(n);
-                    nativeNotif.close();
+            if ('Notification' in window) {
+                const showNative = () => {
+                    try {
+                        const nativeNotif = new Notification(titleText || 'Huellas de la Humanidad', {
+                            body: bodyText || '',
+                            icon: n.thumbUrl || 'favicon.png?v=2',
+                            tag: key
+                        });
+                        nativeNotif.onclick = () => {
+                            try { window.focus(); } catch (e) {}
+                            handleNotificationClick(n);
+                            nativeNotif.close();
+                        };
+                    } catch (err) {}
                 };
+                if (Notification.permission === 'granted') {
+                    showNative();
+                } else if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(perm => {
+                        if (perm === 'granted') showNative();
+                    }).catch(() => {});
+                }
             }
         } catch (e) {}
 
@@ -1237,21 +1250,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const seenKeys = getSeenBrowserNotifKeys();
             if (!hasInitializedBrowserNotifs) {
                 hasInitializedBrowserNotifs = true;
+                // Solo pre-registrar videos históricos en el primer arranque; las notificaciones no leídas de comentarios, likes o mensajes se muestran en vivo
                 deduped.forEach(n => {
                     if (!n) return;
-                    seenKeys.add((n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`);
-                });
-                saveSeenBrowserNotifKeys(seenKeys);
-            } else {
-                deduped.forEach(n => {
-                    if (n && !n.read) {
-                        const key = (n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`;
-                        if (!seenKeys.has(key)) {
-                            dispatchBrowserWindowNotification(n);
-                        }
+                    if (n.type === 'video' || n.read) {
+                        seenKeys.add((n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`);
                     }
                 });
+                saveSeenBrowserNotifKeys(seenKeys);
             }
+
+            deduped.forEach(n => {
+                if (n && !n.read) {
+                    const key = (n.type === 'video' && n.videoId) ? `vid:${n.videoId}` : `id:${n.id}`;
+                    if (!seenKeys.has(key)) {
+                        dispatchBrowserWindowNotification(n);
+                    }
+                }
+            });
         } catch (e) {}
     }
 

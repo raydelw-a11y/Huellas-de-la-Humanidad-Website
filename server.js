@@ -652,7 +652,7 @@ function ensureUserBaseNotifications(username) {
       commentsArr.forEach(c => {
         if (!c) return;
         const commentOwner = resolveUsernameByAuthor(c.author, c.role, c.authorUsername);
-        if (userObj.role === 'admin' && commentOwner !== cleanUser) {
+        if (commentOwner !== cleanUser) {
           const added = addUserNotification(cleanUser, {
             id: `video-comment-${c.id}`,
             type: 'video_comment',
@@ -669,28 +669,26 @@ function ensureUserBaseNotifications(username) {
           if (added) changed = true;
         }
         const replies = Array.isArray(c.replies) ? c.replies : [];
-        if (commentOwner === cleanUser) {
-          replies.forEach(r => {
-            if (!r) return;
-            const replyOwner = resolveUsernameByAuthor(r.author, r.role, r.authorUsername);
-            if (replyOwner !== cleanUser) {
-              const added = addUserNotification(cleanUser, {
-                id: `video-reply-${r.id}`,
-                type: 'video_reply',
-                videoId: vidId,
-                commentId: c.id,
-                thumbUrl: `https://i.ytimg.com/vi/${vidId}/mqdefault.jpg`,
-                titleEs: `💬 ${r.author || 'Usuario'} respondió a tu comentario en un video`,
-                titleEn: `💬 ${r.author || 'User'} replied to your comment on a video`,
-                bodyEs: `«${String(r.text || '').slice(0, 100)}»`,
-                bodyEn: `“${String(r.text || '').slice(0, 100)}”`,
-                createdAt: r.createdAt || c.createdAt,
-                read: false
-              });
-              if (added) changed = true;
-            }
-          });
-        }
+        replies.forEach(r => {
+          if (!r) return;
+          const replyOwner = resolveUsernameByAuthor(r.author, r.role, r.authorUsername);
+          if (replyOwner !== cleanUser && (commentOwner === cleanUser || userObj.role === 'admin')) {
+            const added = addUserNotification(cleanUser, {
+              id: `video-reply-${r.id}`,
+              type: 'video_reply',
+              videoId: vidId,
+              commentId: c.id,
+              thumbUrl: `https://i.ytimg.com/vi/${vidId}/mqdefault.jpg`,
+              titleEs: `💬 ${r.author || 'Usuario'} respondió un comentario en un video`,
+              titleEn: `💬 ${r.author || 'User'} replied to a comment on a video`,
+              bodyEs: `«${String(r.text || '').slice(0, 100)}»`,
+              bodyEn: `“${String(r.text || '').slice(0, 100)}”`,
+              createdAt: r.createdAt || c.createdAt,
+              read: false
+            });
+            if (added) changed = true;
+          }
+        });
       });
     });
   }
@@ -1883,17 +1881,12 @@ const server = http.createServer(async (req, res) => {
       db.videoComments[cleanVid] = db.videoComments[cleanVid].slice(-150);
     }
 
-    // Generar notificación a los administradores y a quienes hayan participado en los comentarios de este video
+    // Generar notificación a los administradores y usuarios registrados cuando alguien comenta un video
     const recipients = new Set();
     Object.values(db.users || {}).forEach(u => {
-      if (u && u.role === 'admin' && u.username !== session.username) {
+      if (u && u.username && u.username !== session.username) {
         recipients.add(u.username);
       }
-    });
-    db.videoComments[cleanVid].forEach(c => {
-      if (!c || c.id === newComment.id) return;
-      const cOwner = resolveUsernameByAuthor(c.author, c.role, c.authorUsername);
-      if (cOwner && cOwner !== session.username) recipients.add(cOwner);
     });
 
     recipients.forEach(targetUname => {

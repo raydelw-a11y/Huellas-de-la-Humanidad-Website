@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const https = require('https');
+const zlib = require('zlib');
 
 const PORT = process.env.PORT || 3000;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
@@ -380,6 +381,193 @@ async function saveDatabase() {
   }
 }
 
+// ============================================================================
+// FOX CITY — Isolated Cloud Sync Persistence (fox-city-saves.json in DB_REPO)
+// ============================================================================
+const FOX_CITY_DB_PATH = 'fox-city-saves.json';
+const FOX_CITY_LOCAL_FILE = path.join(__dirname, 'fox-city-db.local.json');
+const FOX_CITY_EXPECTED_RPC_HASH = crypto
+  .createHash('sha256')
+  .update(
+    'foxcity_cloud_rpc_v1:' +
+      String(process.env.FOX_CITY_PASSWORD || 'admin123').trim().toLowerCase()
+  )
+  .digest('hex');
+
+let foxCityDb = {
+  version: 2,
+  updatedAt: new Date().toISOString(),
+  accounts: {}
+};
+let foxCityGithubSha = null;
+let foxCityIsSaving = false;
+let foxCitySavePending = false;
+let foxCityHydrated = false;
+const foxCityAuthFailures = new Map();
+
+function decodeFoxCityStorage(rawStr) {
+  try {
+    const parsed = JSON.parse(rawStr);
+    if (parsed && parsed.encoding === 'gzip-base64' && typeof parsed.payload === 'string') {
+      const jsonStr = zlib.gunzipSync(Buffer.from(parsed.payload, 'base64')).toString('utf8');
+      const accounts = JSON.parse(jsonStr);
+      return {
+        accounts: accounts && typeof accounts === 'object' ? accounts : {},
+        updatedAt: parsed.updatedAt || new Date().toISOString()
+      };
+    }
+    if (parsed && parsed.accounts && typeof parsed.accounts === 'object') {
+      return {
+        accounts: parsed.accounts,
+        updatedAt: parsed.updatedAt || new Date().toISOString()
+      };
+    }
+  } catch (e) {
+    console.error('[FoxCity] Error decoding cloud storage:', e.message);
+  }
+  return null;
+}
+
+function encodeFoxCityStorage() {
+  const payload = zlib
+    .gzipSync(Buffer.from(JSON.stringify(foxCityDb.accounts || {}), 'utf8'))
+    .toString('base64');
+  return JSON.stringify({
+    version: 2,
+    updatedAt: foxCityDb.updatedAt,
+    encoding: 'gzip-base64',
+    payload
+  });
+}
+
+async function loadFoxCityDatabase() {
+  try {
+    if (fs.existsSync(FOX_CITY_LOCAL_FILE)) {
+      const decoded = decodeFoxCityStorage(fs.readFileSync(FOX_CITY_LOCAL_FILE, 'utf8'));
+      if (decoded) {
+        foxCityDb.accounts = decoded.accounts;
+        foxCityDb.updatedAt = decoded.updatedAt;
+      }
+    }
+  } catch (e) {
+    console.error('[FoxCity] Error reading local DB:', e.message);
+  }
+
+  if (!GITHUB_TOKEN) {
+    foxCityHydrated = true;
+    return;
+  }
+
+  try {
+    const res = await githubRequest('GET', `/repos/${DB_REPO}/contents/${FOX_CITY_DB_PATH}`);
+    if (res && res.status === 200 && res.body && res.body.content) {
+      foxCityGithubSha = res.body.sha;
+      const decodedText = Buffer.from(res.body.content, 'base64').toString('utf8');
+      const decoded = decodeFoxCityStorage(decodedText);
+      if (decoded) {
+        foxCityDb.accounts = decoded.accounts;
+        foxCityDb.updatedAt = decoded.updatedAt;
+      }
+      foxCityHydrated = true;
+    } else if (res && res.status === 404) {
+      foxCityHydrated = true;
+    } else {
+      foxCityHydrated = false;
+    }
+  } catch (e) {
+    console.error('[FoxCity] Error loading DB from GitHub:', e.message);
+    foxCityHydrated = false;
+  }
+}
+
+async function saveFoxCityDatabase(retryCount = 0) {
+  const serialized = encodeFoxCityStorage();
+  try {
+    fs.writeFileSync(FOX_CITY_LOCAL_FILE, serialized, 'utf8');
+  } catch (e) {
+    // Ignore local write errors on ephemeral fs
+  }
+
+  if (!GITHUB_TOKEN || !foxCityHydrated) return;
+  if (foxCityIsSaving) {
+    foxCitySavePending = true;
+    return;
+  }
+  foxCityIsSaving = true;
+  let retryingConflict = false;
+  try {
+    const contentBase64 = Buffer.from(serialized, 'utf8').toString('base64');
+    const payload = {
+      message: `sync: fox-city cloud saves (${new Date().toISOString()})`,
+      content: contentBase64,
+      ...(foxCityGithubSha ? { sha: foxCityGithubSha } : {})
+    };
+    const res = await githubRequest('PUT', `/repos/${DB_REPO}/contents/${FOX_CITY_DB_PATH}`, payload);
+    if (res && (res.status === 200 || res.status === 201) && res.body && res.body.content) {
+      foxCityGithubSha = res.body.content.sha;
+    } else if (res && res.status === 409 && retryCount < 2) {
+      const getRes = await githubRequest('GET', `/repos/${DB_REPO}/contents/${FOX_CITY_DB_PATH}`);
+      if (getRes && getRes.status === 200 && getRes.body) {
+        foxCityGithubSha = getRes.body.sha;
+        retryingConflict = true;
+      }
+    }
+  } catch (e) {
+    console.error('[FoxCity] Error saving DB to GitHub:', e.message);
+  } finally {
+    foxCityIsSaving = false;
+  }
+
+  if (retryingConflict) {
+    return saveFoxCityDatabase(retryCount + 1);
+  }
+  if (foxCitySavePending) {
+    foxCitySavePending = false;
+    return saveFoxCityDatabase(0);
+  }
+}
+
+function verifyFoxCityRpc(req, body) {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+  const now = Date.now();
+  const entry = foxCityAuthFailures.get(ip);
+  if (entry && now < entry.resetAt && entry.count >= 10) {
+    return { ok: false, status: 429, error: 'Demasiados intentos. Espera unos minutos.' };
+  }
+
+  const rawHeader = String(req.headers['authorization'] || '').replace(/^Bearer\s+/i, '').trim();
+  const rpcKey = String((body && body.rpcKey) || rawHeader || '').trim().toLowerCase();
+
+  let matched = false;
+  if (/^[0-9a-f]{64}$/.test(rpcKey)) {
+    matched = crypto.timingSafeEqual(
+      Buffer.from(rpcKey, 'hex'),
+      Buffer.from(FOX_CITY_EXPECTED_RPC_HASH, 'hex')
+    );
+  }
+
+  if (!matched) {
+    const nextCount = entry && now < entry.resetAt ? entry.count + 1 : 1;
+    foxCityAuthFailures.set(ip, { count: nextCount, resetAt: now + 10 * 60 * 1000 });
+    return { ok: false, status: 401, error: 'Contraseña incorrecta.' };
+  }
+
+  foxCityAuthFailures.delete(ip);
+  return { ok: true };
+}
+
+function summarizeFoxCityAccount(acc) {
+  const cities = Object.values((acc && acc.cities) || {}).map((c) => {
+    const summary = { ...c };
+    delete summary.compactState;
+    return summary;
+  });
+  cities.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+  return cities;
+}
+
 function sendJson(res, status, data) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -725,8 +913,156 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
-  if (pathname.startsWith('/api/') && pathname !== '/api/presence/leave') {
+  if (pathname.startsWith('/api/') && pathname !== '/api/presence/leave' && !pathname.startsWith('/api/foxcity/')) {
     recordActiveVisitor(req, parsedUrl);
+  }
+
+  // --- FOX CITY ISOLATED CLOUD SYNC ROUTES ---
+  if (pathname.startsWith('/api/foxcity/')) {
+    if (pathname === '/api/foxcity/health' && req.method === 'GET') {
+      return sendJson(res, 200, {
+        ok: true,
+        service: 'foxcity-cloud',
+        cloudConfigured: Boolean(GITHUB_TOKEN),
+        hydrated: foxCityHydrated,
+        updatedAt: foxCityDb.updatedAt
+      });
+    }
+
+    if (req.method !== 'POST') {
+      return sendJson(res, 405, { ok: false, error: 'Método no permitido.' });
+    }
+
+    const body = await parseBody(req);
+    const authCheck = verifyFoxCityRpc(req, body);
+    if (!authCheck.ok) {
+      return sendJson(res, authCheck.status, { ok: false, error: authCheck.error });
+    }
+
+    if (!foxCityHydrated) {
+      await loadFoxCityDatabase();
+      if (!foxCityHydrated && GITHUB_TOKEN) {
+        return sendJson(res, 503, { ok: false, error: 'Hidratando almacenamiento en nube...' });
+      }
+    }
+
+    const rawAccId = String(body.accountId || '').trim();
+    const accountId = /^[a-z0-9_-]{3,40}$/.test(rawAccId) ? rawAccId : 'acc_raydel';
+    if (!foxCityDb.accounts[accountId]) {
+      foxCityDb.accounts[accountId] = { mayorName: 'Raydel', cities: {} };
+    }
+    const acc = foxCityDb.accounts[accountId];
+    if (!acc.cities || typeof acc.cities !== 'object') {
+      acc.cities = {};
+    }
+
+    if (pathname === '/api/foxcity/list') {
+      return sendJson(res, 200, { ok: true, cities: summarizeFoxCityAccount(acc) });
+    }
+
+    if (pathname === '/api/foxcity/get') {
+      const slotId = String(body.slotId || '').trim();
+      if (!/^[a-zA-Z0-9_-]{2,64}$/.test(slotId)) {
+        return sendJson(res, 400, { ok: false, error: 'slotId inválido.' });
+      }
+      return sendJson(res, 200, { ok: true, city: acc.cities[slotId] || null });
+    }
+
+    if (pathname === '/api/foxcity/sync') {
+      const city = body.city;
+      const slotId = String((city && city.slotId) || body.slotId || '').trim();
+      if (
+        !/^[a-zA-Z0-9_-]{2,64}$/.test(slotId) ||
+        !city ||
+        typeof city.compactState !== 'string' ||
+        city.compactState.length > 1500000
+      ) {
+        return sendJson(res, 400, { ok: false, error: 'Datos de ciudad inválidos.' });
+      }
+
+      const existing = acc.cities[slotId];
+      const baseRev = Number(body.baseRev || 0);
+      const deviceId = String(body.deviceId || '').slice(0, 64);
+      const forceOverwrite = Boolean(body.forceOverwrite);
+
+      if (
+        existing &&
+        Number(existing.serverRev || 0) > baseRev &&
+        existing.deviceId &&
+        existing.deviceId !== deviceId &&
+        !forceOverwrite
+      ) {
+        let backupSlotId = null;
+        if (Object.keys(acc.cities).length < 16) {
+          backupSlotId = `${slotId}-bkp-${Date.now().toString(36).slice(-4)}`.slice(0, 60);
+          acc.cities[backupSlotId] = {
+            slotId: backupSlotId,
+            name: `${String(city.name || 'Fox City').slice(0, 44)} (Respaldo Local)`,
+            mapId: String(city.mapId || 'emerald_bay'),
+            seed: Number(city.seed || 1),
+            sandboxMode: Boolean(city.sandboxMode),
+            population: Number(city.population || 0),
+            money: Number(city.money || 0),
+            happiness: Number(city.happiness || 50),
+            day: Number(city.day || 1),
+            serverRev: 1,
+            updatedAt: new Date().toISOString(),
+            deviceId,
+            compactState: city.compactState
+          };
+          foxCityDb.updatedAt = new Date().toISOString();
+          void saveFoxCityDatabase();
+        }
+        return sendJson(res, 409, {
+          ok: false,
+          conflict: true,
+          serverCity: existing,
+          backupSlotId,
+          cities: summarizeFoxCityAccount(acc)
+        });
+      }
+
+      const nextRev = Math.max(baseRev, existing ? Number(existing.serverRev || 0) : 0) + 1;
+      const nowIso = new Date().toISOString();
+      acc.cities[slotId] = {
+        slotId,
+        name: String(city.name || 'Fox City').slice(0, 60),
+        mapId: String(city.mapId || 'emerald_bay'),
+        seed: Number(city.seed || 1),
+        sandboxMode: Boolean(city.sandboxMode),
+        population: Number(city.population || 0),
+        money: Number(city.money || 0),
+        happiness: Number(city.happiness || 50),
+        day: Number(city.day || 1),
+        serverRev: nextRev,
+        updatedAt: nowIso,
+        deviceId,
+        compactState: city.compactState
+      };
+      foxCityDb.updatedAt = nowIso;
+      void saveFoxCityDatabase();
+      return sendJson(res, 200, {
+        ok: true,
+        serverRev: nextRev,
+        updatedAt: nowIso,
+        cities: summarizeFoxCityAccount(acc)
+      });
+    }
+
+    if (pathname === '/api/foxcity/delete') {
+      const slotId = String(body.slotId || '').trim();
+      if (!/^[a-zA-Z0-9_-]{2,64}$/.test(slotId)) {
+        return sendJson(res, 400, { ok: false, error: 'slotId inválido.' });
+      }
+      if (acc.cities[slotId]) {
+        delete acc.cities[slotId];
+        foxCityDb.updatedAt = new Date().toISOString();
+        void saveFoxCityDatabase();
+      }
+      return sendJson(res, 200, { ok: true, cities: summarizeFoxCityAccount(acc) });
+    }
+
+    return sendJson(res, 404, { ok: false, error: 'Ruta de Fox City no encontrada.' });
   }
 
   // --- API ROUTES ---
@@ -2425,7 +2761,7 @@ async function refreshSocialFollowerCounts() {
   } catch (e) {}
 }
 
-loadDatabase().then(() => {
+Promise.all([loadDatabase(), loadFoxCityDatabase()]).then(() => {
   refreshSocialFollowerCounts();
   checkYoutubeAndNotify();
   server.listen(PORT, () => {

@@ -2683,7 +2683,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { key: 'catastrofes', es: 'Grandes Catástrofes', en: 'Great Catastrophes' },
         { key: 'prehistoria', es: 'Prehistoria y Orígenes', en: 'Prehistory & Origins' },
         { key: 'ww2', es: 'Segunda Guerra Mundial', en: 'World War II' },
-        { key: 'prehispanica', es: 'América Prehispánica', en: 'Pre-Hispanic America' }
+        { key: 'prehispanica', es: 'América Prehispánica', en: 'Pre-Hispanic America' },
+        { key: 'ciencia', es: 'Ciencia, Tecnología y Supervivencia', en: 'Science, Technology & Survival' }
     ];
 
     const DOCUMENTARIES = [

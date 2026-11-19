@@ -60,11 +60,12 @@ const KNOWN_PLACES_GAZETTEER = [
   { re: /\broma\b|coliseo|vaticano/i, es: 'Roma, Italia', en: 'Rome, Italy', lon: 12.49, lat: 41.89, region: 'europe' },
   { re: /florencia/i, es: 'Florencia, Italia', en: 'Florence, Italy', lon: 11.25, lat: 43.77, region: 'europe' },
   { re: /venecia/i, es: 'Venecia, Italia', en: 'Venice, Italy', lon: 12.33, lat: 45.44, region: 'europe' },
-  { re: /atenas|esparta|grecia|acrópolis|acropolis|creta/i, es: 'Atenas, Grecia', en: 'Athens, Greece', lon: 23.73, lat: 37.98, region: 'europe' },
+  { re: /atenas|esparta|grecia|acrópolis|acropolis|\bcreta\b/i, es: 'Atenas, Grecia', en: 'Athens, Greece', lon: 23.73, lat: 37.98, region: 'europe' },
   { re: /giza|el cairo|pir[aá]mides|egipto|alejandr[ií]a|tebas|luxor/i, es: 'Egipto', en: 'Egypt', lon: 31.13, lat: 29.98, region: 'europe' },
   { re: /nazaret|galilea/i, es: 'Nazaret, Galilea', en: 'Nazareth, Galilee', lon: 35.30, lat: 32.70, region: 'europe' },
   { re: /par[ií]s|louvre|versalles|bastilla/i, es: 'París, Francia', en: 'Paris, France', lon: 2.34, lat: 48.86, region: 'europe' },
   { re: /normand[ií]a/i, es: 'Normandía, Francia', en: 'Normandy, France', lon: -0.85, lat: 49.34, region: 'europe' },
+  { re: /\boxford\b/i, es: 'Oxford, Inglaterra', en: 'Oxford, England', lon: -1.26, lat: 51.75, region: 'europe' },
   { re: /londres|inglaterra| Reino Unido/i, es: 'Londres, Inglaterra', en: 'London, England', lon: -0.13, lat: 51.51, region: 'europe' },
   { re: /belfast|irlanda/i, es: 'Belfast, Irlanda', en: 'Belfast, Ireland', lon: -5.93, lat: 54.60, region: 'europe' },
   { re: /escocia|edimburgo/i, es: 'Edimburgo, Escocia', en: 'Edinburgh, Scotland', lon: -3.19, lat: 55.95, region: 'europe' },
@@ -82,13 +83,13 @@ const KNOWN_PLACES_GAZETTEER = [
   { re: /san francisco|alcatraz|california/i, es: 'San Francisco, California', en: 'San Francisco, California', lon: -122.42, lat: 37.77, region: 'americas' },
   { re: /washington|chicago|boston|filadelfia|estados unidos/i, es: 'Estados Unidos', en: 'United States', lon: -77.04, lat: 38.90, region: 'americas' },
   { re: /teotihuac[aá]n|tenochtitl[aá]n|m[eé]xico|chich[eé]n itz[aá]|yucat[aá]n/i, es: 'México', en: 'Mexico', lon: -99.13, lat: 19.43, region: 'americas' },
-  { re: /machu picchu|cusco|per[uú]|inca/i, es: 'Cusco, Perú', en: 'Cusco, Peru', lon: -72.54, lat: -13.16, region: 'americas' },
+  { re: /machu picchu|cusco|\bper[uú]\b|\bincas?\b/i, es: 'Cusco, Perú', en: 'Cusco, Peru', lon: -72.54, lat: -13.16, region: 'americas' },
   { re: /colombia|bogot[aá]|cartagena/i, es: 'Colombia', en: 'Colombia', lon: -74.07, lat: 4.71, region: 'americas' },
   { re: /argentina|buenos aires|los andes/i, es: 'Buenos Aires, Argentina', en: 'Buenos Aires, Argentina', lon: -58.38, lat: -34.60, region: 'americas' },
   { re: /tokio|hiroshima|nagasaki|kioto|jap[oó]n/i, es: 'Japón', en: 'Japan', lon: 139.69, lat: 35.68, region: 'asia' },
   { re: /pek[ií]n|china|shangh[aá]i|muralla china/i, es: 'China', en: 'China', lon: 116.40, lat: 39.90, region: 'asia' },
   { re: /krakatoa|sumatra|indonesia|java/i, es: 'Indonesia', en: 'Indonesia', lon: 105.42, lat: -6.10, region: 'asia' },
-  { re: /india|nueva delhi|taj mahal/i, es: 'India', en: 'India', lon: 77.21, lat: 28.61, region: 'asia' },
+  { re: /\bindia\b|nueva delhi|taj mahal/i, es: 'India', en: 'India', lon: 77.21, lat: 28.61, region: 'asia' },
   { re: /camboya|angkor|vietnam/i, es: 'Sudeste Asiático', en: 'Southeast Asia', lon: 103.86, lat: 13.41, region: 'asia' }
 ];
 
@@ -2475,7 +2476,7 @@ const server = http.createServer(async (req, res) => {
     if (Date.now() - lastYoutubeCheckTime > 60 * 1000) {
       await checkYoutubeAndNotify();
     }
-    const autoDocs = Array.isArray(db.autoDocumentaries) ? db.autoDocumentaries : [];
+    const autoDocs = (Array.isArray(db.autoDocumentaries) ? db.autoDocumentaries : []).map(applyFixedDocumentaryMetadata);
     const latestId = (db.youtubeNotifier && (db.youtubeNotifier.lastHorizontalVideoId || db.youtubeNotifier.lastVideoId)) || 'Iswv7f6AoCU';
     const latestTitle = (db.youtubeNotifier && db.youtubeNotifier.lastVideoTitle) || 'Así fue la llegada de los Españoles a México y Cuba en 1885';
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -2804,7 +2805,29 @@ function verifyIsHorizontalYoutubeVideo(videoId) {
   });
 }
 
+// Videos con ubicación/categoría fijadas a mano: se corrigen también las entradas ya guardadas en la base de datos
+const FIXED_DOCUMENTARY_IDS = new Set(['Iswv7f6AoCU', '7oexZOHGQ8k', 'PPgK7kuznm0', '3uxAt5KeXQY']);
+
+function applyFixedDocumentaryMetadata(doc) {
+  if (!doc || !FIXED_DOCUMENTARY_IDS.has(doc.id)) return doc;
+  return inferDocumentaryMetadata(doc.id, doc.titleEs || '', '', doc.publishedAt);
+}
+
 function inferDocumentaryMetadata(videoId, rawTitle, description, publishedAt) {
+  if (videoId === '3uxAt5KeXQY') {
+    return {
+      id: '3uxAt5KeXQY',
+      titleEs: 'La Penicilina: Olvidada 2 veces, rechazada 3 veces y salvó millones de vidas',
+      titleEn: 'Penicillin: Forgotten Twice, Rejected Three Times, and It Saved Millions of Lives',
+      eraEs: 'Oxford, Inglaterra · Año 1941',
+      eraEn: 'Oxford, England · Year 1941',
+      category: 'ciencia',
+      region: 'europe',
+      lon: -1.26,
+      lat: 51.75,
+      publishedAt: publishedAt || '2026-11-18T04:07:21+00:00'
+    };
+  }
   if (videoId === 'Iswv7f6AoCU') {
     return {
       id: 'Iswv7f6AoCU',
@@ -2899,6 +2922,8 @@ function inferDocumentaryMetadata(videoId, rawTitle, description, publishedAt) {
     category = 'prehistoria';
   } else if (/teotihuac[aá]n|maya|azteca|mexica|inca|prehisp[aá]nic|mesoam[eé]rica|tenochtitl[aá]n|chich[eé]n|machu picchu/i.test(fullText)) {
     category = 'prehispanica';
+  } else if (/penicilina|antibi[oó]tico|vacuna|medicina|cient[ií]fic|invento|invenci[oó]n|tecnolog[ií]a|epidemia|pandemia|supervivencia/i.test(fullText)) {
+    category = 'ciencia';
   } else if (/a\.\s*c\.|egipto|giza|pompeya|roma\b|grecia|mesopotamia|babilonia|nazaret|antes de cristo/i.test(fullText)) {
     category = 'antigua';
   }

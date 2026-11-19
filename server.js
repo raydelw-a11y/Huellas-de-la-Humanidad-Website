@@ -2550,6 +2550,12 @@ function recordActiveVisitor(req, parsedUrl) {
     : (!isExplicitGuest && paramUser && db.users && db.users[paramUser] ? db.users[paramUser] : null);
 
   const vid = String(parsedUrl.searchParams.get('vid') || parsedUrl.searchParams.get('voterId') || '').trim();
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+
+  // Un navegador ya identificado (por vid o por cuenta) no debe contarse otra vez por su IP
+  if (ip && (uObj || vid)) {
+    activeVisitors.delete(`ip:${ip}`);
+  }
 
   if (uObj) {
     // Si ya había un registro temporal user:username o de otro vid del mismo usuario, consolidarlo
@@ -2562,6 +2568,7 @@ function recordActiveVisitor(req, parsedUrl) {
     activeVisitors.set(targetKey, {
       key: targetKey,
       lastSeen: now,
+      ip,
       username: uObj.username,
       displayName: uObj.displayName || uObj.username,
       role: uObj.role || 'user'
@@ -2574,6 +2581,7 @@ function recordActiveVisitor(req, parsedUrl) {
     activeVisitors.set(vid, {
       key: vid,
       lastSeen: now,
+      ip,
       username: isExplicitGuest ? null : (prev && prev.username ? prev.username : null),
       displayName: isExplicitGuest ? null : (prev && prev.displayName ? prev.displayName : null),
       role: isExplicitGuest ? 'guest' : (prev && prev.role ? prev.role : 'guest')
@@ -2583,9 +2591,12 @@ function recordActiveVisitor(req, parsedUrl) {
 
   const ua = String(req.headers['user-agent'] || '');
   if (/bot|crawl|spider|uptime|render|curl/i.test(ua)) return;
-  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   if (ip) {
     const ipKey = `ip:${ip}`;
+    // Peticiones sin vid (p. ej. /api/youtube-videos o /api/release) del mismo navegador que ya está contado
+    for (const [k, entry] of activeVisitors.entries()) {
+      if (k !== ipKey && entry && entry.ip === ip && now - entry.lastSeen <= 25000) return;
+    }
     const prev = activeVisitors.get(ipKey);
     activeVisitors.set(ipKey, {
       key: ipKey,

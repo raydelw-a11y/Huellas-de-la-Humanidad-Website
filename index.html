@@ -6,10 +6,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="app-build-version" content="11190003">
+    <meta name="app-build-version" content="11200956">
     <script>
         (function () {
-            var CURRENT_BUILD = '11190003';
+            var CURRENT_BUILD = '11200956';
             try {
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -84,7 +84,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=11190003">
+    <link rel="stylesheet" href="style.css?v=11200956">
     <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -816,9 +816,25 @@ Cada historia deja una huella. Aquí seguimos sus rastros.»</p>
 
     <div id="browser-live-toast-container" class="browser-live-toast-container" aria-live="polite"></div>
 
-    <div class="build-timestamp">Actualizado: 12:03 AM - 11/19/2026</div>
+    <!-- Ventana de invitación a hacerse Miembro de YouTube (aparece a los 8 s; ver script.js) -->
+    <div id="member-invite-overlay" class="member-invite-overlay" hidden>
+        <div class="member-invite-modal" role="dialog" aria-modal="true" aria-labelledby="member-invite-title" aria-describedby="member-invite-text">
+            <button type="button" id="member-invite-close" class="member-invite-close" aria-label="Cerrar / Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="member-invite-crown"><i class="fa-solid fa-crown"></i></div>
+            <h2 id="member-invite-title" data-i18n="member_invite_title">Hazte Miembro del canal</h2>
+            <p id="member-invite-text" data-i18n="member_invite_text">Somos una productora independiente. Tu apoyo como miembro en YouTube nos permite seguir investigando y produciendo cada documental.</p>
+            <a id="member-invite-cta" href="https://www.youtube.com/channel/UCayIhjKhh0KFaJlzRIRkSZQ/join" target="_blank" rel="noopener noreferrer" class="member-invite-cta">
+                <i class="fa-solid fa-crown"></i> <span data-i18n="btn_become_member">Convertirse en Miembro</span>
+            </a>
+            <button type="button" id="member-invite-dismiss" class="member-invite-dismiss" data-i18n="member_invite_dismiss">Ahora no</button>
+        </div>
+    </div>
 
-    <script src="world-map-data.js?v=11190003"></script>
-    <script src="script.js?v=11190003"></script>
+    <div class="build-timestamp">Actualizado: 10:05 AM - 11/20/2026</div>
+
+    <script src="world-map-data.js?v=11200956"></script>
+    <script src="script.js?v=11200956"></script>
 </body>
 </html>

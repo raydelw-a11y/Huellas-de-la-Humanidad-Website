@@ -149,6 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_on: 'Audio: ON',
             btn_bg_audio_off: 'Audio: OFF',
             btn_become_member: 'Convertirse en Miembro',
+            member_invite_title: 'Hazte Miembro del canal',
+            member_invite_text: 'Somos una productora independiente. Tu apoyo como miembro en YouTube nos permite seguir investigando y produciendo cada documental.',
+            member_invite_dismiss: 'Ahora no',
             followers_total_label: 'Seguidores',
             admin_active_visitors: 'Activos:',
             video_comments_title: 'Comentarios de este Video',
@@ -300,6 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
             btn_bg_audio_on: 'BG Audio: ON',
             btn_bg_audio_off: 'BG Audio: OFF',
             btn_become_member: 'Become a Member',
+            member_invite_title: 'Become a channel Member',
+            member_invite_text: 'We are an independent production company. Your support as a YouTube member lets us keep researching and producing every documentary.',
+            member_invite_dismiss: 'Not now',
             followers_total_label: 'Followers',
             admin_active_visitors: 'Active:',
             video_comments_title: 'Comments on This Video',
@@ -4642,4 +4648,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     checkUrlRecoveryToken();
+
+    // ==========================================
+    // VENTANA DE INVITACIÓN A HACERSE MIEMBRO
+    // Aparece a los 8 s. Si se cierra, no vuelve en 7 días;
+    // si se hace clic en el botón, no vuelve en 30 días.
+    // Máximo una vez por visita (aunque se recargue la página).
+    // ==========================================
+    (function initMemberInvite() {
+        const overlay = document.getElementById('member-invite-overlay');
+        if (!overlay) return;
+        const UNTIL_KEY = 'huellas_member_invite_until';
+        const SESSION_KEY = 'huellas_member_invite_shown';
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const SHOW_DELAY_MS = 8000;
+        const closeBtn = document.getElementById('member-invite-close');
+        const dismissBtn = document.getElementById('member-invite-dismiss');
+        const cta = document.getElementById('member-invite-cta');
+        let previousFocus = null;
+
+        function snooze(days) {
+            try { localStorage.setItem(UNTIL_KEY, String(Date.now() + days * DAY_MS)); } catch (e) {}
+        }
+
+        function shouldShow() {
+            try {
+                if (sessionStorage.getItem(SESSION_KEY)) return false;
+                const until = parseInt(localStorage.getItem(UNTIL_KEY) || '0', 10);
+                return !(until && Date.now() < until);
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function onKeyDown(e) {
+            if (e.key === 'Escape') closeInvite(7);
+        }
+
+        function openInvite() {
+            if (!shouldShow()) return;
+            try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) {}
+            previousFocus = document.activeElement;
+            overlay.hidden = false;
+            requestAnimationFrame(() => overlay.classList.add('is-visible'));
+            document.addEventListener('keydown', onKeyDown);
+            if (cta) cta.focus({ preventScroll: true });
+        }
+
+        function closeInvite(days) {
+            snooze(days);
+            overlay.classList.remove('is-visible');
+            document.removeEventListener('keydown', onKeyDown);
+            setTimeout(() => { overlay.hidden = true; }, 300);
+            if (previousFocus && typeof previousFocus.focus === 'function') {
+                previousFocus.focus({ preventScroll: true });
+            }
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', () => closeInvite(7));
+        if (dismissBtn) dismissBtn.addEventListener('click', () => closeInvite(7));
+        if (cta) cta.addEventListener('click', () => closeInvite(30));
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeInvite(7);
+        });
+
+        if (shouldShow()) setTimeout(openInvite, SHOW_DELAY_MS);
+    })();
 });
